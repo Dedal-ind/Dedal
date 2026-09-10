@@ -1,37 +1,37 @@
 // CoordinatorHubScreen.jsx
-// Route: /backstage/coordinator-hub — the coordinator's own assignments.
+// Route: /backstage/coordinator-hub — the events this coordinator runs.
 //
-// WHAT THIS SCREEN IS FOR: a coordinator arriving at a fest with two or three
-// grants, deciding which one to open. That is a LIST, and the retired version
-// made it a wall of 180px olive gradient posters with a glass overlay and a
-// glowing red LIVE badge — decoration on a chooser, and it pushed the third
-// assignment off a phone screen entirely.
+// WHAT THIS REPLACED, and why it had to go.
 //
-// It is now a table: one 44px row per assignment, the scope on the left, the
-// shift window and the live word on the right. Live rows sort to the top, as
-// before.
+// The screen rendered ONE row per assignment, and an assignment is fest-scoped:
+// its label was every event name in the grant joined with a comma. Measured on
+// this account at 1536px — 913 characters in a 1258px box with an intrinsic
+// width of 6250px, ellipsed after the fifth event. Sixty-two of the sixty-three
+// events were also unreachable: the row's tap opened `eventIds[0]` and nothing
+// else could be selected.
 //
-// ON THE DEDAL DESIGN SYSTEM (`dop-`). The two fetches, the administrator /
-// platform-admin inclusion rule, the shift-window arithmetic, the 30-second
-// clock tick and the fest-wide fallback to /backstage are unchanged and moved
-// verbatim.
+// It is now ONE CARD PER EVENT, which is the unit a coordinator opens. One
+// action per card; no reading a wall of text to find the row.
 //
-// STATE WORDS. "Live now" in --primary with a dot, for an assignment whose
-// shift covers this instant. Everything else says nothing at all rather than
-// "Not live" — an absent badge on a list where one row is red is unambiguous,
-// and a column of "Not live" is noise on the rows that need no attention.
+// WHERE THE EVENT DETAIL COMES FROM. /staff-assignments/mine populates events
+// with `eventName status` only — no type, no dates, no counts — so it can say
+// WHICH events are granted but carries nothing worth putting on a card. The
+// fest's own event list has all of it (eventType, startsAt/endsAt,
+// registeredCount), and BackstageScreen already reads that same endpoint. So
+// the assignment supplies the GRANT, the fest supplies the DETAIL, and the two
+// are joined on event id here. No backend change was needed.
 //
-// COPY. BACKSTAGE_COPY.festWide is also read by BackstageScreen and
-// VolunteerHubScreen, which another migration owns, so the fest-wide label is
-// overridden LOCALLY here rather than changed at source.
+// A fest-wide grant (empty eventIds) means every event in the fest, so the
+// intersection is skipped for it rather than yielding nothing.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { QrCode } from 'lucide-react';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import apiClient from '../../api-client/api-client.js';
-import EmptyState from '../../components/empty-state/EmptyState.jsx';
-import { formatCategoryLabel } from '../../helpers/category-format.js';
+import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
+import { dayChip, isToday, whenLabel } from '../../helpers/backstage-time.js';
+import '../../design/backstage.css';
 
 const STAFF_ROLES = {
   COORDINATOR: 'coordinator',
@@ -39,52 +39,100 @@ const STAFF_ROLES = {
   PLATFORM_ADMIN: 'platformAdmin',
 };
 
-/* Sentence case, IST. Not formatClockTime, which is the padded uppercase one. */
-const IST_CLOCK = new Intl.DateTimeFormat('en-IN', {
-  timeZone: 'Asia/Kolkata',
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-});
+const COPY = {
+  title: 'My assignments',
+  empty: 'No assignments yet.',
+  errorMessage: 'Could not load your assignments.',
+  retry: 'Try again',
+  offline:
+    'You are offline, so this is the last version loaded. It will refresh when you are back on a network.',
+  eventsLabel: 'events',
+  liveLabel: 'live now',
+  todayLabel: 'on today',
+  live: 'Live now',
+  done: 'Finished',
+  team: 'Team',
+  solo: 'Solo',
+  registered: 'registered',
+};
 
-function clock(isoString) {
-  if (!isoString) return '';
-  const date = new Date(isoString);
-  return Number.isNaN(date.getTime()) ? '' : IST_CLOCK.format(date).toLowerCase();
+/* Three states, derived from the clock rather than stored anywhere. */
+function eventPhase(event, nowMs) {
+  const start = event.startsAt ? new Date(event.startsAt).getTime() : null;
+  const end = event.endsAt ? new Date(event.endsAt).getTime() : null;
+  if (start !== null && end !== null && nowMs >= start && nowMs <= end) return 'live';
+  if (end !== null && nowMs > end) return 'done';
+  return 'upcoming';
 }
 
-/* Overridden locally; the shared key is consumed by screens another migration
-   owns. "Fest-wide" is what the grant actually is: every event in the fest. */
-const FEST_WIDE_LABEL = 'Every event in this fest';
+const PHASE_RANK = { live: 0, upcoming: 1, done: 2 };
 
 function CoordinatorHubScreen() {
   const navigate = useTransitionNavigate();
-  const [assignments, setAssignments] = useState([]);
-  const [shifts, setShifts] = useState([]);
+  const isOnline = useOnlineStatus();
+  const [groups, setGroups] = useState([]);
   const [loadState, setLoadState] = useState('loading');
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   const loadData = useCallback(async () => {
     setLoadState('loading');
     try {
-      const [assignmentList, shiftPayload] = await Promise.all([
-        apiClient.get('/staff-assignments/mine'),
-        apiClient.get('/shifts/mine').catch(() => ({ shifts: [] })),
-      ]);
+      const assignmentList = await apiClient.get('/staff-assignments/mine');
       /*
        * An administrator's fest-wide grant covers coordination too, so their
-       * row belongs in this list — filtering to `coordinator` alone would show
-       * an admin an empty hub for a fest they own.
+       * fests belong here — filtering to `coordinator` alone would show an
+       * admin an empty hub for a fest they own.
        */
-      setAssignments(
-        (Array.isArray(assignmentList) ? assignmentList : []).filter(
-          (a) =>
-            a.role === STAFF_ROLES.COORDINATOR ||
-            a.role === STAFF_ROLES.ADMINISTRATOR ||
-            a.role === STAFF_ROLES.PLATFORM_ADMIN,
-        ),
+      const mine = (Array.isArray(assignmentList) ? assignmentList : []).filter(
+        (assignment) =>
+          assignment.role === STAFF_ROLES.COORDINATOR ||
+          assignment.role === STAFF_ROLES.ADMINISTRATOR ||
+          assignment.role === STAFF_ROLES.PLATFORM_ADMIN,
       );
-      setShifts(Array.isArray(shiftPayload?.shifts) ? shiftPayload.shifts : []);
+
+      /*
+       * Collapsed to one entry per FEST before fetching: two grants on the same
+       * fest would otherwise request the same event list twice.
+       */
+      const byFest = new Map();
+      for (const assignment of mine) {
+        const fest = assignment.festId;
+        if (!fest?.id) continue;
+        const grantedIds = (assignment.eventIds ?? []).map((event) => event.id).filter(Boolean);
+        const existing = byFest.get(fest.id);
+        if (existing) {
+          // A fest-wide grant on either row widens the pair to the whole fest.
+          existing.festWide = existing.festWide || grantedIds.length === 0;
+          grantedIds.forEach((id) => existing.grantedIds.add(id));
+        } else {
+          byFest.set(fest.id, {
+            festId: fest.id,
+            festName: fest.festName ?? '',
+            festWide: grantedIds.length === 0,
+            grantedIds: new Set(grantedIds),
+          });
+        }
+      }
+
+      const built = await Promise.all(
+        [...byFest.values()].map(async (fest) => {
+          /* One fest's event list failing drops that section, not the screen. */
+          const payload = await apiClient
+            .get('/public/fests/' + fest.festId + '/events?includeChildren=true')
+            .catch(() => null);
+          const all = Array.isArray(payload?.events)
+            ? payload.events
+            : Array.isArray(payload)
+              ? payload
+              : [];
+          const events = fest.festWide
+            ? all
+            : all.filter((event) => fest.grantedIds.has(event.id));
+          return { festId: fest.festId, festName: fest.festName, events };
+        }),
+      );
+
+      setGroups(built.filter((group) => group.events.length > 0));
       setLoadState('ready');
     } catch {
       setLoadState('error');
@@ -96,163 +144,183 @@ function CoordinatorHubScreen() {
     loadData();
   }, [loadData]);
 
-  // Refresh "now" every 30 seconds so live status updates automatically.
+  // Live status is read from the clock, so the clock has to move.
   useEffect(() => {
     const intervalId = window.setInterval(() => setNowMs(Date.now()), 30000);
     return () => window.clearInterval(intervalId);
   }, []);
 
-  // Build flat rows from assignments. Each assignment becomes one row showing
-  // the event names it covers (or "every event in this fest"), the fest it
-  // belongs to, whether it has an active shift right now, and the shift times.
-  const cards = useMemo(() => {
-    return assignments.map((assignment) => {
-      const fest = assignment.festId;
-      const festId = fest?.id ?? '';
-      const eventNames = (assignment.eventIds ?? []).map((e) => e.eventName).filter(Boolean);
-      const scopeLabel =
-        eventNames.length > 0 ? eventNames.join(', ') : (fest?.festName ?? FEST_WIDE_LABEL);
-      const category = (assignment.eventIds ?? []).find((e) => e.category)?.category ?? null;
-
-      // Find shifts for this fest.
-      const assignmentShifts = shifts.filter(
-        (shift) => (shift.festId?.id ?? shift.festId) === festId && shift.status !== 'cancelled',
-      );
-
-      // Is any shift active right now?
-      const activeShift = assignmentShifts.find((shift) => {
-        const start = shift.startsAt ? new Date(shift.startsAt).getTime() : null;
-        const end = shift.endsAt ? new Date(shift.endsAt).getTime() : null;
-        return start !== null && end !== null && nowMs >= start && nowMs <= end;
-      });
-
-      // Next upcoming shift (for timing display).
-      const nextShift = assignmentShifts
-        .filter((shift) => shift.startsAt && new Date(shift.startsAt).getTime() >= nowMs)
-        .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))[0];
-
-      const displayShift = activeShift ?? nextShift ?? assignmentShifts[0] ?? null;
-      const timeLabel = displayShift
-        ? `${clock(displayShift.startsAt)} to ${clock(displayShift.endsAt)}`
-        : null;
-
-      /*
-       * The event page is event-scoped, so the row must carry a real event id.
-       * An assignment covering several events still has one primary event to
-       * open; a fest-wide grant has none and falls back to the panel.
-       */
-      const primaryEventId = (assignment.eventIds ?? [])[0]?.id ?? null;
-
-      return {
-        id: assignment.id,
-        eventId: primaryEventId,
-        festId,
-        scopeLabel,
-        category,
-        timeLabel,
-        isLive: !!activeShift,
-        festName: fest?.festName ?? '',
-        festSlug: fest?.festSlug ?? '',
-        eventSlug: (assignment.eventIds ?? [])[0]?.eventSlug ?? null,
-      };
-    });
-  }, [assignments, shifts, nowMs]);
-
-  // Live assignments first, then the rest.
-  const sortedCards = useMemo(
-    () => [...cards].sort((a, b) => (b.isLive ? 1 : 0) - (a.isLive ? 1 : 0)),
-    [cards],
+  /* Live first, then upcoming by start time, then finished. */
+  const sortedGroups = useMemo(
+    () =>
+      groups.map((group) => ({
+        ...group,
+        events: [...group.events].sort((first, second) => {
+          const byPhase =
+            PHASE_RANK[eventPhase(first, nowMs)] - PHASE_RANK[eventPhase(second, nowMs)];
+          if (byPhase !== 0) return byPhase;
+          return new Date(first.startsAt ?? 0) - new Date(second.startsAt ?? 0);
+        }),
+      })),
+    [groups, nowMs],
   );
 
-  const totalAssigned = assignments.length;
-  const liveCount = cards.filter((c) => c.isLive).length;
+  const allEvents = useMemo(
+    () => sortedGroups.flatMap((group) => group.events),
+    [sortedGroups],
+  );
+  const totalEvents = allEvents.length;
+  const liveCount = allEvents.filter((event) => eventPhase(event, nowMs) === 'live').length;
+  const todayCount = allEvents.filter((event) => isToday(event.startsAt, nowMs)).length;
+  /* A single header over the only group names something already known. */
+  const showFestHeaders = sortedGroups.length > 1;
 
   return (
-    <div className="dop-screen">
-      <ScreenHeader title="My assignments" />
+    <div className="dbk-screen">
+      <ScreenHeader title={COPY.title} />
 
-      <div className="dop-page">
+      <div className="dbh-page">
+        {!isOnline ? <p className="dbk-offline">{COPY.offline}</p> : null}
+
         {loadState === 'loading' ? (
           <>
-            <div className="dop-stats">
-              <span className="dop-sk dop-sk--block" />
-              <span className="dop-sk dop-sk--block" />
+            <div className="dbh-stats">
+              <div className="dbh-skel dbh-skel--stat" />
+              <div className="dbh-skel dbh-skel--stat" />
+              <div className="dbh-skel dbh-skel--stat" />
             </div>
-            <div className="dop-skstack">
-              <span className="dop-sk dop-sk--row" />
-              <span className="dop-sk dop-sk--row" />
-              <span className="dop-sk dop-sk--row" />
+            <div className="dbh-list">
+              <div className="dbh-skel dbh-skel--card" />
+              <div className="dbh-skel dbh-skel--card" />
+              <div className="dbh-skel dbh-skel--card" />
             </div>
           </>
         ) : null}
 
         {loadState === 'error' ? (
-          <div className="dop-retry">
-            <p className="dop-retry__text">Could not load my assignments.</p>
-            <button type="button" className="dop-btn" onClick={loadData}>
-              Try again
+          <div className="dbk-error">
+            <p className="dbk-error__message">{COPY.errorMessage}</p>
+            <button type="button" className="dbk-error__retry" onClick={loadData}>
+              {COPY.retry}
             </button>
           </div>
         ) : null}
 
         {loadState === 'ready' ? (
-          <>
-            <div className="dop-stats">
-              <div className="dop-stat">
-                <span className="dop-stat__value">{totalAssigned}</span>
-                <span className="dop-stat__label">Assignments</span>
-              </div>
-              <div className="dop-stat">
-                <span className="dop-stat__value">{liveCount}</span>
-                <span className="dop-stat__label">Live now</span>
-              </div>
-            </div>
-
-            {sortedCards.length === 0 ? (
-              <EmptyState line="No coordinator assignments yet." />
-            ) : (
-              <div className="dop-table">
-                {sortedCards.map((card) => (
-                  <button
-                    type="button"
-                    key={card.id}
-                    className="dop-row dop-row--button"
-                    onClick={() =>
-                      navigate(
-                        card.eventId
-                          ? `/backstage/coordinator-event?eventId=${card.eventId}&festId=${card.festId}`
-                          : '/backstage',
-                      )
+          totalEvents === 0 ? (
+            <p className="dbh-empty">{COPY.empty}</p>
+          ) : (
+            <>
+              <div className="dbh-stats">
+                <div className="dbh-stat">
+                  <span className="dbh-stat__value">{totalEvents}</span>
+                  <span className="dbh-stat__label">{COPY.eventsLabel}</span>
+                </div>
+                <div className="dbh-stat">
+                  <span
+                    className={
+                      liveCount > 0 ? 'dbh-stat__value dbh-stat__value--now' : 'dbh-stat__value'
                     }
                   >
-                    <span className="dop-row__main">
-                      <span className="dop-row__name">{card.scopeLabel}</span>
-                      <span className="dop-row__meta">
-                        {[
-                          card.festName,
-                          card.category
-                            ? (formatCategoryLabel(card.category) ?? card.category)
-                            : null,
-                          card.timeLabel,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </span>
-                    </span>
-                    <span className="dop-row__end">
-                      {card.isLive ? (
-                        <span className="dop-state dop-state--live">
-                          <span className="dop-state__dot" aria-hidden="true" />
-                          Live now
-                        </span>
-                      ) : null}
-                      <ChevronRight size={16} aria-hidden="true" />
-                    </span>
-                  </button>
-                ))}
+                    {liveCount}
+                  </span>
+                  <span className="dbh-stat__label">{COPY.liveLabel}</span>
+                </div>
+                <div className="dbh-stat">
+                  <span className="dbh-stat__value">{todayCount}</span>
+                  <span className="dbh-stat__label">{COPY.todayLabel}</span>
+                </div>
               </div>
-            )}
-          </>
+
+              {sortedGroups.map((group) => (
+                <section className="dbh-section" key={group.festId}>
+                  {showFestHeaders ? (
+                    <h2 className="dbh-section__title">{group.festName}</h2>
+                  ) : null}
+
+                  <div className="dbh-list">
+                    {group.events.map((event) => {
+                      const phase = eventPhase(event, nowMs);
+                      const chip = dayChip(event.startsAt, nowMs);
+                      const meta = [
+                        event.eventType === 'team' ? COPY.team : COPY.solo,
+                        (event.registeredCount ?? 0) + ' ' + COPY.registered,
+                        phase === 'done' ? COPY.done : null,
+                      ].filter(Boolean);
+                      return (
+                        <div className="dbh-card" key={event.id}>
+                          <button
+                            type="button"
+                            className="dbh-card__open"
+                            onClick={() =>
+                              navigate(
+                                '/backstage/coordinator-event?eventId=' +
+                                  event.id +
+                                  '&festId=' +
+                                  group.festId,
+                              )
+                            }
+                          >
+                            <span
+                              className={
+                                chip.isToday ? 'dbh-when dbh-when--today' : 'dbh-when'
+                              }
+                            >
+                              <span className="dbh-when__day">{chip.day}</span>
+                              <span className="dbh-when__month">{chip.month}</span>
+                            </span>
+
+                            <span className="dbh-card__body">
+                              <span className="dbh-card__name">{event.eventName}</span>
+                              <span className="dbh-card__time">
+                                {whenLabel(event.startsAt, event.endsAt, nowMs)}
+                              </span>
+                              <span className="dbh-card__meta">
+                                {phase === 'live' ? (
+                                  <span className="dbh-status dbh-status--now">
+                                    <span className="dbh-status__dot" aria-hidden="true" />
+                                    {COPY.live}
+                                  </span>
+                                ) : null}
+                                {phase === 'live' && meta.length > 0 ? (
+                                  <span className="dbh-card__sep" aria-hidden="true">
+                                    ·
+                                  </span>
+                                ) : null}
+                                {meta.map((piece, index) => (
+                                  <span key={piece}>
+                                    {index > 0 ? (
+                                      <span className="dbh-card__sep" aria-hidden="true">
+                                        {' · '}
+                                      </span>
+                                    ) : null}
+                                    {piece}
+                                  </span>
+                                ))}
+                              </span>
+                            </span>
+                          </button>
+
+                          {/* The thing a coordinator at a door actually wants,
+                              previously three taps away. */}
+                          <button
+                            type="button"
+                            className="dbh-card__qr"
+                            aria-label={'Scan passes for ' + event.eventName}
+                            onClick={() =>
+                              navigate('/backstage/scanner?eventId=' + event.id)
+                            }
+                          >
+                            <QrCode size={20} aria-hidden="true" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </>
+          )
         ) : null}
       </div>
     </div>

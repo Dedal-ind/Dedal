@@ -833,18 +833,13 @@
   padding: var(--s5);
 }
 
-.dcd-push__title {
-  margin: 0;
-  padding: var(--s5) var(--s5) var(--s2);
-  font-size: var(--display-m-size);
-  line-height: var(--display-m-line);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
+/* .dcd-push__title is gone: the event name is ScreenHeader's title now. The
+   top padding it used to contribute above the tabs moves onto the tabs
+   themselves, so the strip does not sit flush against the header bar. */
 
 .dcd-push__tabs {
   display: flex;
+  padding-block-start: var(--s2);
   padding-inline: var(--s5);
   border-bottom: 1px solid var(--divider);
 }

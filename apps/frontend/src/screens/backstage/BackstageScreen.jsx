@@ -24,11 +24,45 @@
 // "On duty now" plus the checkpoint or event name, with --primary as the second
 // signal behind the words.
 //
-// NO BACK CONTROL, deliberately, and this is load-bearing: /backstage is a nav
-// ROOT and the sign-in redirect target for staff, so both arrivals start with
-// EMPTY history and navigate(-1) is a silent no-op. It also passes NO title to
-// ScreenHeader, because a title suppresses the global app header — right for a
-// pushed screen, wrong for a root, which would lose its only way out.
+// THE BACK-AND-TITLE BAR, and why this screen now has one.
+//
+// It used to pass neither a title nor a back control, on the reasoning that
+// /backstage is a nav ROOT and the sign-in redirect target for staff — so
+// history would be empty and navigate(-1) a silent no-op, and suppressing the
+// global app header would strand a person with no way out.
+//
+// HALF OF THAT IS NO LONGER TRUE. Staff are not redirected here any more; see
+// the note above RootRoute in App.jsx, which says so in as many words, and no
+// redirect to this path exists anywhere. /backstage is reached from the
+// Backstage row in /account like any other pushed screen, so it should look
+// like one: a back control and its own name, not the participant app header
+// with a wordmark and a search box over a crew tool.
+//
+// The remaining half IS still true — a bookmark or a pasted link lands here
+// with empty history, where navigate(-1) is a silent no-op — so back asks
+// first and only falls back to a path when there is genuinely nothing behind.
+//
+// WHY IT ASKS RATHER THAN ALWAYS TAKING THE PATH. A fixed destination sends
+// everyone to the same place regardless of where they actually came from. This
+// screen is reached from the Backstage row in /account, from the volunteer
+// scanner's way out, and by typing the URL; answering all three with /account
+// is right for one of them and wrong for the other two. Real history is the
+// only thing that knows which.
+//
+// react-router 7 numbers its own history entries in window.history.state.idx,
+// so `idx > 0` is "there is an in-app entry behind this one". An entry the
+// router did not create has no idx, which is read as no history — the
+// conservative answer, since the fallback always lands somewhere real.
+//
+// The cost is that going back through history is not animated:
+// use-transition-navigate cannot animate navigate(-1), because a delta
+// resolves through popstate after the transition has already ended. That is
+// the same instant back every other screen in this app has, and landing on the
+// right screen beats sliding to the wrong one.
+//
+// The screen's own <h1> is gone with it. The title lives in ScreenHeader now,
+// which is the whole point of that component — one name per screen, in one
+// band, not the same word twice down the left edge.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
@@ -296,16 +330,30 @@ function BackstageScreen() {
 
   const activeCheckpoint = activeShift ? readShiftCheckpoint(activeShift) : null;
 
+  /*
+   * Back to wherever this was opened from. /account is the fallback, not the
+   * destination: it is the menu that lists Backstage, and it renders real
+   * content for any signed-in user — which matters, because a route that
+   * renders only <Navigate> is snapshotted empty by a view transition.
+   */
+  function handleBack() {
+    const historyIndex = window.history.state?.idx;
+    if (typeof historyIndex === 'number' && historyIndex > 0) {
+      navigate(-1);
+      return;
+    }
+    navigate('/account');
+  }
+
   function openScanner(checkpointId) {
     navigate(`/backstage/scanner?checkpointId=${checkpointId}`);
   }
 
   return (
     <div className="dbk-screen">
-      <ScreenHeader showBack={false} />
+      <ScreenHeader title={COPY.heading} onBack={handleBack} />
 
       <div className="dbk-col">
-        <h1 className="dbk-h1">{COPY.heading}</h1>
 
         {!isOnline ? <p className="dbk-offline">{COPY.offline}</p> : null}
 

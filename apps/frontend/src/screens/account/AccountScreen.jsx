@@ -214,7 +214,27 @@ function AccountScreen() {
             className="dac-item dac-item--danger"
             onClick={() => {
               signOut();
-              navigate('/', { replace: true });
+            /*
+              STRAIGHT TO /auth/email, NOT to "/".
+              
+              Signing out used to navigate to "/", letting RootRoute bounce the
+              now-unauthenticated visitor onward. That is what produced the blank
+              white page, and the mechanism is worth stating because it will bite
+              any future redirect:
+              
+              RootRoute answers an unauthenticated visitor with <Navigate>, which
+              renders NOTHING and moves the URL from an effect. useTransitionNavigate
+              commits the route change inside document.startViewTransition via
+              flushSync, and the browser takes its "after" snapshot the moment that
+              callback returns — so it snapshots the empty frame that <Navigate>
+              rendered, then holds that blank frame for the length of the
+              transition while the real redirect happens underneath it.
+              
+              A route that renders only <Navigate> can therefore never be the
+              DESTINATION of an animated navigation. Going directly to the screen
+              the redirect would have reached gives the snapshot real content.
+            */
+              navigate('/auth/email', { replace: true });
             }}
           >
             <SignOutIcon />

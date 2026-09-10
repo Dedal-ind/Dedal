@@ -171,7 +171,11 @@ function AccountDrawer({ isOpen, onClose }) {
           onClick={() => {
             onClose();
             signOut();
-            navigate('/');
+            /* Direct, not via "/" — see the note on the same control in
+               AccountScreen.jsx: RootRoute answers a signed-out visitor with
+               <Navigate>, which renders nothing, and an empty render is what a
+               view transition snapshots and then holds on screen. */
+            navigate('/auth/email', { replace: true });
           }}
         >
           <SignOutIcon />

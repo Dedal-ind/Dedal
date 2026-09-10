@@ -30,17 +30,32 @@
  * `.dvl-screen` is registered there and nothing in this file adds a ring back.
  */
 
+/*
+ * A flex column, so the sticky scan bar can sit at the end of it and stay at
+ * the bottom of the viewport on a short page as well as a long one.
+ */
 .dvl-screen {
+  display: flex;
   min-height: 100dvh;
+  flex-direction: column;
   background: var(--surface);
   color: var(--ink);
   font-family: var(--font);
 }
 
+/*
+ * 720px, matching the two backstage hubs. --col-max is `none` below 1920px, so
+ * this column previously ran the full width of a laptop for a checkpoint with
+ * three numbers on it.
+ */
 .dvl-col {
-  max-width: var(--col-max);
+  flex: 1;
+  max-width: 720px;
   margin: 0 auto;
   padding: var(--s2) var(--page-pad) var(--feed-end);
+  /* AFTER the shorthand, which would otherwise reset it. Room for the fixed
+     scan bar: the 64px control, its padding, and the notch. */
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: var(--s6);
@@ -188,9 +203,15 @@
   color: var(--muted);
 }
 
+/*
+ * THREE COLUMNS, fixed, because there are exactly three of these. auto-fit at
+ * a 130px floor fitted two per row on a 412px phone and left the third alone
+ * on a row of its own — the orphan that made this block look misaligned.
+ * Three short numbers fit 108px each at that width comfortably.
+ */
 .dvl-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--card-gap);
 }
 
@@ -220,9 +241,15 @@
 
 /* ── Secondary actions: the CSV downloads and the contact button ────────── */
 
+/*
+ * TWO UP. Four full-width buttons with near-identical labels stacked to 224px
+ * of near-identical rows — four taps of the same shape, which is exactly the
+ * choice cost a list of options should not impose. Two columns halves the
+ * height and lets the labels be read as a set of four rather than as a queue.
+ */
 .dvl-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--card-gap);
 }
 
@@ -487,4 +514,141 @@
   font-size: var(--body-s-size);
   line-height: var(--body-s-line);
   color: var(--ink);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SCAN BAR.
+   
+   The scanner button used to sit at y=177 in the content, between the
+   checkpoint name and the counts. Measured on a 412px phone: it scrolled out
+   of view as soon as the volunteer looked at the recent-scan list below it,
+   and it sat in the stretch zone rather than the thumb zone.
+   
+   That is the wrong place for THE repeated action on this screen. A volunteer
+   at a door scans, looks up, scans again, dozens of times an hour. The
+   references are consistent: the primary repeated action belongs bottom-centre
+   — it is why the shutter button on a phone camera is where it is.
+   
+   ON DESKTOP it stops being sticky and simply ends the column: a cursor has no
+   thumb zone, and a bar pinned over a wide window is chrome for a problem that
+   does not exist there.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * FIXED, not sticky. Sticky was tried first and does not hold here: this
+ * screen's root is only as tall as its own content (816px) while the document
+ * around it scrolls further (903px), so the bar's sticky containing block ends
+ * before the scroll does and it never gets pulled into view — measured sitting
+ * one pixel below the fold at the top of the page and only appearing once the
+ * page had been scrolled to the very end. Which is the opposite of the point.
+ *
+ * Fixed does not care what any ancestor's height is. The column reserves the
+ * bar's height below itself so nothing hides behind it.
+ */
+.dvl-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 5;
+  /*
+   * NOT margin-top: auto. An auto margin on a flex item resolves by absorbing
+   * the free space, which fixes the item's position and stops `bottom: 0` from
+   * ever pulling it up into view — the bar then sat one pixel below the fold
+   * until the page was scrolled. The column below carries flex: 1 instead, so
+   * the bar is pushed to the end of a short page by its sibling rather than by
+   * a margin it cannot stick against.
+   */
+  /* The bar and the canvas are different colours, so the boundary is a real
+     edge; the hairline stops it painting a seam at fractional DPR. */
+  border-top: 1px solid var(--divider);
+  background: var(--surface-card);
+  padding: var(--s3) var(--page-pad) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+}
+
+.dvl-bar__inner {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .dvl-col {
+    padding-bottom: var(--feed-end);
+  }
+
+  .dvl-bar {
+    position: static;
+    border-top: 0;
+    background: transparent;
+    padding-inline: 0;
+    padding-bottom: 0;
+  }
+}
+
+/*
+ * ONE ORCHESTRATED MOMENT, and it animates OPACITY ONLY.
+ *
+ * It rose with translateY(100%) first. That put the bar's POSITION in the
+ * hands of an animation, and a layout cannot rely on one: an animation does
+ * not advance in a background tab, and a running-but-frozen animation still
+ * applies its current value. Measured with the tab hidden — playState
+ * "running", currentTime stuck at 0, transform held at translateY(75px) — the
+ * bar sat its own height below the fold, which is exactly where the control
+ * this screen exists for must never be. Removing the fill mode did not help,
+ * because the animation was still notionally running.
+ *
+ * Opacity cannot move anything. The bar is in the right place from the first
+ * frame whether the fade plays, is throttled, or never runs at all.
+ */
+@keyframes dvl-bar-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+ * NO `both` FILL MODE, deliberately, and this was found the hard way.
+ *
+ * `both` holds the `from` keyframe before the animation starts — and the
+ * `from` keyframe here is translateY(100%), which is the bar parked entirely
+ * below the fold. A CSS animation does not advance in a background tab, so a
+ * bar with `both` sits off-screen for as long as the tab stays hidden.
+ * Measured exactly that: playState "running", currentTime stuck at 0,
+ * transform frozen at translateY(86.8px) — the bar's own height.
+ *
+ * Without a fill mode the resting state is the element's own position, so the
+ * bar is where it belongs whether the animation runs, is throttled, or never
+ * plays at all. The animation becomes decoration on top of a correct layout
+ * rather than the thing responsible for it.
+ */
+.dvl-bar {
+  animation: dvl-bar-fade var(--d-move, 260ms) var(--ease-enter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dvl-bar {
+    animation: none;
+  }
+}
+
+/* The scanner is the one control that must not look like the four grey
+   download buttons above it. */
+.dvl-bar .dvl-scan {
+  transition:
+    transform 80ms var(--ease-exit),
+    filter var(--d-quick) var(--ease-enter);
+}
+
+.dvl-bar .dvl-scan:active {
+  transform: scale(0.97);
+}
+
+.dvl-bar .dvl-scan:disabled {
+  filter: grayscale(1);
+  opacity: 0.6;
+  cursor: not-allowed;
 }

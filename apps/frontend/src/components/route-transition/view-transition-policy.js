@@ -31,11 +31,35 @@ import {
  * instant. Sliding away from a gate pass while the volunteer is still looking
  * at it is the same problem in reverse.
  */
+/*
+ * REDIRECT-ONLY ROUTES, and why they belong in this list rather than in the
+ * "we would rather it were instant" category above.
+ *
+ * A route that renders only <Navigate> renders NOTHING. useTransitionNavigate
+ * commits inside document.startViewTransition, and the browser takes its
+ * "after" snapshot the moment that callback returns — before <Navigate>'s
+ * effect has run. So the transition captures an empty frame and then holds it
+ * on screen for its whole duration, which reads as the app going blank.
+ *
+ * This is not a preference. Animating INTO one of these is always a bug, so
+ * they are excluded structurally rather than left for each call site to
+ * remember. It is why signing out goes straight to /auth/email instead of
+ * letting RootRoute bounce it.
+ *
+ * "/" is deliberately NOT here: it renders the participant feed for a
+ * signed-in participant and only redirects for the other cases, so exempting
+ * it would kill the transition on the single most travelled route in the app.
+ * The call sites that can land on a redirecting "/" name their real
+ * destination instead.
+ */
+const REDIRECT_ONLY_ROUTES = ['discover', 'my-fests'];
+
 const NEVER_ANIMATED = [
   /* /my-passes is the LIST and does animate; only /my-passes/:festId is the
      pass itself, hence the two-segment check. */
   (segments) => segments[0] === 'my-passes' && segments.length >= 2,
   (segments) => segments[0] === 'backstage' && segments[1] === 'scanner',
+  (segments) => segments.length === 1 && REDIRECT_ONLY_ROUTES.includes(segments[0]),
 ];
 
 function toSegments(pathname) {

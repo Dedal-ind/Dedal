@@ -409,7 +409,33 @@ function PushCertificateScreen() {
 
   return (
     <div className="dcd-push">
-      <ScreenHeader />
+      {/*
+        A TITLE, and an explicit back path.
+
+        Passing no title left this screen stacking three bands down the top of
+        the viewport: the participant app header (wordmark, search, bell), a
+        bare floating back arrow under it, and then the screen's own <h1>. A
+        title is what tells the layout to stand the app header down — see
+        screen-title-context.jsx — so without one the bar this screen already
+        had could never replace the one above it.
+
+        The event name moves up into that bar rather than being repeated: it
+        was the <h1> immediately below, and it is the thing a coordinator needs
+        to see, since pushing certificates to the wrong event cannot be undone.
+
+        Back goes to the event this screen was opened from, NOT navigate(-1).
+        Two reasons. A pasted link lands here with empty history, where a delta
+        is a silent no-op. And a history delta cannot be animated —
+        use-transition-navigate resolves those through popstate, after the
+        transition has already ended — so a path is what makes the returning
+        slide actually run.
+      */}
+      <ScreenHeader
+        title={eventName}
+        onBack={() =>
+          navigate(`/backstage/coordinator-event?eventId=${eventId}&festId=${festId}`)
+        }
+      />
 
       {loadState === 'loading' ? (
         <div className="dcd-push__pad">
@@ -429,8 +455,6 @@ function PushCertificateScreen() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-          <h1 className="dcd-push__title">{eventName}</h1>
-
           <div className="dcd-push__tabs" role="tablist" aria-label="Certificate batches">
             <button
               type="button"
@@ -725,7 +749,9 @@ function PushCertificateScreen() {
             <div className="dcd-sheet__actions">
               <button
                 type="button"
-                onClick={() => navigate(-1)}
+                onClick={() =>
+                  navigate(`/backstage/coordinator-event?eventId=${eventId}&festId=${festId}`)
+                }
                 className="dcd-action"
                 data-variant="primary"
               >

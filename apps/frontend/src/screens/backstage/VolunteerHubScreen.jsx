@@ -1,92 +1,88 @@
 // VolunteerHubScreen.jsx
-// Route: /backstage/volunteer-hub — the volunteer's assignments, on the dedal
-// design system.
+// Route: /backstage/volunteer-hub — the posts this volunteer works.
 //
-// DATA IS UNCHANGED: GET /staff-assignments/mine, GET /shifts/mine (tolerated
-// failure) and GET /backstage/volunteer/summary (tolerated failure) in one
-// Promise.all, the same role filter (volunteer, administrator, platformAdmin),
-// the same 30-second clock, the same card derivation, the same checkpoint
-// pairing (event-name match, then the fest-wide gate), the same live-first sort
-// and the same client-built CSV with the same columns and the same filename.
+// WHAT THIS REPLACED. One card per ASSIGNMENT, and an assignment is fest-scoped:
+// its label was every event name in the grant joined with a middle dot. Measured
+// on this account at 1536px — 975 characters wrapping to a 696px-tall label
+// inside a 313px column, giving a single card 795px tall. Worse than the
+// coordinator hub's version of the same bug, because this one wrapped instead of
+// ellipsing.
 //
-// ONE REAL FIX, and it was a crash. `handleDownloadShifts` was declared ABOVE
-// `cards` with `[cards, shifts, isDownloading]` as its dependency array. A
-// dependency array is evaluated during render, `cards` is a `const` declared
-// later in the same scope, so every render of this screen threw
-// "Cannot access 'cards' before initialization" and the route rendered nothing.
-// The callback now sits after the memo it depends on. Nothing else about it
-// moved.
+// It is now ONE CARD PER CHECKPOINT, which is the unit a volunteer is actually
+// posted to and the unit the scanner opens.
 //
-// THE CARDS. They were 180px olive gradient posters with a blur layer, a
-// black-to-transparent scrim and a red LIVE badge whose text pulsed. None of
-// that survived: a volunteer is looking for which post is theirs and when, so
-// the card is now the assignment name, the fest, the shift window in words, and
-// a status chip that SAYS "On now" or "Scheduled" rather than glowing. They sit
-// in an intrinsic grid, so a laptop fills the row instead of stacking one
-// column of wide ribbons.
+// THE DATA WAS ALREADY RIGHT; ONLY THE RENDERING WAS NOT.
+// GET /backstage/volunteer/summary returns `scope`: one entry per checkpoint,
+// each carrying checkpointName, checkpointType, festId/festName, eventName,
+// eventType and the event window. That is the whole card. It was previously
+// used for one thing only — finding a single checkpointId to attach to the
+// merged card — and everything else on it was thrown away.
+//
+// THE SHIFT JOIN IS NOW ON checkpointId. It used to pair a card to a checkpoint
+// by matching event NAMES between two payloads, falling back to the fest-wide
+// gate. Both payloads carry checkpointId, so the join is exact and two events
+// sharing a name can no longer collide.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Check, Download, QrCode } from 'lucide-react';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
 import apiClient from '../../api-client/api-client.js';
-import EmptyState from '../../components/empty-state/EmptyState.jsx';
-import { formatCategoryLabel } from '../../helpers/category-format.js';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
-import { CheckIcon, DownloadIcon } from '../../components/detail-icons/DetailIcons.jsx';
+import { dayChip, isToday, whenLabel } from '../../helpers/backstage-time.js';
 import '../../design/backstage.css';
 
-const STAFF_ROLES = {
-  VOLUNTEER: 'volunteer',
-  ADMINISTRATOR: 'administrator',
-  PLATFORM_ADMIN: 'platformAdmin',
+const COPY = {
+  title: 'Volunteer',
+  empty: 'No assignments yet.',
+  errorMessage: 'Could not load your assignments.',
+  retry: 'Try again',
+  offline:
+    'You are offline, so this is the last version loaded. It will refresh when you are back on a network.',
+  downloadLabel: 'Download my shifts as a CSV file',
+  checkpointsLabel: 'checkpoints',
+  activeLabel: 'on now',
+  todayLabel: 'today',
+  activeNow: 'Active now',
+  scheduled: 'Scheduled',
+  completed: 'Completed',
+  noShift: 'No shift yet',
 };
 
 /*
- * Local copy. BACKSTAGE_COPY is shared with CoordinatorHubScreen (not part of
- * this change) and its strings are stamped uppercase, so the sentence-case
- * versions live here rather than being changed underneath that screen. The one
- * key still read from the shared block is `festWide`, and it is read through a
- * local sentence-case constant for the same reason.
+ * The checkpoint kinds this surface can be posted to, in words. An unknown
+ * kind falls back to its own key rather than to nothing: a badge reading
+ * `offerCounter` is still more use than a blank where a badge should be.
  */
-const COPY = {
-  title: 'Volunteer',
-  festWide: 'Fest wide',
-  assignmentsTitle: 'My assignments',
-  onNow: 'On now',
-  scheduled: 'Scheduled',
-  noShift: 'No shift scheduled yet',
-  totalLabel: 'assignments',
-  liveLabel: 'shifts on now',
-  empty: 'You have no volunteer assignments yet. Your fest admin adds them.',
-  errorMessage: 'Could not load your assignments.',
-  retry: 'Try again',
-  downloadLabel: 'Download my shifts as a CSV file',
-  offline: 'You are offline, so this is the last version loaded. It will refresh when you are back on a network.',
+const CHECKPOINT_LABELS = {
+  gate: 'Gate',
+  eventEntry: 'Event entry',
+  offerCounter: 'Offer counter',
+  mealCounter: 'Meal counter',
 };
 
-/* IST, sentence case, local. Not formatShortDate — that is the retired
-   stamped-uppercase helper. */
-const CLOCK = new Intl.DateTimeFormat('en-IN', {
-  timeZone: 'Asia/Kolkata',
-  hour: 'numeric',
-  minute: '2-digit',
-  hour12: true,
-});
-
-function formatClock(value) {
-  if (!value) {
-    return '';
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '' : CLOCK.format(date);
+/*
+ * The shift's state, from the clock and the stored status together. `completed`
+ * is trusted when the server says so; otherwise an end time in the past is what
+ * makes a shift finished.
+ */
+function shiftPhase(shift, nowMs) {
+  if (!shift) return 'none';
+  if (shift.status === 'completed') return 'completed';
+  const start = shift.startsAt ? new Date(shift.startsAt).getTime() : null;
+  const end = shift.endsAt ? new Date(shift.endsAt).getTime() : null;
+  if (start !== null && end !== null && nowMs >= start && nowMs <= end) return 'active';
+  if (end !== null && nowMs > end) return 'completed';
+  return 'scheduled';
 }
+
+const PHASE_RANK = { active: 0, scheduled: 1, none: 2, completed: 3 };
 
 function VolunteerHubScreen() {
   const navigate = useTransitionNavigate();
   const isOnline = useOnlineStatus();
-  const [assignments, setAssignments] = useState([]);
-  const [shifts, setShifts] = useState([]);
   const [scope, setScope] = useState([]);
+  const [shifts, setShifts] = useState([]);
   const [loadState, setLoadState] = useState('loading');
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [isDownloading, setIsDownloading] = useState(false);
@@ -95,25 +91,11 @@ function VolunteerHubScreen() {
   const loadData = useCallback(async () => {
     setLoadState('loading');
     try {
-      /*
-       * The scope list is what the event screen actually keys off: a volunteer
-       * card must carry a real checkpointId, not an assignment id, or every
-       * card opens the same (first) checkpoint.
-       */
-      const [assignmentList, shiftPayload, summary] = await Promise.all([
-        apiClient.get('/staff-assignments/mine'),
+      const [summary, shiftPayload] = await Promise.all([
+        apiClient.get('/backstage/volunteer/summary'),
         apiClient.get('/shifts/mine').catch(() => ({ shifts: [] })),
-        apiClient.get('/backstage/volunteer/summary').catch(() => ({ scope: [] })),
       ]);
       setScope(Array.isArray(summary?.scope) ? summary.scope : []);
-      setAssignments(
-        (Array.isArray(assignmentList) ? assignmentList : []).filter(
-          (a) =>
-            a.role === STAFF_ROLES.VOLUNTEER ||
-            a.role === STAFF_ROLES.ADMINISTRATOR ||
-            a.role === STAFF_ROLES.PLATFORM_ADMIN,
-        ),
-      );
       setShifts(Array.isArray(shiftPayload?.shifts) ? shiftPayload.shifts : []);
       setLoadState('ready');
     } catch {
@@ -126,118 +108,125 @@ function VolunteerHubScreen() {
     loadData();
   }, [loadData]);
 
-  // Refresh "now" every 30 seconds so live status updates automatically.
   useEffect(() => {
     const intervalId = window.setInterval(() => setNowMs(Date.now()), 30000);
     return () => window.clearInterval(intervalId);
   }, []);
 
-  // Build flat cards from assignments. Each assignment becomes one card showing
-  // the event names it covers (or the fest), whether it has an active shift
-  // right now, and the next/current shift times.
-  const cards = useMemo(() => {
-    return assignments.map((assignment) => {
-      const fest = assignment.festId;
-      const festId = fest?.id ?? '';
-      const eventNames = (assignment.eventIds ?? []).map((e) => e.eventName).filter(Boolean);
-      const scopeLabel =
-        eventNames.length > 0 ? eventNames.join(' · ') : (fest?.festName ?? COPY.festWide);
-      const category = (assignment.eventIds ?? []).find((e) => e.category)?.category ?? null;
+  /* checkpointId → the live-or-soonest shift at that post. */
+  const shiftByCheckpoint = useMemo(() => {
+    const map = new Map();
+    for (const shift of shifts) {
+      if (!shift?.checkpointId || shift.status === 'cancelled') continue;
+      const existing = map.get(shift.checkpointId);
+      if (!existing) {
+        map.set(shift.checkpointId, shift);
+        continue;
+      }
+      /* An active shift always wins; otherwise the one starting sooner does. */
+      const existingRank = PHASE_RANK[shiftPhase(existing, nowMs)];
+      const candidateRank = PHASE_RANK[shiftPhase(shift, nowMs)];
+      if (
+        candidateRank < existingRank ||
+        (candidateRank === existingRank &&
+          new Date(shift.startsAt ?? 0) < new Date(existing.startsAt ?? 0))
+      ) {
+        map.set(shift.checkpointId, shift);
+      }
+    }
+    return map;
+  }, [shifts, nowMs]);
 
-      // Find shifts for this fest.
-      const assignmentShifts = shifts.filter(
-        (shift) => (shift.festId?.id ?? shift.festId) === festId && shift.status !== 'cancelled',
-      );
+  const cards = useMemo(
+    () =>
+      scope.map((checkpoint) => {
+        const shift = shiftByCheckpoint.get(checkpoint.checkpointId) ?? null;
+        return {
+          checkpointId: checkpoint.checkpointId,
+          festId: checkpoint.festId ?? '',
+          festName: checkpoint.festName ?? '',
+          /* The event is the name a volunteer is looking for; the checkpoint's
+             own name repeats it ("Manthan Entry") and is used only as a
+             fallback for a post that belongs to no event, like a fest gate. */
+          name: checkpoint.eventName || checkpoint.checkpointName || '',
+          typeLabel:
+            CHECKPOINT_LABELS[checkpoint.checkpointType] ?? checkpoint.checkpointType ?? '',
+          shift,
+          phase: shiftPhase(shift, nowMs),
+          startsAt: shift?.startsAt ?? checkpoint.eventStartsAt ?? null,
+          endsAt: shift?.endsAt ?? checkpoint.eventEndsAt ?? null,
+        };
+      }),
+    [scope, shiftByCheckpoint, nowMs],
+  );
 
-      // Is any shift active right now?
-      const activeShift = assignmentShifts.find((shift) => {
-        const start = shift.startsAt ? new Date(shift.startsAt).getTime() : null;
-        const end = shift.endsAt ? new Date(shift.endsAt).getTime() : null;
-        return start !== null && end !== null && nowMs >= start && nowMs <= end;
-      });
-
-      // Next upcoming shift (for timing display).
-      const nextShift = assignmentShifts
-        .filter((shift) => shift.startsAt && new Date(shift.startsAt).getTime() >= nowMs)
-        .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))[0];
-
-      const displayShift = activeShift ?? nextShift ?? assignmentShifts[0] ?? null;
-      const timeLabel = displayShift
-        ? `${formatClock(displayShift.startsAt)} to ${formatClock(displayShift.endsAt)}`
-        : null;
-
-      /*
-       * Pair the assignment with the checkpoint the volunteer would actually
-       * scan at: prefer an event-name match, fall back to the fest-wide gate.
-       */
-      const matchingCheckpoint =
-        scope.find((cp) => cp.eventName && eventNames.includes(cp.eventName)) ??
-        scope.find((cp) => cp.festName === fest?.festName && !cp.eventName) ??
-        null;
-
-      return {
-        id: assignment.id,
-        checkpointId: matchingCheckpoint?.checkpointId ?? null,
-        scopeLabel,
-        category,
-        timeLabel,
-        isLive: !!activeShift,
-        festName: fest?.festName ?? '',
-        festSlug: fest?.festSlug ?? '',
-        eventSlug: (assignment.eventIds ?? [])[0]?.eventSlug ?? null,
-      };
-    });
-  }, [assignments, shifts, scope, nowMs]);
+  /* Grouped by fest, active first, then upcoming by time, then completed. */
+  const groups = useMemo(() => {
+    const byFest = new Map();
+    for (const card of cards) {
+      const key = card.festId || card.festName;
+      if (!byFest.has(key)) {
+        byFest.set(key, { key, festName: card.festName, cards: [] });
+      }
+      byFest.get(key).cards.push(card);
+    }
+    return [...byFest.values()].map((group) => ({
+      ...group,
+      cards: group.cards.sort((first, second) => {
+        const byPhase = PHASE_RANK[first.phase] - PHASE_RANK[second.phase];
+        if (byPhase !== 0) return byPhase;
+        return new Date(first.startsAt ?? 0) - new Date(second.startsAt ?? 0);
+      }),
+    }));
+  }, [cards]);
 
   /*
-   * Download shifts as CSV. Debounced via the isDownloading flag — rapid taps
-   * are ignored while a download is in flight, and the control shows a tick for
-   * 1.5s afterwards. DECLARED AFTER `cards` on purpose; see the file header.
+   * DECLARED AFTER `cards`, deliberately. A previous version listed `cards` in
+   * this callback's dependency array while declaring the callback above it —
+   * dependency arrays are evaluated during render, so every render threw
+   * "Cannot access 'cards' before initialization" and the route rendered
+   * nothing.
    */
   const handleDownloadShifts = useCallback(async () => {
-    if (isDownloading) return; // debounce
+    if (isDownloading) return;
     setIsDownloading(true);
     setDownloadDone(false);
     try {
-      // Build a simple CSV from the loaded data — no extra API call needed.
-      const header = 'Event,Checkpoint,Shift Start,Shift End,Status';
-      const rows = cards.map((card) => {
-        const shift = shifts.find((s) => s.checkpointId === card.checkpointId);
-        return [
-          card.eventName?.replace(/,/g, ' ') ?? '',
-          card.scopeLabel?.replace(/,/g, ' ') ?? '',
-          shift?.startsAt ? new Date(shift.startsAt).toLocaleString() : '',
-          shift?.endsAt ? new Date(shift.endsAt).toLocaleString() : '',
-          card.isLive ? 'LIVE' : 'Scheduled',
-        ].join(',');
-      });
+      const header = 'Event,Checkpoint,Type,Shift start,Shift end,Status';
+      const clean = (value) => String(value ?? '').replace(/,/g, ' ');
+      const rows = cards.map((card) =>
+        [
+          clean(card.name),
+          clean(card.shift?.checkpointName),
+          clean(card.typeLabel),
+          card.shift?.startsAt ? new Date(card.shift.startsAt).toLocaleString() : '',
+          card.shift?.endsAt ? new Date(card.shift.endsAt).toLocaleString() : '',
+          clean(card.phase),
+        ].join(','),
+      );
       const csv = [header, ...rows].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `dedal-volunteer-shifts-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = 'dedal-volunteer-shifts-' + new Date().toISOString().slice(0, 10) + '.csv';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       setDownloadDone(true);
-      setTimeout(() => setDownloadDone(false), 1500);
+      window.setTimeout(() => setDownloadDone(false), 1500);
     } catch {
-      // silent — the button returns to its download state
+      // silent — the control returns to its download state
     } finally {
       setIsDownloading(false);
     }
-  }, [cards, shifts, isDownloading]);
+  }, [cards, isDownloading]);
 
-  // Live events first, then the rest.
-  const sortedCards = useMemo(
-    () => [...cards].sort((a, b) => (b.isLive ? 1 : 0) - (a.isLive ? 1 : 0)),
-    [cards],
-  );
-
-  const totalAssigned = assignments.length;
-  const liveCount = cards.filter((c) => c.isLive).length;
+  const totalCheckpoints = cards.length;
+  const activeCount = cards.filter((card) => card.phase === 'active').length;
+  const todayCount = cards.filter((card) => isToday(card.startsAt, nowMs)).length;
+  const showFestHeaders = groups.length > 1;
 
   return (
     <div className="dbk-screen">
@@ -253,23 +242,29 @@ function VolunteerHubScreen() {
           >
             {/* A tick for a moment after the file is written: the one piece of
                 motion-free feedback that confirms the tap did something. */}
-            {downloadDone ? <CheckIcon /> : <DownloadIcon />}
+            {downloadDone ? (
+              <Check size={20} aria-hidden="true" />
+            ) : (
+              <Download size={20} aria-hidden="true" />
+            )}
           </button>
         }
       />
 
-      <div className="dbk-col">
+      <div className="dbh-page">
         {!isOnline ? <p className="dbk-offline">{COPY.offline}</p> : null}
 
         {loadState === 'loading' ? (
           <>
-            <div className="dbk-stats">
-              <div className="dbk-skel dbk-skel--stat" />
-              <div className="dbk-skel dbk-skel--stat" />
+            <div className="dbh-stats">
+              <div className="dbh-skel dbh-skel--stat" />
+              <div className="dbh-skel dbh-skel--stat" />
+              <div className="dbh-skel dbh-skel--stat" />
             </div>
-            <div className="dbk-grid">
-              <div className="dbk-skel dbk-skel--card" />
-              <div className="dbk-skel dbk-skel--card" />
+            <div className="dbh-list">
+              <div className="dbh-skel dbh-skel--card" />
+              <div className="dbh-skel dbh-skel--card" />
+              <div className="dbh-skel dbh-skel--card" />
             </div>
           </>
         ) : null}
@@ -284,80 +279,118 @@ function VolunteerHubScreen() {
         ) : null}
 
         {loadState === 'ready' ? (
-          <>
-            <div className="dbk-stats">
-              <div className="dbk-stat">
-                <span className="dbk-stat__value">{totalAssigned}</span>
-                <span className="dbk-stat__label">{COPY.totalLabel}</span>
-              </div>
-              <div className="dbk-stat">
-                <span
-                  className={
-                    liveCount > 0 ? 'dbk-stat__value dbk-stat__value--now' : 'dbk-stat__value'
-                  }
-                >
-                  {liveCount}
-                </span>
-                <span className="dbk-stat__label">{COPY.liveLabel}</span>
-              </div>
-            </div>
-
-            {sortedCards.length === 0 ? (
-              <EmptyState line={COPY.empty} />
-            ) : (
-              <section className="dbk-section">
-                <h2 className="dbk-section__title">{COPY.assignmentsTitle}</h2>
-                <div className="dbk-grid">
-                  {sortedCards.map((card) => (
-                    <button
-                      type="button"
-                      key={card.id}
-                      className="dbk-card"
-                      onClick={() =>
-                        navigate(
-                          card.checkpointId
-                            ? `/backstage/volunteer-event?checkpointId=${card.checkpointId}`
-                            : '/backstage/volunteer-event',
-                        )
-                      }
-                    >
-                      {/*
-                       * STATUS IN WORDS. "On now" carries --primary and a dot;
-                       * "Scheduled" and "No shift scheduled yet" are --muted.
-                       * With the colour removed the three still read apart.
-                       */}
-                      <span
-                        className={card.isLive ? 'dbk-status dbk-status--now' : 'dbk-status'}
-                      >
-                        {card.isLive ? (
-                          <span className="dbk-status__dot" aria-hidden="true" />
-                        ) : null}
-                        {card.isLive
-                          ? COPY.onNow
-                          : card.timeLabel
-                            ? COPY.scheduled
-                            : COPY.noShift}
-                      </span>
-                      <span className="dbk-card__name">{card.scopeLabel}</span>
-                      <span className="dbk-card__meta">
-                        {card.festName ? (
-                          <span className="dbk-card__meta-item">{card.festName}</span>
-                        ) : null}
-                        {card.category ? (
-                          <span className="dbk-card__meta-item">
-                            {formatCategoryLabel(card.category) ?? card.category}
-                          </span>
-                        ) : null}
-                        {card.timeLabel ? (
-                          <span className="dbk-card__meta-item">{card.timeLabel}</span>
-                        ) : null}
-                      </span>
-                    </button>
-                  ))}
+          totalCheckpoints === 0 ? (
+            <p className="dbh-empty">{COPY.empty}</p>
+          ) : (
+            <>
+              <div className="dbh-stats">
+                <div className="dbh-stat">
+                  <span className="dbh-stat__value">{totalCheckpoints}</span>
+                  <span className="dbh-stat__label">{COPY.checkpointsLabel}</span>
                 </div>
-              </section>
-            )}
-          </>
+                <div className="dbh-stat">
+                  <span
+                    className={
+                      activeCount > 0 ? 'dbh-stat__value dbh-stat__value--now' : 'dbh-stat__value'
+                    }
+                  >
+                    {activeCount}
+                  </span>
+                  <span className="dbh-stat__label">{COPY.activeLabel}</span>
+                </div>
+                <div className="dbh-stat">
+                  <span className="dbh-stat__value">{todayCount}</span>
+                  <span className="dbh-stat__label">{COPY.todayLabel}</span>
+                </div>
+              </div>
+
+              {groups.map((group) => (
+                <section className="dbh-section" key={group.key}>
+                  {showFestHeaders ? (
+                    <h2 className="dbh-section__title">{group.festName}</h2>
+                  ) : null}
+
+                  <div className="dbh-list">
+                    {group.cards.map((card) => {
+                      const chip = dayChip(card.startsAt, nowMs);
+                      return (
+                        <div className="dbh-card" key={card.checkpointId}>
+                          <button
+                            type="button"
+                            className="dbh-card__open"
+                            onClick={() =>
+                              navigate(
+                                '/backstage/volunteer-event?checkpointId=' + card.checkpointId,
+                              )
+                            }
+                          >
+                            <span
+                              className={
+                                chip.isToday ? 'dbh-when dbh-when--today' : 'dbh-when'
+                              }
+                            >
+                              <span className="dbh-when__day">{chip.day}</span>
+                              <span className="dbh-when__month">{chip.month}</span>
+                            </span>
+
+                            <span className="dbh-card__body">
+                              <span className="dbh-card__name">{card.name}</span>
+                              <span className="dbh-card__time">
+                                {whenLabel(card.startsAt, card.endsAt, nowMs)}
+                              </span>
+                              <span className="dbh-card__meta">
+                                {card.phase === 'active' ? (
+                                  <span className="dbh-status dbh-status--now">
+                                    <span className="dbh-status__dot" aria-hidden="true" />
+                                    {COPY.activeNow}
+                                  </span>
+                                ) : null}
+                                {card.phase === 'completed' ? (
+                                  <span className="dbh-status">
+                                    <Check size={12} aria-hidden="true" />
+                                    {COPY.completed}
+                                  </span>
+                                ) : null}
+                                {card.phase === 'scheduled' ? (
+                                  <span className="dbh-status">{COPY.scheduled}</span>
+                                ) : null}
+                                {card.phase === 'none' ? (
+                                  <span className="dbh-status">{COPY.noShift}</span>
+                                ) : null}
+                                {card.typeLabel ? (
+                                  <>
+                                    <span className="dbh-card__sep" aria-hidden="true">
+                                      {' · '}
+                                    </span>
+                                    {card.typeLabel}
+                                  </>
+                                ) : null}
+                              </span>
+                            </span>
+                          </button>
+
+                          {/* The scanner, one tap from the list. This is what a
+                              volunteer standing at the post came to open. */}
+                          <button
+                            type="button"
+                            className="dbh-card__qr"
+                            aria-label={'Open the scanner for ' + card.name}
+                            onClick={() =>
+                              navigate(
+                                '/backstage/scanner?checkpointId=' + card.checkpointId,
+                              )
+                            }
+                          >
+                            <QrCode size={20} aria-hidden="true" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </>
+          )
         ) : null}
       </div>
     </div>

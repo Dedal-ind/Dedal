@@ -49,24 +49,48 @@ import {
 } from '../../components/detail-icons/DetailIcons.jsx';
 import '../../design/volunteer.css';
 
+/*
+ * THE VOCABULARY, and why it is this short.
+ *
+ * The four export controls used to read "Download the full list", "Download
+ * the checked in list", "Download the not checked in list" and "Download the
+ * checked out list". At 166px each that wrapped every one of them onto two
+ * lines, and the word "Download" was printed four times beside four download
+ * icons — the redundancy UX-writing guidance exists to cut. A label wants two
+ * or three words, and articles and prepositions can go if the meaning survives.
+ *
+ * So the verb is said ONCE, by the section heading and the icons, and each
+ * control is named for the list it produces. The full sentence still reaches a
+ * screen reader through aria-label, which has no width to run out of.
+ *
+ * The stat words are the coordinator event screen's words exactly — checked
+ * in, yet to arrive, registered, checked out — so the two staff screens
+ * describe the same four numbers the same way.
+ */
 const COPY = {
   title: 'My checkpoint',
   openScanner: 'Open the scanner',
-  checkedInOf: (checkedIn, expected) => `${checkedIn} checked in of ${expected} expected`,
-  statTotal: 'Expected in total',
+  scanOffline: 'Scanning needs a network',
+  checkedInOf: (checkedIn, expected) => `${checkedIn} of ${expected} checked in`,
+  statTotal: 'Registered',
   statCheckedIn: 'Checked in',
   statCheckedOut: 'Checked out',
-  statYetToCheckIn: 'Not checked in yet',
+  statYetToCheckIn: 'Yet to arrive',
   team: 'Team event',
   solo: 'Solo event',
   recentTitle: 'Recent check ins',
   recentCount: (count) => `${count} ${count === 1 ? 'scan' : 'scans'}`,
   noScans: 'No check ins yet.',
   unknownName: 'Name not recorded',
-  downloadFull: 'Download the full list',
-  downloadCheckedIn: 'Download the checked in list',
-  downloadCheckedOut: 'Download the checked out list',
-  downloadYetToCheckIn: 'Download the not checked in list',
+  exportTitle: 'Export',
+  downloadFull: 'Everyone',
+  downloadCheckedIn: 'Checked in',
+  downloadCheckedOut: 'Checked out',
+  downloadYetToCheckIn: 'Yet to arrive',
+  downloadFullAria: 'Download the list of everyone registered',
+  downloadCheckedInAria: 'Download the list of people checked in',
+  downloadCheckedOutAria: 'Download the list of people checked out',
+  downloadYetToCheckInAria: 'Download the list of people yet to arrive',
   downloadFailed: 'Could not download that list. Try again.',
   errorMessage: 'Could not load this checkpoint.',
   retry: 'Try again',
@@ -242,11 +266,6 @@ function VolunteerEventScreen() {
                 ) : null}
               </div>
 
-              <button type="button" className="dvl-scan" onClick={handleOpenScanner}>
-                <QrIcon size="lg" />
-                {COPY.openScanner}
-              </button>
-
               <div className="dvl-headline">
                 <span className="dvl-headline__value">{checkedIn}</span>
                 <span className="dvl-headline__label">{COPY.checkedInOf(checkedIn, total)}</span>
@@ -278,12 +297,14 @@ function VolunteerEventScreen() {
                * list it produces named in full — the 24px corner icons they
                * replaced were four unlabelled taps of the same picture.
                */}
+              <h3 className="dvl-subhead">{COPY.exportTitle}</h3>
               <div className="dvl-actions">
                 <button
                   type="button"
                   className="dvl-button"
                   disabled={!isOnline}
                   onClick={() => handleDownloadKind('participants')}
+                  aria-label={COPY.downloadFullAria}
                 >
                   <DownloadIcon size="sm" />
                   {COPY.downloadFull}
@@ -293,6 +314,7 @@ function VolunteerEventScreen() {
                   className="dvl-button"
                   disabled={!isOnline}
                   onClick={() => handleDownloadKind('checked-in')}
+                  aria-label={COPY.downloadCheckedInAria}
                 >
                   <DownloadIcon size="sm" />
                   {COPY.downloadCheckedIn}
@@ -302,6 +324,7 @@ function VolunteerEventScreen() {
                   className="dvl-button"
                   disabled={!isOnline}
                   onClick={() => handleDownloadKind('yet-to-checkin')}
+                  aria-label={COPY.downloadYetToCheckInAria}
                 >
                   <DownloadIcon size="sm" />
                   {COPY.downloadYetToCheckIn}
@@ -311,6 +334,7 @@ function VolunteerEventScreen() {
                   className="dvl-button"
                   disabled={!isOnline}
                   onClick={() => handleDownloadKind('checked-out')}
+                  aria-label={COPY.downloadCheckedOutAria}
                 >
                   <DownloadIcon size="sm" />
                   {COPY.downloadCheckedOut}
@@ -340,6 +364,35 @@ function VolunteerEventScreen() {
           </>
         ) : null}
       </div>
+
+      {/*
+        THE SCAN BAR. Outside the scrolling column so it stays put: this is the
+        control a volunteer taps dozens of times an hour, and where it used to
+        sit — between the checkpoint name and the counts — it scrolled out of
+        view the moment they looked at the list below it, and sat in the stretch
+        zone rather than the thumb zone.
+
+        Rendered only once there is a checkpoint to scan at: a bar on an error
+        screen is chrome for an action that does not exist yet.
+
+        Disabled while offline WITH THE REASON SAID OUT LOUD, rather than a grey
+        button the volunteer has to work out for themselves.
+      */}
+      {loadState === 'ready' && data?.checkpointId ? (
+        <div className="dvl-bar">
+          <div className="dvl-bar__inner">
+            <button
+              type="button"
+              className="dvl-scan"
+              onClick={handleOpenScanner}
+              disabled={!isOnline}
+            >
+              <QrIcon size="lg" />
+              {isOnline ? COPY.openScanner : COPY.scanOffline}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={showExitConfirm}

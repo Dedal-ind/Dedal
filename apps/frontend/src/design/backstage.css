@@ -84,6 +84,9 @@
  * deliberately body-sized: a label for the column beneath it, not a headline
  * competing with the tiles.
  */
+/* Still used by /crew-select, which is a chooser rather than a titled screen
+   and keeps its heading in the content column. /backstage no longer uses it:
+   its name is ScreenHeader's title. */
 .dbk-h1 {
   margin: 0;
   font-size: var(--body-m-size);
@@ -533,4 +536,398 @@
   font-size: var(--body-s-size);
   line-height: var(--body-s-line);
   color: var(--muted);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE HUB LIST (`dbh-`) — shared by the coordinator hub and the volunteer hub.
+   
+   WHY ONE BLOCK FOR TWO SCREENS. The two hubs answer the same question with
+   different nouns: "which of my posts am I opening?" (volunteer, one card per
+   CHECKPOINT) and "which of my events am I opening?" (coordinator, one card per
+   EVENT). They were previously built from two different kits — `dbk-` here and
+   `dop-` in operator-kit.css — which is how they drifted into two different
+   answers to one problem. One row per item, tap to act, is the shape every task
+   list app already taught the reader.
+   
+   They replace a single row whose label was every event name joined with a
+   comma: 913 characters in a 1258px box on the coordinator hub, 975 characters
+   wrapping to a 795px-tall card on the volunteer hub. Measured, both.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * 720px, and centred. The old volunteer column was `max-width: none` and the
+ * coordinator page capped at 1440px, so both spent the whole width of a laptop
+ * on a list of short names. A list of one-line rows has a reading measure like
+ * any other text.
+ */
+.dbh-page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--s2) var(--page-pad) var(--feed-end);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+/* ── Summary stats ──────────────────────────────────────────────────────── */
+
+.dbh-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s2);
+}
+
+.dbh-stat {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dbh-stat__value {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one number that is allowed colour, and only when it is not zero: a red
+   0 announces nothing is happening in the colour reserved for something
+   happening. */
+.dbh-stat__value--now {
+  color: var(--primary);
+}
+
+.dbh-stat__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Fest section ───────────────────────────────────────────────────────── */
+
+.dbh-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+
+/*
+ * The fest name, as a section header rather than as a line repeated inside
+ * every card. Rendered only when there is more than one fest — a single
+ * header over the only group names something the reader already knows.
+ */
+.dbh-section__title {
+  margin: 0;
+  padding-block-end: var(--s2);
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── The list ───────────────────────────────────────────────────────────── */
+
+.dbh-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2); /* 8px */
+}
+
+/*
+ * THE CARD. Redesigned after the first pass read as "everything thrown off":
+ * a name, then a run-on line joining fest, date and time with dots, then a
+ * row mixing three unrelated badge types. Four things left-aligned in one
+ * column with nothing to anchor them, and no obvious place for the eye to land.
+ *
+ * What the references agree on, and what is applied here:
+ *   · a LEADING element starts the row and gives the eye an anchor
+ *   · lead with the one or two fields that drive the action
+ *   · bold the key value, keep secondary lines lighter
+ *   · three lines maximum
+ *   · relative days ("Today", "Tomorrow", a weekday) beat absolute dates
+ *
+ * So: a date chip leads, the name is the one bold thing, the time sits under
+ * it in tabular figures, and the third line carries the quiet meta. The fest
+ * name is NOT repeated on every card — it is the section header.
+ *
+ * TWO ACTIONS, NOT A NESTED ONE. The whole row opens the event, and the QR
+ * button scans it. A <button> cannot contain another <button>, so the row is a
+ * container holding two siblings: an open button that flexes to fill
+ * everything left of the scanner, and the scanner itself. "Anywhere on the
+ * card" is therefore literal, without nesting anything.
+ */
+.dbh-card {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  min-height: 64px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.dbh-card__open {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex: 1;
+  min-width: 0;
+  padding: var(--s3) var(--s3) var(--s3) var(--s3);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-enter);
+}
+
+.dbh-card__open:hover {
+  background: var(--ink-dim-2);
+}
+
+.dbh-card__open:active {
+  transform: scale(0.97);
+}
+
+/* ── The leading date chip ──────────────────────────────────────────────── */
+
+/*
+ * 44px so it aligns with the tap-target rhythm of everything else. Tabular
+ * figures, so a column of them lines up down the list.
+ */
+.dbh-when {
+  display: flex;
+  flex-shrink: 0;
+  width: 44px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding-block: var(--s1);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+/* Today is the one the reader is looking for, so it is the one with colour. */
+.dbh-when--today {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.dbh-when__day {
+  font-size: 17px;
+  line-height: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dbh-when--today .dbh-when__day {
+  color: var(--primary);
+}
+
+.dbh-when__month {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dbh-when--today .dbh-when__month {
+  color: var(--primary);
+}
+
+/* ── The three lines ────────────────────────────────────────────────────── */
+
+.dbh-card__body {
+  display: flex;
+  min-width: 0; /* lets the name ellipse rather than stretch the row */
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* The one bold thing on the card. Always one line — this is the field that
+   used to hold 913 characters. */
+.dbh-card__name {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The second thing a coordinator or volunteer reads: when. Tabular, so the
+   times align down the column. */
+.dbh-card__time {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Line three: the quiet one. Everything here is optional. */
+.dbh-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dbh-card__sep {
+  color: var(--divider);
+}
+
+/* ── The scan shortcut ──────────────────────────────────────────────────── */
+
+/*
+ * A real second action, not a chevron. The chevron said "this row opens",
+ * which the row already says by being a row; scanning is the thing a person
+ * standing at a door actually came to do, and it was three taps away.
+ *
+ * Full height and a hairline to its left, so it reads as its own target
+ * rather than as an icon floating inside the row.
+ */
+.dbh-card__qr {
+  display: flex;
+  flex-shrink: 0;
+  width: 56px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid var(--divider);
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-enter);
+}
+
+.dbh-card__qr:hover {
+  background: var(--ink-dim-2);
+  color: var(--primary);
+}
+
+.dbh-card__qr:active {
+  transform: scale(0.97);
+}
+
+/* ── Badges and status ──────────────────────────────────────────────────── */
+
+.dbh-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dbh-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dbh-status--now {
+  color: var(--primary);
+}
+
+.dbh-status__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dbh-pulse 1.6s var(--ease-enter) infinite;
+}
+
+@keyframes dbh-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* The dot still marks the row; only the pulse stops. */
+@media (prefers-reduced-motion: reduce) {
+  .dbh-status__dot {
+    animation: none;
+  }
+  .dbh-card:active {
+    transform: none;
+  }
+}
+
+.dbh-chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+/* ── Loading, empty ─────────────────────────────────────────────────────── */
+
+/* Skeletons match the shape of what is arriving and do not pulse. */
+.dbh-skel {
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dbh-skel--stat {
+  height: 76px;
+}
+
+.dbh-skel--card {
+  height: 64px;
+}
+
+/*
+ * LEFT-ALIGNED, and no action. Assignments arrive from an admin, so a button
+ * here would be a control for something the reader cannot do — and a centred
+ * sentence in the middle of an empty screen reads as a page that failed.
+ */
+.dbh-empty {
+  margin: 0;
+  padding-block: var(--s4);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
 }

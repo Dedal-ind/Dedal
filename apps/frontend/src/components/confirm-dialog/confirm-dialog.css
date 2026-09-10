@@ -1,0 +1,135 @@
+/*
+ * confirm-dialog.css — the confirmation dialog, on the dedal design system.
+ *
+ * IT WAS THE LAST HERITAGE SURFACE ON THE VOLUNTEER FLOW. Everything the
+ * dialog drew came from the retired palette: `bg-background`, `text-on-surface`,
+ * `rounded-heritage`, `border-outline-variant`, `text-brand-beige`, and a
+ * hardcoded olive gradient — `linear-gradient(#2d4a1a, #556b2f)` — on the
+ * confirm button. Tapping back from a redesigned screen opened a box from the
+ * old app.
+ *
+ * Only colour, radius, elevation and type move here. The behaviour, the exit
+ * transition (layer-motion.css still owns the shape) and the markup's structure
+ * are untouched.
+ */
+
+.dcf-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  /* --scrim is the system's over-media wash: --ink at 55%, so white text and a
+     raised card both survive on top of it. Not a bare black/40. */
+  background: var(--scrim);
+}
+
+.dcf-card {
+  position: fixed;
+  z-index: 50;
+  inset-inline: var(--s6);
+  top: 50%;
+  padding: var(--s5);
+  border-radius: var(--r-sheet);
+  background: var(--surface-card);
+  box-shadow: var(--e2);
+  font-family: var(--font);
+}
+
+/*
+ * Centred with auto margins, NOT with translateX.
+ *
+ * layer-motion.css owns `transform` on this element — it animates
+ * translateY(-50%) scale(0.97 → 1) — and a transform here would replace that
+ * wholesale, taking the vertical centring and the pop with it. This file loads
+ * after layer-motion.css, so it would win, silently. Auto margins between
+ * inset-inline: 0 do the same job and touch nothing the animation needs.
+ */
+@media (min-width: 640px) {
+  .dcf-card {
+    inset-inline: 0;
+    width: min(360px, calc(100% - 2 * var(--s6)));
+    margin-inline: auto;
+  }
+}
+
+.dcf-title {
+  margin: 0 0 var(--s1);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dcf-message {
+  margin: 0 0 var(--s5);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* Left-aligned, not centred. A question and its consequence read as a
+   sentence; centring them makes a two-line message ragged on both edges. */
+.dcf-title,
+.dcf-message {
+  text-align: left;
+}
+
+.dcf-actions {
+  display: flex;
+  gap: var(--s2);
+}
+
+.dcf-btn {
+  flex: 1;
+  min-height: 44px;
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-exit);
+}
+
+.dcf-btn:active {
+  transform: scale(0.97);
+}
+
+.dcf-btn--cancel {
+  border-color: var(--divider);
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+.dcf-btn--cancel:hover {
+  background: var(--ink-dim-2);
+}
+
+/*
+ * --ink for an ordinary confirm, --primary for a destructive one.
+ *
+ * The palette has one red and it means "urgent or destructive". Spending it on
+ * every confirmation — including "leave this screen?" — would make the colour
+ * mean nothing by the time something genuinely cannot be undone. So the plain
+ * confirm is solid ink, which is the strongest neutral the system has, and red
+ * is held back for `danger`.
+ */
+.dcf-btn--confirm {
+  background: var(--ink);
+  color: var(--surface-card);
+}
+
+.dcf-btn--danger {
+  background: var(--primary);
+  color: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcf-btn:active {
+    transform: none;
+  }
+}
