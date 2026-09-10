@@ -67,6 +67,39 @@ entitlementSchema.index(
   }
 );
 
+/*
+ * GATE ACCESS NEEDS ITS OWN GUARD, and the index above cannot be it.
+ *
+ * That index is filtered to source: REGISTRATION, precisely so the manual-grant
+ * carve-out above stays legal. Gate access is written with source: MANUAL_GRANT,
+ * so it falls outside the filter and had NO uniqueness guard of any kind — which
+ * left ensureGateAccessEntitlement as a bare find-then-create. Two registrations
+ * landing in the same fest at the same instant both read no gate access and both
+ * inserted, giving one pass two active gateAccess rows. It reproduced on CI and
+ * not locally, because the interleaving depends on how the two round trips
+ * happen to line up.
+ *
+ * Keyed on (passId, entitlementType) with NO referenceId: gate access is
+ * fest-wide and always carries referenceId: null, so there is nothing per-row to
+ * key on. That is also why it must be a separate index rather than a widening of
+ * the one above — including referenceId there is what allows many eventEntry
+ * rows per pass, and gate access needs exactly the opposite.
+ *
+ * Filtered to ACTIVE so revoking and re-granting still works, matching the
+ * status carve-out above.
+ */
+entitlementSchema.index(
+  { passId: 1, entitlementType: 1 },
+  {
+    name: "index_entitlements_passId_gateAccess_active",
+    unique: true,
+    partialFilterExpression: {
+      entitlementType: ENTITLEMENT_TYPES.GATE_ACCESS,
+      status: ENTITLEMENT_STATUSES.ACTIVE,
+    },
+  }
+);
+
 entitlementSchema.set("toJSON", {
   virtuals: true,
   versionKey: false,

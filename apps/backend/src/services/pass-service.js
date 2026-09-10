@@ -73,6 +73,27 @@ function isDuplicateRegistrationEventEntry(error) {
 }
 
 /*
+ * The gate-access counterpart of the two detectors above. The loser of a
+ * concurrent get-or-create trips index_entitlements_passId_gateAccess_active,
+ * which means the winner has already written the row, so it is re-read rather
+ * than treated as a failure.
+ *
+ * The key shape is (passId, entitlementType) with no referenceId, which is what
+ * distinguishes it from isDuplicateRegistrationEventEntry — that index includes
+ * referenceId. Anything else, including a pass secret collision, has a different
+ * shape and still propagates.
+ */
+function isDuplicateGateAccess(error) {
+  if (error?.code !== DUPLICATE_KEY_ERROR_CODE) return false;
+  const collidedFields = Object.keys(error.keyPattern || {});
+  return (
+    collidedFields.includes("passId") &&
+    collidedFields.includes("entitlementType") &&
+    !collidedFields.includes("referenceId")
+  );
+}
+
+/*
  * When an event-entry entitlement may be used.
  *
  * validFrom is open-ended, and that is the whole fix: a door admits people
@@ -101,22 +122,43 @@ function resolveEventEntitlementWindow(event) {
  * call — without which that pass would scan forever as no-entitlement at the gate.
  */
 async function ensureGateAccessEntitlement(pass, fest) {
-  const existing = await EntitlementModel.findOne({
+  const query = {
     passId: pass._id,
     entitlementType: ENTITLEMENT_TYPES.GATE_ACCESS,
     status: ENTITLEMENT_STATUSES.ACTIVE,
-  });
+  };
+
+  const existing = await EntitlementModel.findOne(query);
   if (existing) return existing;
 
-  return EntitlementModel.create({
-    passId: pass._id,
-    entitlementType: ENTITLEMENT_TYPES.GATE_ACCESS,
-    referenceId: null,
-    maximumUses: null,
-    validFrom: fest.startsOn,
-    validTo: fest.endsOn,
-    source: ENTITLEMENT_SOURCES.MANUAL_GRANT,
-  });
+  /*
+   * The findOne above is a fast path, not the guarantee — it cannot be. Two
+   * callers can both read no row before either insert lands, which is exactly
+   * what two registrations in the same fest do, and it left one pass holding two
+   * active gateAccess rows. The uniqueness is enforced by
+   * index_entitlements_passId_gateAccess_active; this catch is the other half of
+   * it, turning the loser's collision into a re-read.
+   *
+   * Same shape as the pass insert in getOrCreatePassForUserInFest below, and as
+   * the event-entry insert: pre-check for the common case, unique index for
+   * correctness, catch-and-re-read to make the loser's call succeed anyway. A
+   * caller asked to be sure gate access exists; after the winner's insert, it
+   * does, so returning it is the honest answer rather than an error.
+   */
+  try {
+    return await EntitlementModel.create({
+      passId: pass._id,
+      entitlementType: ENTITLEMENT_TYPES.GATE_ACCESS,
+      referenceId: null,
+      maximumUses: null,
+      validFrom: fest.startsOn,
+      validTo: fest.endsOn,
+      source: ENTITLEMENT_SOURCES.MANUAL_GRANT,
+    });
+  } catch (error) {
+    if (!isDuplicateGateAccess(error)) throw error;
+    return EntitlementModel.findOne(query);
+  }
 }
 
 async function getOrCreatePassForUserInFest(userId, festId) {
