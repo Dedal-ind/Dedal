@@ -1,0 +1,289 @@
+/*
+   account.css — /account and /account/:section. Prefix: dac-.
+
+   Mobile first. The phone shape is a panel that slides in from the left under a
+   nav bar; the desktop shape, from 1024px, is two panes with a persistent menu
+   on the left.
+
+   NO padding-top: var(--header-h) ANYWHERE IN THIS FILE. .dhd-header is
+   position: sticky, so it already occupies its own height in flow. Reserving it
+   again here is how you get a 56px band of dead space under the header, which
+   is a bug two other screens have already had.
+*/
+
+.dac-screen {
+  min-height: 100%;
+  background: var(--surface);
+  color: var(--ink);
+
+  /*
+     THE SLIDE. This is the screen's own transform, deliberately NOT a view
+     transition — AccountScreen navigates with skipTransition for exactly this
+     reason, so there is only ever one animation of these pixels.
+
+     It starts one frame before .dac-screen--open is added (see the rAF in the
+     component), which is what gives the transition a start value to run from.
+  */
+  transition:
+    transform var(--d-move) var(--ease-enter),
+    opacity var(--d-move) var(--ease-enter);
+  opacity: 0;
+}
+
+/*
+   The slide is decoration; the page is fully usable without it. Reduced motion
+   gets the end state immediately rather than a faster slide, because a
+   horizontal sweep of the whole viewport is the exact motion this preference
+   exists to remove.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .dac-screen {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}
+
+/* ── The mobile nav bar ─────────────────────────────────────────────────────
+   A back button and the word Profile. Nothing else — no avatar, no subtitle,
+   no actions. It is not sticky: the app header above it already is, and two
+   pinned bars on a phone leave very little screen for the thing you came for.
+*/
+.dac-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--gutter);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dac-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 44px, the floor for anything a thumb aims at. */
+  width: 44px;
+  height: 44px;
+  margin-inline-start: calc(var(--s2) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dac-back:hover {
+  background: var(--ink-dim-4);
+}
+
+.dac-topbar__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+}
+
+/* ── The menu ───────────────────────────────────────────────────────────── */
+
+.dac-body {
+  display: block;
+}
+
+.dac-menu {
+  padding: var(--s2) 0 var(--s6);
+}
+
+.dac-menu__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+   Rows, not cards. The list is short and every entry is the same kind of thing,
+   so a hairline between them says everything a border and a shadow would have —
+   the same reasoning /settings is built on, so the two read as one surface.
+*/
+.dac-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--s3) var(--gutter);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dac-menu__list li + li .dac-item {
+  box-shadow: inset 0 1px 0 var(--divider);
+}
+
+.dac-item:hover {
+  background: var(--ink-dim-2);
+}
+
+.dac-item__label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* A count, not a badge: it answers "have I got anything on?", so it is a
+   number in --muted rather than a coloured dot competing with the label. */
+.dac-item__count {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-variant-numeric: tabular-nums;
+}
+
+.dac-item__chevron {
+  display: inline-flex;
+  color: var(--muted);
+}
+
+.dac-item--danger {
+  margin-top: var(--s4);
+  border-top: 1px solid var(--divider);
+  color: var(--primary);
+}
+
+.dac-item--danger .dac-item__label {
+  flex: 0 1 auto;
+}
+
+/* ── The section pane ───────────────────────────────────────────────────── */
+
+/*
+   Below 1024px a section reached by deep link fills the panel and the menu
+   steps aside — the phone shows one thing at a time.
+*/
+.dac-pane {
+  min-width: 0;
+}
+
+@media (max-width: 1023px) {
+  .dac-screen:has(.dac-pane) .dac-menu {
+    display: none;
+  }
+}
+
+/* ── Desktop: two panes ─────────────────────────────────────────────────── */
+
+@media (min-width: 1024px) {
+  /*
+     No slide on desktop: the panel metaphor is a phone idea, and on a laptop
+     this is simply the page you navigated to.
+  */
+  .dac-screen {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+
+  /* The nav bar's two jobs — say where you are, get you back — are already
+     done by the app header and by a menu that never leaves. */
+  .dac-topbar {
+    display: none;
+  }
+
+  /*
+     USE THE WIDTH. A fixed 280px rail and a right pane that takes everything
+     left over, up to --col-max. The complaint this layout answers is a narrow
+     column stranded in a wide window, so the content pane is not capped at a
+     reading measure here — the screens inside it set their own.
+  */
+  .dac-body {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s7);
+    max-width: var(--col-max);
+    margin-inline: auto;
+    padding: var(--s6) var(--page-pad);
+  }
+
+  .dac-menu {
+    /* Sticky under the app header, so a long section (notifications, a year of
+       certificates) scrolls past a menu that stays put. --header-h is the right
+       offset for a sticky child; it is NOT padding on the page. */
+    position: sticky;
+    top: calc(var(--header-h) + var(--s4));
+    padding: 0;
+    border: 1px solid var(--divider);
+    border-radius: var(--r-card);
+    background: var(--surface-card);
+    overflow: hidden;
+  }
+
+  .dac-item {
+    padding-inline: var(--s4);
+  }
+
+  /* The selection has to survive being the only marked thing on a wide screen,
+     so it is a filled row plus a --primary edge rather than a tint alone. */
+  .dac-item--current {
+    background: var(--ink-dim-4);
+    box-shadow: inset 3px 0 0 var(--primary);
+    font-weight: 600;
+  }
+
+  .dac-menu__list li + li .dac-item--current {
+    box-shadow:
+      inset 0 1px 0 var(--divider),
+      inset 3px 0 0 var(--primary);
+  }
+
+  /* A chevron means "this leads somewhere else". In two panes it does not. */
+  .dac-item__chevron {
+    display: none;
+  }
+
+  .dac-item--danger {
+    margin-top: 0;
+  }
+
+  .dac-pane {
+    border: 1px solid var(--divider);
+    border-radius: var(--r-card);
+    background: var(--surface-card);
+    overflow: hidden;
+  }
+
+  /*
+     ScreenHeader draws a transparent 56px row holding a back button at the top
+     of every screen rendered in the pane. In a two-pane layout that button goes
+     back to wherever the ACCOUNT page came from, which is not what a control
+     sitting above the right pane appears to promise — and the menu beside it is
+     already the way out. So the row is removed here rather than in ScreenHeader,
+     which the rest of the app still needs it in.
+
+     Matched by shape (a leading row containing "Go back") because ScreenHeader
+     carries only Tailwind utility classes; there is no stable hook to name.
+  */
+/*
+ * The section screens own a ScreenHeader, and inside the pane it is redundant:
+ * the left rail already says which section this is, and its back control would
+ * walk out of the account page entirely.
+ *
+ * This used to match the bar by SHAPE — a first-child div containing a button
+ * labelled "Go back" — because ScreenHeader exposed no stable class. It does
+ * now (.shd-wrap), and the shape match silently stopped matching the moment
+ * that markup changed, which put a second back button in every pane.
+ */
+.dac-pane .shd-wrap {
+  display: none;
+}
+}

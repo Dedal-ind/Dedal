@@ -1,0 +1,366 @@
+/*
+ * directory.css — /backstage/coordinator/events/:eventId/directory.
+ *
+ * Prefixed `ddr-`, tokens only from dedal-tokens.css, for the reason every
+ * sheet in this folder is: it loads alongside the retired Heritage Tailwind
+ * @theme and must not be able to lose a cascade to it.
+ *
+ * ── WHAT THIS SCREEN IS FOR, AND WHAT THAT MEANS FOR THE DESIGN ─────────────
+ *
+ * A coordinator standing at a venue with a phone, trying to reach the team that
+ * has not turned up. There are exactly two verbs — message them, call them —
+ * and every design decision here follows from making those two reachable in one
+ * thumb movement from a list that may be a hundred rows long.
+ *
+ * So the actions are always visible on the row rather than behind the expand,
+ * they are 44px targets, and the expand is a third control beside them rather
+ * than the whole card. The screen this replaces nested the broadcast action
+ * inside the expand button as a `role="button"` span with a hand-rolled Enter
+ * handler; a button inside a button is invalid HTML that browsers resolve
+ * unpredictably, and the span was not reachable by Space at all. Three real
+ * sibling controls fixes that and costs nothing.
+ *
+ * COLOUR. The old rows carried four gradients — two greens, a brown, a navy —
+ * plus a hardcoded beige drop-down panel. None of those colours exist any more.
+ * Broadcast takes --primary because it reaches real inboxes and cannot be
+ * recalled, which is the one thing on this screen worth being loud about; call
+ * and email are quiet outlined controls.
+ */
+
+.ddr-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * FLUID TO 1440. A roster is a list, and a list is exactly the kind of content
+ * that was being stranded in a 400px column: a coordinator checking a
+ * forty-team event on a laptop wants to see the roster, not scroll it. The
+ * cards go into an intrinsic grid so the window decides the column count.
+ */
+.ddr-col {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: var(--s2) var(--page-pad) 0;
+}
+
+/* No --header-h clearance: ScreenHeader is in normal flow, and passing it a
+   title stands the app header down entirely. */
+
+.ddr-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--card-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: start;
+}
+
+/*
+ * 340px floor: a row has to hold a team name of real length beside three 44px
+ * controls without the name collapsing to two characters. Below that width the
+ * single column is correct anyway.
+ */
+@media (min-width: 760px) {
+  .ddr-list {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  }
+}
+
+.ddr-entry {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.ddr-entry__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+}
+
+/* The expand control. It takes the name and the meta line, so the large
+   comfortable target is the text — which is where a thumb naturally lands —
+   and the small precise targets are the three icon buttons beside it. */
+.ddr-entry__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  flex: 1;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ddr-entry__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.ddr-entry__name {
+  display: block;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ddr-entry__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.ddr-entry__meta svg {
+  flex: none;
+}
+
+.ddr-entry__chevron {
+  display: flex;
+  flex: none;
+  color: var(--muted);
+  transition: transform var(--d-quick) var(--ease-enter);
+}
+
+.ddr-entry__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* ── The row actions ─────────────────────────────────────────────────────── */
+
+.ddr-action {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  /* 44px, the minimum comfortable touch size, and this screen is used
+     one-handed at a venue. */
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .ddr-action:hover {
+    border-color: var(--muted);
+  }
+}
+
+.ddr-action:active {
+  transform: scale(0.92);
+}
+
+/* Broadcast. The one --primary control on the screen: it sends real mail to
+   real people and cannot be recalled. */
+.ddr-action--send {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--surface-card);
+}
+
+@media (hover: hover) {
+  .ddr-action--send:hover {
+    border-color: transparent;
+    opacity: 0.9;
+  }
+}
+
+/* ── The expanded roster ──────────────────────────────────────────────────
+ *
+ * A tinted panel rather than the warm-beige second layer the old card used,
+ * which was two hardcoded hex values. --ink-dim-4 is the design system's answer
+ * to "a visibly different layer" and it is the same one the notices elsewhere
+ * in the app use.
+ */
+
+.ddr-panel {
+  padding: var(--s3);
+  border-top: 1px solid var(--divider);
+  background: var(--ink-dim-4);
+}
+
+.ddr-panel__college {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.ddr-panel__college svg {
+  flex: none;
+}
+
+.ddr-members {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ddr-member {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+}
+
+/* Initials, not an avatar: this list is read at a glance to find one person by
+   name, and a wall of photographs would be slower, not faster. */
+.ddr-member__initials {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--surface-card);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+.ddr-member__name {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  flex: 1;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.ddr-member__name > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The captain badge. --accent, the app's colour for a staff role, rather than
+   the signature red — the captain is a point of contact, not an alarm. */
+.ddr-member__badge {
+  flex: none;
+  padding: 1px var(--s2);
+  border-radius: var(--r-pill);
+  background: rgb(123 97 255 / 12%);
+  color: var(--accent);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+/* A smaller mail target than the row actions above: it sits inside an expanded
+   panel a coordinator has deliberately opened, so it is a considered tap rather
+   than a glance-and-hit one. Still 36px, and still comfortably reachable. */
+.ddr-member__mail {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .ddr-member__mail:hover {
+    border-color: var(--muted);
+  }
+}
+
+/* ── States ───────────────────────────────────────────────────────────────
+ *
+ * The skeleton is the real shape — collapsed entry rows in the same grid — so
+ * the layout does not jump when the roster lands. Static.
+ */
+
+.ddr-skeleton {
+  height: 60px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.ddr-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-top: var(--s5);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.ddr-error__line {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.ddr-error__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ddr-action:active {
+    transform: none;
+  }
+}

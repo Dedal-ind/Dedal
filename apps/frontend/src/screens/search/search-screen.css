@@ -1,0 +1,56 @@
+/*
+ * search-screen.css — the chrome around SearchPanel on the /search page.
+ *
+ * Deliberately small. Everything on this page is drawn by search.css, which
+ * SearchPanel imports itself; this file owns only the takeover surface and the
+ * back arrow that sits inside the field. If a rule here starts wanting to reach
+ * into the results, it belongs in search.css instead — otherwise the modal and
+ * the page drift apart, which is the exact failure sharing the panel was meant
+ * to prevent.
+ */
+
+/*
+ * A takeover. It renders with NO app header — see App.jsx, where /search sits
+ * outside ParticipantLayout — so the field is the first thing on the screen
+ * rather than the second, and the page starts where the viewport starts. That
+ * is the District pattern and it is also just correct: a header offering
+ * search, a pass and an account menu is three ways to leave a screen somebody
+ * opened to do one thing.
+ */
+.dss-screen {
+  min-height: 100dvh;
+  background: var(--surface);
+  /* --s3 of breathing room above the field, not a full header's worth. */
+  padding: var(--s3) var(--page-pad) var(--s6);
+}
+
+.dss-back {
+  /* 44px is the touch-target floor, not a spacing decision — no token for it. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  /* Pulled left so the ICON lines up with the field's own inner padding rather
+     than being inset by its tap area on top of it. The 36px box is smaller than
+     the 44px floor because it sits INSIDE a 48px field that is itself a target:
+     the field's padding extends the reachable area past the button's edge. */
+  margin-left: calc(var(--s1) * -1);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-enter);
+}
+
+.dss-back:hover {
+  background: var(--ink-dim-4);
+}
+
+.dss-back:active {
+  transform: scale(0.97);
+}
+

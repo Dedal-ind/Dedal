@@ -1,0 +1,780 @@
+/*
+ * registration-success.css — what is TRUE ONLY of the payoff screen.
+ *
+ * Everything structural (the column, the buttons, the 480px success measure)
+ * comes from registration.css. What lives here is the shape of the moment: the
+ * drawn checkmark, the perforated ticket, the sponsor pill, the two calendar
+ * pills.
+ *
+ * Tokens only. This screen must NOT be painted in --primary just because it is
+ * a happy one: the checkmark, the "View pass" fill and its hover stroke take
+ * the signature colour and NOTHING else does. A success screen washed in the
+ * same red the app uses for errors and live-now states teaches the student that
+ * the colour means nothing.
+ *
+ * Everything is LEFT-ALIGNED except the checkmark. There is not a single
+ * centred paragraph on this screen, at any width.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The mark
+   ─────────────────────────────────────────────────────────────────────────
+
+   The one centred element, and the one that animates. Its stroke geometry is
+   set HERE rather than as SVG attributes so the two paths share one weight and
+   one cap; the dash properties are deliberately absent, so the mark's resting
+   state — which is what renders under reduced motion, and what renders if the
+   GSAP timeline never runs at all — is a complete checkmark.
+*/
+
+/*
+ * THE CELEBRATION BLOCK IS CENTRED — mark, headline and status line together.
+ *
+ * The first pass centred only the mark and left-aligned everything, which left
+ * one object floating in the middle above a left-hand column: not a decision,
+ * just an element that failed to line up. The fix is to move the TEXT to the
+ * mark, not the mark to the text.
+ *
+ * Centring is right here specifically because this block is short. The
+ * typographic rule against centred copy is about runs longer than two or three
+ * lines, where the ragged left edge forces the eye to hunt for each new line
+ * start; "You're in" plus a five-word status line never reaches that. It is
+ * also what this category of screen actually does — BookMyShow's booking
+ * confirmation centres its content around the ticket for exactly this reason.
+ *
+ * Everything BELOW stays left-aligned: the ticket's rows, the money, the
+ * actions and the event list are scanned rather than read, and those do want a
+ * hard left edge.
+ */
+.drs-celebrate {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  padding-block: var(--s7) var(--s5);
+}
+
+.drs-mark {
+  display: flex;
+  justify-content: center;
+}
+
+.drs-check__circle,
+.drs-check__tick {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.drs-headline {
+  margin: 0;
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/*
+ * The pass status: one line, body 14, --muted, left-aligned. Both wordings are
+ * honest about a side-load that may still be in flight — see the JSX.
+ */
+.drs-passline {
+  margin: var(--s2) 0 var(--s6);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The pulse says "in progress" without a spinner. Opacity only — nothing moves,
+   nothing reflows — and it exists only where motion was not asked to stop. */
+@media (prefers-reduced-motion: no-preference) {
+  .drs-passline--pending {
+    animation: drs-pending-pulse 1.8s var(--ease-enter) infinite;
+  }
+}
+
+@keyframes drs-pending-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The ticket
+   ─────────────────────────────────────────────────────────────────────────
+
+   THE PERFORATION IS A BACKGROUND IMAGE, NOT A DASHED BORDER, and not
+   border-image either. `border-style: dashed` gives no control at all over dash
+   length — each engine picks its own, and Blink additionally redistributes the
+   dashes to fit the box, so the same card shows 4px dashes on one phone and 9px
+   on another. border-image with a repeating gradient is controllable but paints
+   all four edges from one slice, which is wrong here: only the two side edges
+   and one internal rule are perforated.
+
+   A repeating-linear-gradient background pinned to a 1px-wide strip is exact
+   (6px of --divider, 4px of nothing, forever), identical in Blink, Gecko and
+   WebKit, and lets the three perforated edges be three independent layers.
+*/
+
+.drs-ticket {
+  position: relative;
+  border-radius: var(--r-card);
+  background-color: var(--surface-card);
+  box-shadow: var(--e1);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      var(--divider) 0 6px,
+      transparent 6px 10px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      var(--divider) 0 6px,
+      transparent 6px 10px
+    );
+  background-repeat: no-repeat;
+  background-size: 1px 100%;
+  background-position:
+    left top,
+    right top;
+}
+
+.drs-ticket__top {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s5) var(--s4);
+}
+
+.drs-ticket__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+/*
+ * 48px square, so the ticket's top line is a fixed height whatever aspect ratio
+ * an organiser's phone produced. A zero-area box never becomes visible, so the
+ * min-width also keeps a lazy image inside it loading.
+ */
+.drs-poster {
+  flex: 0 0 auto;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--ink-dim-4);
+}
+
+.drs-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.drs-ticket__names {
+  display: grid;
+  min-width: 0;
+}
+
+.drs-event {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.drs-fest {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* When, where, and (for a captain) the team. Stacked rather than a two-column
+   grid: at 360px a venue string wraps to three lines in half a column and the
+   row heights stop agreeing with each other. */
+.drs-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.drs-fact__icon {
+  flex: 0 0 auto;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.drs-fact__link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* The tear line. Same 6/4 rhythm as the sides, rotated. */
+.drs-ticket__perf {
+  height: 1px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--divider) 0 6px,
+    transparent 6px 10px
+  );
+}
+
+/*
+ * STACKED, not side by side.
+ *
+ * As two flex columns the id and the amount competed for ~278px on a small
+ * phone: the 24-character id wrapped onto two lines with the copy glyph
+ * stranded between them, and the amount was shoved against the right padding
+ * so it looked welded to the card edge. Rows give each the full measure.
+ */
+.drs-ticket__stub {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+}
+
+.drs-stub__block {
+  display: grid;
+  gap: var(--s2);
+  min-width: 0;
+}
+
+/* The money is a label/value pair on ONE line — the receipt convention, and it
+   is what stops "Amount" and "Free" reading as two unrelated stacked words. */
+.drs-stub__block--amount {
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--s3);
+}
+
+.drs-stub__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/*
+ * THE WELDED COPY CONTROL — a read-only value and its button sharing one
+ * border, with the radius split between them, so the pair reads as a single
+ * thing you can copy rather than as a string that happens to have a button
+ * beside it. This is the share-sheet pattern; it is also what stops the glyph
+ * drifting when the value's length changes.
+ */
+.drs-stub__id {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.drs-stub__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--s2) var(--s3);
+  /* One line. The id is 24 hex characters at 14px with 0.05em tracking —
+     roughly 228px — which fits the ~246px this row gets inside a 310px phone
+     once the 40px button is subtracted. Narrower than that and it scrolls
+     rather than wrapping, because a wrapped identifier is harder to read back
+     than a scrolled one. */
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.drs-stub__value::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * A code, not a word. Tabular figures stop the digits shifting under the
+ * copy-morph, and the tracking is what makes a 24-character hex string legible
+ * when somebody is reading it off a phone to a coordinator.
+ *
+ * 14px, not smaller. --muted is roughly 3.5:1 on --surface, which is fine for
+ * text at this size and is not fine below it — and the brief's own instruction
+ * is that this row is --muted, so the size is where the contrast is paid for.
+ */
+.drs-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/*
+ * THE ID IS A NOTCH SMALLER THAN THE TYPE SCALE, deliberately, and it pays for
+ * it in colour.
+ *
+ * Measured at 310px: at 14px with 0.05em tracking the 24-character id rendered
+ * 245px wide inside a 200px field — 45px of overflow, so it either wrapped or
+ * scrolled on every phone. 13px with tighter tracking brings it to roughly
+ * 217px, which fits the ~250px the field gets at 360px (the real narrow phone)
+ * with room to spare, and still scrolls rather than wraps below that.
+ *
+ * 13px is NOT on the scale — the scale goes 14px (body-s) then 11px (micro),
+ * and 11px is far too small for something read aloud at a help desk. So this is
+ * a stated exception for one fixed-length identifier, not a new size anyone
+ * should reach for.
+ *
+ * And it moves from --muted to --ink. --muted is about 3.5:1, which is
+ * acceptable at 14px and is NOT acceptable below it; shrinking the text means
+ * the contrast has to be bought back somewhere, and colour is where.
+ */
+.drs-stub__value {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+/*
+ * The copy control IS the icon. 32px of target around a 16px glyph — under the
+ * 44px comfortable minimum, which is the deliberate trade: this sits inline
+ * beside the id it copies, and a 44px box there would either push the id onto
+ * its own line or overlap the tap area of the row above. It is a convenience,
+ * not a step in the flow, and the id is selectable text regardless.
+ */
+/* The button half of the welded control: its own divider on the left, no
+   radius of its own (the parent clips it), and a full-height target so the
+   whole right end of the field is tappable rather than a 32px island. */
+.drs-copy {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  align-self: stretch;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--divider);
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .drs-copy:hover {
+    background: var(--ink-dim-4);
+  }
+}
+
+.drs-copy:hover {
+  background: var(--ink-dim-4);
+  color: var(--ink);
+}
+
+.drs-stub__amount {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
+}
+
+/* The itemisation, shown only when there is more than one priced line. Quiet
+   and beneath the total: the total is the answer, this is the working. */
+.drs-breakdown {
+  display: grid;
+  gap: var(--s1);
+  margin-top: var(--s1);
+}
+
+.drs-breakdown__line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The copy announcement. Off-screen rather than display:none, which would take
+   the region out of the accessibility tree and silence it. */
+.drs-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sponsor
+   ─────────────────────────────────────────────────────────────────────────
+
+   Directly under the ticket now, not at the foot of the page. A pill on a flat
+   tint — the brief's --haze, which DOES NOT EXIST in dedal-tokens.css; the
+   system is six colours plus stated alphas, and the nearest stated alpha (and
+   the intended effect: ink held back to 4%) is --ink-dim-4. That mapping holds
+   for the dark pass theme too, where --ink-dim-4 inverts with the surface.
+
+   A sponsor logo arrives as anything from a 40px favicon to a 3000px wordmark,
+   so the box is fixed and the image is contained inside it; without a non-zero
+   min-width a wide-aspect logo collapses to nothing and the pill renders as
+   blank space nobody paid for.
+*/
+
+/*
+ * The pill HUGS its contents and sits on one optical line.
+ *
+ * It looked unaligned because the logo lived in a fixed 72px box with the image
+ * pinned left inside it: a narrower mark left dead space before the pill's
+ * right edge, so the pill was wider than what it contained and the label and
+ * logo read as two things at different centres. Now the box sizes to the mark
+ * (up to a cap), everything is centred on one axis, and a single sponsor looks
+ * as deliberate as four.
+ */
+.drs-sponsor {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  width: fit-content;
+  max-width: 100%;
+  margin: var(--s4) 0 0;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.drs-sponsor__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drs-sponsor__box {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  height: 24px;
+  /* A floor so an unloaded logo still occupies a box — a zero-area image never
+     becomes visible and so never loads — and a ceiling so a wide mark cannot
+     push the label out of the pill. */
+  min-width: 40px;
+  max-width: 96px;
+}
+
+.drs-sponsor__box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Centred, not left-pinned: the box now sizes to the mark, so pinning left
+     would reintroduce the gap this rule exists to remove. */
+  object-position: center;
+  display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Actions
+   ─────────────────────────────────────────────────────────────────────────
+
+   NOT the fixed .drg-actions bar. On the form and at checkout there is one
+   thing to do and it must never be scrolled for; here the screen is a thing to
+   read and the actions sit in the flow after the ticket.
+*/
+
+.drs-actions {
+  display: grid;
+  gap: var(--s2);
+  padding-block: var(--s6) var(--s3);
+}
+
+/* "Explore more events" is a real <a> (it is navigation, not an action), so it
+   needs the underline removed that the shared button rule never had to. */
+.drs-actions a.drg-button {
+  text-decoration: none;
+}
+
+/* The quiet button's outline is --ink here, not the shared --divider: it is the
+   second of two stacked full-width buttons and a 20%-muted hairline under a
+   solid red fill reads as disabled. Overridden from this file because every
+   other .drg-button--quiet in the flow sits alone. */
+.drs-actions .drg-button--quiet {
+  border-color: var(--ink);
+}
+
+/*
+ * The confirm stroke on "View pass": 2px of --primary drawing left to right
+ * along the bottom edge over 240ms. HOVER ONLY — inside @media (hover: hover)
+ * so a touch device, where :hover sticks after a tap, never fires it — and only
+ * where motion was not asked to stop, because unlike the checkmark this stroke
+ * is decoration and carries no information at all.
+ *
+ * .drg-button is already position: relative; overflow: hidden, so the pseudo
+ * element is clipped to the button's own radius with nothing added here.
+ */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .drs-view-pass::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--primary);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--d-move) var(--ease-enter);
+  }
+
+  .drs-view-pass:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Calendar
+   ─────────────────────────────────────────────────────────────────────────
+
+   Two compact pills, side by side, no heading. Rebuilt here rather than reusing
+   the shared AddToCalendar component, which carries the retired palette
+   internally and belongs to a screen this change does not own.
+*/
+
+.drs-calendar {
+  display: flex;
+  gap: var(--s2);
+}
+
+.drs-calendar__link {
+  flex: 1 1 0;
+  min-width: 0;
+  /* One line, always. These are 135px controls on a small phone and a wrapped
+     label inside a 44px pill pushes the text off its own vertical centre. */
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px; /* the comfortable touch minimum */
+  padding-inline: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Loading. Blocks in the shape the screen will take, so the layout does not
+   jump when the registration arrives. */
+.drs-skeletons {
+  display: grid;
+  gap: var(--s4);
+  padding-block: var(--s8);
+}
+
+/*
+ * .drg-screen reserves 120px at the bottom to clear the flow's fixed action
+ * bar. This screen has no fixed bar — its actions sit in the flow — so that
+ * reservation is just dead space under the last line. Overridden here rather
+ * than in registration.css because every other screen in the flow does have the
+ * bar and needs the clearance.
+ */
+.drs-screen {
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * The 480px desktop measure and the 16px mobile gutter both come from shared
+ * rules and are reused unchanged: .drg-screen--success sets --drg-col-max:
+ * 480px, which .drg-col reads at >=768px, and --page-pad is 16px until 640px.
+ * Nothing about the width is redefined here.
+ *
+ * What DOES need saying: the column is left-aligned inside that measure, which
+ * is the default and stays the default. No text-align lands on this file except
+ * the amount's right edge in the stub and the checkmark's own flex centring.
+ */
+
+/*
+ * THE QR AND THE BACKUP CODE ARE NOT ON THIS SCREEN — see the actions block in
+ * the JSX for why. The white-backing rule they needed went with them, and the
+ * reason is recorded here so it is not rediscovered the hard way if anyone
+ * moves them back: a QR frame must be LITERAL #fff, not --surface-card, because
+ * a scanner reads contrast rather than tokens and --surface-card follows the
+ * dark pass theme to #0f1729, which is a QR no camera can decode.
+ */
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE TWO-COLUMN DESKTOP
+   ─────────────────────────────────────────────────────────────────────────
+
+   Mobile is a plain single flow — .drs-grid and its two children are ordinary
+   blocks, so the markup order is the reading order and nothing is repositioned.
+
+   From 768px it becomes two columns. The left holds the confirmation (mark,
+   headline, pass line, ticket) at a measure the ticket was designed for; the
+   right holds what happens next. The total is capped at 1100px rather than
+   stretched to the window, because past that the two columns drift so far
+   apart that they stop reading as one page.
+
+   `align-items: start` matters: without it both columns stretch to the height
+   of the taller one and the sponsor pill ends up floating in the middle of a
+   column of air.
+*/
+
+@media (min-width: 768px) {
+  .drs-screen .drg-col.drs-grid {
+    /* Overrides the shared 480px success measure, which was written for the
+       single-column version of this screen. Scoped here rather than changed in
+       registration.css, which still serves the other flow screens. */
+    max-width: 1040px;
+    display: grid;
+    /*
+     * BOTH columns carry a floor, not just the sidebar.
+     *
+     * With `minmax(0, 1.15fr)` on the left the ticket column is infinitely
+     * compressible, so at the narrow end of "desktop" the sidebar's own 300px
+     * minimum wins and the ticket — the thing the page exists to show — gets
+     * whatever is left. Floors of 320 and 280 plus the 32px gap come to 632,
+     * which fits inside the ~688px of content width available at the 768px
+     * breakpoint, so neither column is ever squeezed at the width where this
+     * layout first applies.
+     */
+    grid-template-columns: minmax(320px, 1.15fr) minmax(280px, 0.85fr);
+    gap: var(--s7);
+    align-items: start;
+  }
+
+  .drs-aside {
+    display: grid;
+    gap: var(--s5);
+    /* The next actions stay in view while somebody reads the ticket beside
+       them; it releases before the page ends so it never traps the footer. */
+    position: sticky;
+    top: var(--s6);
+  }
+}
+
+@media (min-width: 1280px) {
+  .drs-screen .drg-col.drs-grid {
+    max-width: 1100px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   More at this fest
+   ─────────────────────────────────────────────────────────────────────────
+
+   Rows, not cards. The one card on this page is the ticket, and a stack of
+   little cards beside it would compete with the thing the page exists to show.
+*/
+
+/* No rule above this block. Its own heading already marks the boundary, and a
+   hairline directly under the calendar pills read as a stray line closing off
+   the page rather than as a separator opening a new section. Spacing does the
+   separating instead. */
+.drs-more {
+  padding-top: var(--s5);
+}
+
+.drs-more__title {
+  margin: 0 0 var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.drs-more__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--s1);
+}
+
+.drs-more__item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2);
+  margin-inline: calc(var(--s2) * -1);
+  border-radius: var(--r-card);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .drs-more__item:hover {
+    background: var(--ink-dim-4);
+  }
+}
+
+.drs-more__item:active {
+  transform: scale(0.99);
+}
+
+.drs-more__thumb {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  /* A non-zero box even before the image lands: a zero-area box never becomes
+     visible, so a lazy image inside one never loads. */
+  min-width: 40px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--ink-dim-4);
+}
+
+.drs-more__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.drs-more__text {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.drs-more__name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drs-more__meta {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}

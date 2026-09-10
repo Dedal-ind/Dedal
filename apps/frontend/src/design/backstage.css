@@ -1,0 +1,536 @@
+/*
+ * backstage.css — the staff hub screens, on the dedal design system.
+ *
+ * Covers /backstage (the crew access hub), /backstage/volunteer-hub,
+ * /backstage/no-access and /crew-select. One sheet rather than four because
+ * these four are the same screen shape — a column of large tap targets that
+ * leads somewhere else — and splitting it would have meant four copies of the
+ * same tile, stat and status rules drifting apart.
+ *
+ * THESE ARE STAFF TOOLS. A volunteer reads them at a gate, one-handed, in
+ * sunlight, with a queue in front of them. Two things follow from that and
+ * they are the whole brief of this file:
+ *
+ *   1. TARGETS ARE BIG. Anything tapped repeatedly is at least 56px tall, well
+ *      above the 44px comfortable minimum the participant app uses, because
+ *      the participant app is used sitting down.
+ *   2. STATUS IS A WORD. The retired design said "live" with a red glowing dot
+ *      and green and amber washes and nothing else. Every state here is
+ *      spelled out in text; colour is redundant reinforcement, never the
+ *      message. There is no amber and no green in this system to say it with
+ *      anyway.
+ *
+ * DECORATION IS GONE. The olive poster gradients, the glass blur overlays, the
+ * pulsing LIVE text and the press-brightness filters are deleted rather than
+ * restyled. The only motion here is an 80ms press feedback, which confirms a
+ * tap landed.
+ *
+ * FOCUS: design/focus.css owns focus for the whole participant surface and its
+ * policy is "no ring". `.dbk-screen` is registered there; nothing here adds one
+ * back.
+ */
+
+.dbk-screen {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+/*
+ * The content column. --col-max is `none` below 1920px on purpose: capping it
+ * would cap the grid, and a narrow ribbon of cards in a wide window is the one
+ * thing this layout exists to avoid.
+ */
+.dbk-col {
+  max-width: var(--col-max);
+  margin: 0 auto;
+  padding: var(--s2) var(--page-pad) var(--feed-end);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+}
+
+.dbk-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.dbk-section__title {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/*
+ * THE INTRINSIC GRID. minmax(0, ...) via min(100%, 300px), never a bare 1fr: a
+ * grid item defaults to min-width:auto and will not shrink below its content,
+ * so one long fest name would push the page wider than the viewport.
+ */
+.dbk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: var(--grid-gap);
+}
+
+/*
+ * The page name on the two ROOT screens in this file (/backstage and
+ * /crew-select). They sit under the global app header and pass no title to
+ * ScreenHeader — a title would suppress that header, and a root destination
+ * would then have no way out — so they still need a heading of their own. It is
+ * deliberately body-sized: a label for the column beneath it, not a headline
+ * competing with the tiles.
+ */
+.dbk-h1 {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── The role tiles on /backstage ────────────────────────────────────────── */
+
+/*
+ * A destination, not a poster. 132px of height with the name at display size
+ * and a plain sentence under it — enough to hit without looking, and it says
+ * what is behind it rather than showing a gradient.
+ */
+.dbk-tile {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--s1);
+  min-width: 0;
+  min-height: 132px;
+  padding: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dbk-tile:active {
+  transform: scale(0.99);
+}
+
+.dbk-tile__name {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+}
+
+.dbk-tile__hint {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Counts ─────────────────────────────────────────────────────────────── */
+
+.dbk-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: var(--grid-gap);
+}
+
+.dbk-stat {
+  min-width: 0;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dbk-stat__value {
+  display: block;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * A count that is currently running reads in --primary AND its label says "on
+ * now". The colour is the second signal, never the only one.
+ */
+.dbk-stat__value--now {
+  color: var(--primary);
+}
+
+.dbk-stat__label {
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Assignment cards on the volunteer hub ──────────────────────────────── */
+
+.dbk-card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+  min-height: 116px;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dbk-card:active {
+  transform: scale(0.99);
+}
+
+.dbk-card__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.dbk-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dbk-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+/*
+ * THE STATUS CHIP. A word, at body-s, in a bordered pill. "On now" carries
+ * --primary and a filled dot; "Scheduled" is --muted with no dot. With the
+ * colour stripped out the two still say different things.
+ */
+.dbk-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  align-self: flex-start;
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dbk-status--now {
+  color: var(--primary);
+}
+
+.dbk-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: currentColor;
+}
+
+/*
+ * THE ON-DUTY PANEL. Same card, but it is not a button — the shift itself is
+ * not tappable; the scan action inside it is.
+ */
+.dbk-duty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  min-width: 0;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+}
+
+/*
+ * The one --primary action a hub screen is allowed: opening the scanner for a
+ * shift that is running right now. 56px, because it is the control somebody is
+ * reaching for while walking to their post.
+ */
+.dbk-cta {
+  appearance: none;
+  align-self: flex-start;
+  min-height: 56px;
+  padding: var(--s3) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: #fff;
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dbk-cta:active {
+  transform: scale(0.99);
+}
+
+/* ── The fest rows on /crew-select ──────────────────────────────────────── */
+
+.dbk-row {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-width: 0;
+  /* 64px: scanned once and tapped once per fest, so the height buys legibility
+     rather than density. */
+  min-height: 64px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dbk-row:hover {
+  background: var(--ink-dim-2);
+}
+
+.dbk-row:active {
+  background: var(--ink-dim-4);
+}
+
+.dbk-row__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  object-fit: cover;
+  color: var(--muted);
+}
+
+.dbk-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dbk-row__chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+/* ── The search field on /crew-select ───────────────────────────────────── */
+
+.dbk-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 48px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+}
+
+.dbk-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font);
+  /* 16px. Anything smaller and iOS Safari zooms the page on focus. */
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+}
+
+.dbk-search__input::placeholder {
+  color: var(--muted);
+}
+
+.dbk-search__clear {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/*
+ * An icon control in the ScreenHeader's action slot. 44px, matching the back
+ * control it sits opposite, so the two ends of the bar are the same weight.
+ */
+.dbk-iconbtn {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dbk-iconbtn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* ── Loading, error, offline ────────────────────────────────────────────── */
+
+/*
+ * STATIC skeletons. The retired ones pulsed; a pulse on a staff screen spends
+ * frames telling somebody something they can already see, and on a mid-range
+ * Android at a gate those frames are not free.
+ */
+.dbk-skel {
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dbk-skel--tile {
+  height: 132px;
+}
+
+.dbk-skel--card {
+  height: 116px;
+}
+
+.dbk-skel--row {
+  height: 64px;
+}
+
+.dbk-skel--stat {
+  height: 84px;
+}
+
+.dbk-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dbk-error__message {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dbk-error__retry {
+  appearance: none;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: var(--s2) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/*
+ * The offline notice. Cached content stays on screen underneath it; this only
+ * states why nothing will refresh.
+ */
+.dbk-offline {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+/* ── /backstage/no-access ───────────────────────────────────────────────── */
+
+.dbk-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s4);
+  /* The 56px ScreenHeader is already spent above this. */
+  min-height: calc(100dvh - 120px);
+  padding: 0 var(--page-pad);
+  text-align: center;
+}
+
+.dbk-locked__line {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dbk-locked__hint {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}

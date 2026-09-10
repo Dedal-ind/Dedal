@@ -1,0 +1,869 @@
+/*
+ * auth-sign-in.css — the whole authentication surface: the sign-in split, the
+ * inline OTP step, the standalone /auth/verify-otp screen, and the sign-out
+ * interstitial.
+ *
+ * ONE FILE FOR FOUR SCREENS ON PURPOSE. /auth/email and /auth/verify-otp are two
+ * implementations of the same six boxes and the same countdown, and sign-out is
+ * the last frame of the same flow. Giving each its own stylesheet is how the
+ * standalone verify route came to look like a different product from the inline
+ * step it duplicates. There is one `.dsi-otp` and both routes render it.
+ *
+ * Tokens only — no Tailwind, no heritage palette. --primary appears in exactly
+ * four places on this surface: the single call to action, the focus ring on the
+ * active OTP box, the error state, and the wordmark's own thread. It is the
+ * signature, so it is never spent on decoration.
+ *
+ * NOTE ON FOCUS. design/focus.css strips focus indicators inside the older
+ * `.dsc-shell` / `.dss-root` scopes. This surface is deliberately NOT in that
+ * selector list: an authentication form is the one place where a keyboard user
+ * must always be able to see which field they are in, so the rings below stand.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The page
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsi-screen {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+/*
+ * DESKTOP IS A DECORATIVE SPLIT, and the decorative half is inert.
+ *
+ * The left column carries the wordmark, the tagline and a --primary wash. It
+ * holds no links, no buttons and no headings that a screen reader needs to walk
+ * past: it is aria-hidden in the markup and contains nothing focusable, so Tab
+ * from the address bar lands on the email field rather than on three ornaments.
+ * Below 1024px the column is not rendered at all — a decorative half-screen
+ * above a form is a scroll the person has to get past to sign in.
+ */
+.dsi-split {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .dsi-split {
+    flex-direction: row;
+  }
+}
+
+.dsi-aside {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .dsi-aside {
+    position: relative;
+    display: flex;
+    flex: 1 1 50%;
+    align-items: center;
+    justify-content: center;
+    padding: var(--s8);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  /*
+   * The gradient. --primary at 5%, once, from the top-left — enough to tell the
+   * two halves apart without becoming a coloured panel. Drawn as a pseudo
+   * element so it cannot ever sit above the wordmark.
+   */
+  .dsi-aside::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 90% at 12% 8%, rgb(255 59 48 / 5%) 0%, rgb(255 59 48 / 0%) 62%);
+  }
+
+  .dsi-aside::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: 1px;
+    background: var(--divider);
+  }
+}
+
+.dsi-aside__inner {
+  position: relative;
+  max-width: 380px;
+}
+
+.dsi-aside__tagline {
+  margin: var(--s5) 0 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dsi-aside__note {
+  margin: var(--s3) 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+/* The form half. Centred, and capped at 400px so the fields keep a sane measure
+   on a 1920px monitor instead of becoming one very long line. */
+.dsi-main {
+  display: flex;
+  flex: 1 1 50%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--s7) var(--gutter) var(--s8);
+}
+
+.dsi-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* The mobile wordmark. The desktop aside carries it above 1024px, so rendering
+   both would put the mark on the page twice. */
+.dsi-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--s7);
+}
+
+@media (min-width: 1024px) {
+  .dsi-brand {
+    display: none;
+  }
+}
+
+.dsi-title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dsi-sub {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+/* The address the code went to, echoed under the OTP heading. Not a chip and not
+   a badge — the person needs to read it and decide whether it is right, so it is
+   simply the one word on the line that is not muted. */
+.dsi-sub__address {
+  color: var(--ink);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * The context banners (admin-bound, payment-bound). These carry the SAME weight
+ * as any other explanatory line on the screen — a tinted box in the signature
+ * red would read as a failure, and "your session expired, sign in to finish
+ * paying" is not a failure, it is a bookmark.
+ */
+.dsi-notice {
+  margin: 0 0 var(--s5);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Step transition — CSS only
+   ─────────────────────────────────────────────────────────────────────────
+
+   Email → OTP is an opacity and an 8px rise. That is genuinely all it is, so it
+   is a keyframe and not a timeline: pulling in an animation library to fade one
+   div would add a dependency to the critical path of the sign-in screen.
+
+   Behind `no-preference`, so somebody who has asked for less motion gets the
+   next step instantly rather than getting it slowly.
+*/
+.dsi-step {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dsi-step {
+    animation: dsi-step-in var(--d-move) var(--ease-enter) both;
+  }
+}
+
+@keyframes dsi-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Form furniture
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsi-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.dsi-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dsi-label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/*
+ * 16px is a floor, not a preference. Mobile Safari zooms the viewport whenever a
+ * focused input's text is under 16px, and it does not zoom back out — so a 14px
+ * email field leaves the person half-way through signing in on a page that is
+ * suddenly 1.3× too wide, with the OTP boxes off the right edge.
+ */
+.dsi-input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dsi-input::placeholder {
+  color: var(--muted);
+}
+
+.dsi-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-color: var(--ink);
+}
+
+.dsi-input[aria-invalid='true'] {
+  border-color: var(--primary);
+}
+
+.dsi-error {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--primary);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dsi-error__icon {
+  flex: 0 0 auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The one action
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsi-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--s3) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--e1);
+  transition:
+    transform var(--d-instant) var(--ease-enter),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+.dsi-cta:active {
+  transform: scale(0.98);
+}
+
+.dsi-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: var(--e0);
+}
+
+.dsi-cta:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* A text button that is still a 44px target: the tap area is padding, the ink is
+   the label. Used for resend, "use a different email", and the sign-out link. */
+.dsi-textbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dsi-textbtn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+.dsi-textbtn--quiet {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* The spinner. A ring with one quadrant in the button's own ink, because a
+   spinner in --primary on a --primary button is invisible. */
+.dsi-spin {
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentcolor;
+  border-top-color: transparent;
+  border-radius: var(--r-pill);
+  opacity: 0.85;
+  animation: dsi-spin 700ms linear infinite;
+}
+
+@keyframes dsi-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The divider and the Google slot
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsi-or {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dsi-or::before,
+.dsi-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--divider);
+}
+
+/*
+ * THE GOOGLE SLOT IS A SLOT, NOT A BUTTON.
+ *
+ * Google Identity Services renders its own button element into this container
+ * from inside the SDK, and Google's brand terms require that button's own white
+ * fill, its own mark and its own wording. Restyling it into the dedal palette
+ * would be both a policy breach and a phishing signal to anyone who has learned
+ * what a real Google button looks like.
+ *
+ * So this rule sizes and centres the container and stops. Nothing here sets a
+ * colour, a font or a radius on the child; `min-height` only reserves the space
+ * so the layout does not jump when the SDK finishes rendering into it.
+ */
+.dsi-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.dsi-google__pending,
+.dsi-google__note {
+  margin: 0;
+  text-align: center;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dsi-google__note--error {
+  color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The six boxes
+   ─────────────────────────────────────────────────────────────────────────
+
+   48px squares, six of them plus five gaps. At 360px that is 288 + 40 = 328px
+   inside a 32px gutter, which fits exactly — so the boxes are allowed to shrink
+   below 48 only under that, and never below 44.
+*/
+
+.dsi-otp {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  gap: var(--s2);
+}
+
+.dsi-otp__box {
+  width: 48px;
+  height: 48px;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: 1;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+@media (max-width: 359px) {
+  .dsi-otp {
+    gap: var(--s1);
+  }
+
+  .dsi-otp__box {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/*
+ * The one place --primary is a focus ring on this surface. The global ring is
+ * --ink, and it is --ink for a good reason (see dedal-tokens.css) — but a row of
+ * six identical squares has no other way to say WHICH square is taking the next
+ * keystroke, and here the ring is the only cursor there is.
+ */
+.dsi-otp__box:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+.dsi-otp--error .dsi-otp__box {
+  border-color: var(--primary);
+}
+
+/*
+ * Verifying. The boxes dim rather than disappearing — the person should still be
+ * able to read back the code they entered while it is being checked — and a
+ * 2px --primary rule runs beneath the row as the progress indicator, which is
+ * the same red as the CTA that would otherwise be there.
+ */
+.dsi-otp--busy .dsi-otp__box {
+  opacity: 0.5;
+}
+
+.dsi-otp__track {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -10px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dsi-otp__track::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--primary);
+  border-radius: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dsi-otp__track::after {
+    animation: dsi-track 1100ms var(--ease-enter) infinite;
+  }
+}
+
+@keyframes dsi-track {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/*
+ * THE WRONG-CODE SHAKE, and the one exception to the reduced-motion rule.
+ *
+ * Three 80ms cycles of a 6px translateX. Everything else on this surface is
+ * gated behind `prefers-reduced-motion: no-preference`; this is not, because the
+ * shake is not decoration — it is half of how a rejected code is reported, and
+ * silently dropping it for a reduced-motion user would leave them with a border
+ * colour change they may not be able to distinguish. Instead the motion is
+ * REPLACED under `reduce` with a held --primary wash on the boxes, so the error
+ * stays perceivable without anything moving.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .dsi-otp--shake {
+    animation: dsi-shake 80ms var(--ease-exit) 3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsi-otp--shake .dsi-otp__box {
+    background: rgb(255 59 48 / 8%);
+  }
+}
+
+@keyframes dsi-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-6px);
+  }
+
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+/*
+ * The polite live region under the boxes. It holds BOTH the rejection message
+ * and the resend countdown's state changes, because they occupy the same line
+ * and two live regions on one line announce over each other.
+ *
+ * min-height reserves the line so the card does not grow by 20px the first time
+ * a code is rejected, which would shift the boxes out from under the cursor.
+ */
+.dsi-otp__status {
+  min-height: var(--body-s-line);
+  margin: 0;
+  text-align: center;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dsi-otp__status--error {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/*
+ * Announced but not drawn. The countdown itself must NOT sit in a live region:
+ * it changes once a second, and a polite region wired to it makes a screen
+ * reader read "27", "26", "25" over whatever the person was doing. What is worth
+ * announcing is the single transition — the moment resending becomes possible —
+ * so the visible digits are aria-hidden and this element carries one sentence
+ * that appears exactly once.
+ */
+.dsi-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dsi-resend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+}
+
+/* The countdown reads "Resend in 28s". Tabular figures so the line does not
+   twitch sideways once a second as the digit widths change. */
+.dsi-resend__wait {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The foot of the card
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsi-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s6);
+  text-align: center;
+}
+
+.dsi-foot__line {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dsi-foot__line--fine {
+  max-width: 34ch;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+}
+
+.dsi-link {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dsi-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The metrics strip
+   ─────────────────────────────────────────────────────────────────────────
+
+   Kept because the numbers are real and load without authentication, but demoted
+   from four cards to one line of figures: on the sign-in screen the only thing
+   that matters is the form, and a grid of stat cards under it competes with it.
+   Hidden entirely when the fetch fails — an empty row of em-dashes is worse than
+   no row.
+*/
+.dsi-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s3) var(--s6);
+  padding: var(--s5) var(--gutter);
+  border-top: 1px solid var(--divider);
+}
+
+.dsi-metric {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dsi-metric__value {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dsi-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s2) var(--s5);
+  padding: var(--s5) var(--gutter) var(--s6);
+  border-top: 1px solid var(--divider);
+}
+
+.dsi-legal a {
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  text-decoration: none;
+}
+
+.dsi-legal a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.dsi-legal a:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The full-screen Google hand-off
+   ─────────────────────────────────────────────────────────────────────────
+
+   Google's popup can take a few seconds and returns focus to a page that looks
+   unchanged. The scrim says the page is busy and stops a second click on the
+   Google button from starting a second exchange.
+*/
+.dsi-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s4);
+  padding: var(--s6);
+  background: var(--scrim);
+  color: var(--surface-card);
+  text-align: center;
+}
+
+.dsi-scrim p {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   /sign-out
+   ─────────────────────────────────────────────────────────────────────────
+
+   The last frame of this flow, so it lives with it. One centred column; no card,
+   because there is nothing to act on — the screen is a receipt for something
+   that already happened and it leaves on its own after two seconds.
+*/
+.dsi-signout {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s4);
+  padding: var(--s6) var(--gutter);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: center;
+}
+
+.dsi-signout__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+}
+
+.dsi-signout__title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.dsi-signout__body {
+  margin: 0;
+  max-width: 32ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+/* The two-second wait, drawn as the bar that is actually elapsing rather than as
+   three pulsing dots that imply an indefinite one. */
+.dsi-signout__track {
+  width: 120px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dsi-signout__track::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary);
+  border-radius: inherit;
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dsi-signout__track::after {
+    animation: dsi-drain 2000ms linear both;
+  }
+}
+
+@keyframes dsi-drain {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+
+/* The inert state of the primary action: visibly unavailable, still focusable.
+   aria-disabled keeps it in the tab order so somebody navigating by keyboard
+   reaches it and is told why, rather than finding a control that silently is
+   not there. */
+.dsi-cta--inert {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

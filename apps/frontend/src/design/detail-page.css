@@ -1,0 +1,1039 @@
+/*
+ * detail-page.css — the shared furniture of the two detail screens.
+ *
+ * Fest detail and event detail are the same shape: a full-bleed hero with the
+ * title burned into it, a tight block of facts under it, some sections, and a
+ * bar pinned to the bottom that never scrolls away. Building that twice is how
+ * the two drift; the parts that genuinely differ (category tabs, rounds,
+ * capacity) live in each screen's own stylesheet.
+ *
+ * Prefixed `ddp-` for the same reason every other stylesheet here is: this
+ * loads alongside a Tailwind @theme belonging to the older design system, and
+ * an unprefixed `.hero` or `.tabs` would sooner or later be won or lost by a
+ * utility class nobody was thinking about.
+ *
+ * Tokens only, from dedal-tokens.css. No colour appears here as a literal
+ * except inside a scrim over photography, where the app's canvas colours are
+ * the wrong tool — see the note on .ddp-hero__scrim.
+ */
+
+.ddp-screen {
+  container-type: inline-size;
+  container-name: ddp;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  /*
+   * Clears the sticky bar at the foot. Set here rather than on each section so
+   * no screen can forget it and end with its last line under the CTA.
+   *
+   * 112px, not 72px, and the extra 40 is not padding-by-feel. The bar is not a
+   * fixed height: it grows with what it has to say. Measured on the event page
+   * at the very bottom of the scroll, a bar carrying a "Team of 5 / ₹1,000"
+   * meta block and a 48px button came to 73px against 72px of clearance, and
+   * the last line of the contact block sat one pixel underneath it. Add a
+   * disabled state's reason line, or a wrapped label on a narrow phone, and the
+   * gap is tens of pixels, not one.
+   *
+   * The alternative is measuring the bar with a ResizeObserver and publishing
+   * its height as a custom property, which is exact but puts a layout
+   * dependency in JavaScript for a value that only ever moves between two
+   * plausible numbers. A ceiling that covers the tallest bar either screen can
+   * build costs a little dead space under the last section and cannot fail.
+   */
+  padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+
+  /*
+   * ── THE PAGE MAXIMUM. 1440px, and it is deliberately NOT --col-max. ──────
+   *
+   * --col-max in dedal-tokens.css is the FEED's ladder: `none` below 1920px
+   * and 1800px above it. That is correct for the feed and wrong here, and the
+   * token file says why in its own words — capping the container would cap the
+   * grid, "which is the thing that is supposed to use the room". A feed is an
+   * auto-filling wall of cards and more width buys another column.
+   *
+   * A detail page is the opposite shape: one reading column and a rail of
+   * facts beside it. Neither gains anything from a fifth column, so past about
+   * 1440px extra width does not make the page more generous, it makes the same
+   * two columns thinner relative to the window and strands the rail a long way
+   * from the thing it describes. Measured before this change, the fest page at
+   * 1920px ran its pair across 1672px with a 547px rail — a sidebar wider than
+   * a phone, holding a fee and one button.
+   *
+   * So the ladder is read for the GUTTER (--page-pad, which keeps climbing
+   * 16 → 24 → 40 → 64) and ignored for the maximum. 1440 rather than the
+   * feed's 1200 because the fest page's reading column carries a four-across
+   * card grid inside it; at a 1200px page those cards fall to ~170px.
+   *
+   * Below 1440px this is inert and the layout is fluid, which is what the
+   * width is for. Above it the pair centres and the surplus becomes equal
+   * margin on both sides.
+   */
+  --ddp-max: 1440px;
+}
+
+.ddp-col {
+  width: 100%;
+  max-width: var(--ddp-max);
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Hero
+   ─────────────────────────────────────────────────────────────────────────
+
+   Edge to edge, and the title lives ON the image rather than under it. A
+   poster with the name repeated beneath it says the name twice and pushes the
+   facts — dates, fee, venue — below the fold on a phone, which are the things
+   somebody opened the page to read.
+*/
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE SEAM RULE — read this before adding another full-bleed hero
+   ─────────────────────────────────────────────────────────────────────────
+
+   A hairline of the wrong colour kept appearing across the top of the poster,
+   and it was fixed three times in three places before the actual class of
+   problem was named. Writing it down here so the next hero inherits the fix
+   instead of rediscovering it.
+
+   WHAT CAUSES IT. A hero's height comes from viewport units (56vh), so it is
+   fractional: 512.5px on a 915px-tall phone. Its top edge sits at whatever the
+   chrome above it happens to measure. At a device pixel ratio of 3.5 those
+   boundaries land BETWEEN physical pixels, and the browser has to round. When
+   the two surfaces meeting at that boundary are different colours, the rounding
+   paints one device pixel of the wrong one and you get a line.
+
+   It is not a border. Removing borders does not fix it, and neither does
+   setting a colour to transparent, because a transparent border still occupies
+   layout and moves the boundary onto a fraction.
+
+   THE FIX, and it is two halves:
+
+   1. OVERLAP. Every hero pulls itself 1px INTO whatever is above it, and the
+      block below it pulls 1px into the hero (see .ded-sheet). There is then no
+      shared edge left to round: at every join, one surface is drawn over the
+      other. One pixel is invisible on a photograph and on an opaque bar.
+
+   2. DARK BEHIND. The hero's own background is --ink, not a pale tint. A
+      dedicated __fallback element draws the no-poster state, so this colour is
+      only ever seen in the gaps — and a dark sliver against a dark photograph
+      under a dark scrim cannot be seen, whereas a pale one is a white line.
+
+   BOTH hero classes are listed. .ddp-hero is the fest page and .ded-hero is the
+   event page; keying anything on one of them alone is how the event page went
+   unfixed the first two times.
+*/
+.ddp-hero,
+.ded-hero {
+  margin-top: -1px;
+  /*
+   * AND THE SAME ONE PIXEL SIDEWAYS.
+   *
+   * The vertical hairline beside the bookmark is the horizontal case of the
+   * same bug. A phone's CSS viewport width can itself be fractional (412.5px is
+   * common), so a hero at width:100% has fractional left and right edges, and
+   * the image inside it rounds inward — leaving a sliver of whatever is behind
+   * the hero showing down one side. Against the near-white page background that
+   * is a thin white line, running the full height of the poster, on the edge
+   * where the eye is already drawn by the bookmark control.
+   *
+   * Bleeding the hero one pixel past both edges means its own dark surface,
+   * not the page, is what any rounding can expose. Paired with `overflow-x:
+   * clip` on the screen below so the bleed cannot produce a scrollbar — `clip`
+   * rather than `hidden` because hidden would make the screen a scroll
+   * container and break `position: sticky` on the rails inside it.
+   */
+  margin-inline: -1px;
+  width: calc(100% + 2px);
+}
+
+.ddp-screen,
+.ded-screen {
+  overflow-x: clip;
+}
+
+.ddp-hero {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  /* A ceiling for wide screens: 16:9 across 1600px is 900px of poster and
+     nothing else above the fold. */
+  max-block-size: 56vh;
+  overflow: hidden;
+  /*
+   * DARK, NOT PALE, AND THIS IS THE FIX FOR THE HAIRLINE.
+   *
+   * A dedicated .*-hero__fallback element draws the no-poster state, so this
+   * background is only ever seen in the gaps: the sub-pixel slivers left beside
+   * or under the image when its rendered size rounds differently from its box
+   * at a device pixel ratio above 1. Pale, those slivers read as thin white
+   * lines down the edge of the poster, which is exactly how they were reported
+   * (the bookmark side, on a phone).
+   *
+   * Against --ink a sliver is invisible: every poster is a photograph, the
+   * scrim over it is already dark, and a one-device-pixel dark edge on a dark
+   * image is nothing. This does not change the no-poster case, which paints its
+   * own surface on top.
+   */
+  background: var(--ink);
+}
+
+.ddp-hero__media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* No poster: the one place --accent appears at this size. The title sits over
+   it and carries the identity instead. */
+.ddp-hero__fallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--ink));
+}
+
+/*
+ * The scrim. Black, not --ink: this sits over an arbitrary photograph, and a
+ * navy-tinted wash shifts the colours of the image underneath it. A gradient
+ * rather than a flat overlay, so the top of the poster — usually the part worth
+ * showing — stays untouched.
+ */
+.ddp-hero__scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--s4);
+  background: linear-gradient(
+    to top,
+    rgb(0 0 0 / 78%) 0%,
+    rgb(0 0 0 / 45%) 32%,
+    rgb(0 0 0 / 0%) 62%
+  );
+  pointer-events: none;
+}
+
+.ddp-hero__title {
+  margin: 0;
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #ffffff;
+  /* Two lines then ellipsis: a four-line fest name would push its own dates
+     off the bottom of the hero it is sitting in. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+/*
+ * The controls over the artwork. White with a shadow rather than a filled
+ * button: a solid chip in the corner of a poster covers the creative, and the
+ * shadow is what keeps a white glyph legible over a white sky without one.
+ */
+.ddp-hero__controls {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s2) var(--s3);
+  padding-top: calc(var(--s2) + env(safe-area-inset-top, 0px));
+}
+
+.ddp-hero__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 45%));
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.ddp-hero__control:active {
+  transform: scale(0.97);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Core info — the block of facts directly under the hero
+   ─────────────────────────────────────────────────────────────────────────
+
+   Tight by design. These are single lines, not cards: a fest's college, its
+   dates and its event count are four short facts, and wrapping each in its own
+   bordered box turns four lines into a screenful.
+*/
+
+.ddp-facts {
+  display: grid;
+  gap: var(--s1);
+  padding-block: var(--s3) var(--s4);
+}
+
+.ddp-facts__host {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ddp-facts__line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one fact that is an instruction rather than a description. */
+.ddp-facts__deadline {
+  color: var(--primary);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sections
+   ───────────────────────────────────────────────────────────────────────── */
+
+.ddp-section {
+  padding-block: var(--s5);
+  border-top: 1px solid var(--divider);
+}
+
+/* Sentence case, and it labels a section rather than shouting over one. Not an
+   ALL-CAPS eyebrow: caps at this size is the commonest tell of a generated
+   page and it reads slower. */
+.ddp-section__title {
+  margin: 0 0 var(--s3);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ddp-prose {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: 22px;
+  font-weight: 400;
+  color: var(--ink);
+  /* Under 80 characters. Long-form description is the one thing on these
+     screens that is genuinely read rather than scanned. */
+  max-width: 68ch;
+  white-space: pre-wrap;
+}
+
+/* Collapsed to four lines, with the toggle below it. -webkit-line-clamp rather
+   than a fixed height, so the cut always lands on a line boundary whatever the
+   font does. */
+.ddp-prose--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/*
+ * A REAL CONTROL, NOT AN UNDERLINE.
+ *
+ * "View full schedule" was underlined text with no padding and no boundary. In
+ * a column of section content that reads as emphasis at least as readily as it
+ * reads as something you can press, and it gave a thumb nothing to aim at — no
+ * target, no press, no feedback.
+ *
+ * It is now a bounded pill at 44px, full width on a phone so it cannot be
+ * missed at the end of a list, and hugging its content from 600px up where a
+ * full-bleed bar would outrank the section it closes. Same treatment as the
+ * venue control on the event page, so the two read as the same kind of thing.
+ */
+.ddp-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--s4);
+  padding-inline: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter),
+    transform var(--d-quick) var(--ease-enter);
+}
+
+/* The chevron that says "this goes somewhere", leaning in the direction of
+   travel on hover. */
+.ddp-more::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  background: currentColor;
+  mask: var(--ddp-chevron) center / contain no-repeat;
+  -webkit-mask: var(--ddp-chevron) center / contain no-repeat;
+  opacity: 0.6;
+  transition:
+    transform var(--d-quick) var(--ease-enter),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+.ddp-more {
+  --ddp-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+}
+
+.ddp-more:active {
+  transform: scale(0.98);
+  background: var(--ink-dim-4);
+}
+
+@media (min-width: 600px) {
+  .ddp-more {
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ddp-more,
+  .ddp-more::after {
+    transition: none;
+  }
+
+  .ddp-more:active {
+    transform: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The sticky bar
+   ─────────────────────────────────────────────────────────────────────────
+
+   Pinned, never scrolls away. On these two screens there is exactly one thing
+   a person came to do, and it should not be something they have to scroll to
+   find.
+*/
+
+.ddp-cta {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--page-pad);
+  padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  background: var(--surface-card);
+  border-top: 1px solid var(--divider);
+}
+
+.ddp-cta__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  max-width: var(--ddp-max);
+  margin-inline: auto;
+}
+
+.ddp-cta__meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ddp-cta__label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ddp-cta__value {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ddp-button {
+  /*
+   * A flex row, so a button that carries a glyph beside its label lines the two
+   * up on one baseline. As a plain block the retry button rendered its icon
+   * hard against the left edge with the text centred independently of it, which
+   * read as a broken control at exactly the moment the page was already telling
+   * somebody something had gone wrong.
+   */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex: 0 0 auto;
+  /* 48px — the floor for the one control the screen exists to offer. */
+  min-height: 48px;
+  padding-inline: var(--s6);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.ddp-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.ddp-button--quiet {
+  background: var(--surface-card);
+  color: var(--ink);
+  border: 1px solid var(--divider);
+}
+
+.ddp-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* A disabled control always says why. */
+.ddp-cta__reason {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Chips and badges shared by both screens
+   ───────────────────────────────────────────────────────────────────────── */
+
+.ddp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--ink);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ddp-badge--free {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.ddp-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  color: var(--primary);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+}
+
+.ddp-live__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ddp-live__dot {
+    animation: ddp-pulse 1.6s var(--ease-enter) infinite;
+  }
+}
+
+@keyframes ddp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Skeletons
+   ───────────────────────────────────────────────────────────────────────── */
+
+.ddp-skel {
+  background: var(--ink-dim-4);
+  border-radius: var(--r-card);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ddp-skel {
+    animation: ddp-skel-pulse 1s linear infinite alternate;
+  }
+}
+
+@keyframes ddp-skel-pulse {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ddp-skel--hero {
+  aspect-ratio: 16 / 9;
+  max-block-size: 56vh;
+  width: 100%;
+  border-radius: var(--r-flush);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The way out of a state
+   ─────────────────────────────────────────────────────────────────────────
+
+   The event page renders OUTSIDE the participant layout: there is no app header
+   above it and no wordmark to fall back to, so the arrow burned into the hero
+   is the only way off the screen. When the load fails there is no hero — and
+   measured in the browser, a failed event page was a sentence, a retry button,
+   and no route out at all except the browser's own back button.
+
+   So the control is hoisted out of the hero for those two states. It is the
+   same 44px target in the same corner, over the canvas instead of over a
+   poster, which is why it takes --ink rather than white.
+*/
+
+.ddp-backbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding: var(--s2) var(--s3);
+  padding-top: calc(var(--s2) + env(safe-area-inset-top, 0px));
+  background: var(--surface);
+}
+
+.ddp-backbar .ddp-hero__control {
+  color: var(--ink);
+  /* No drop shadow: that exists to hold a white glyph off a photograph, and
+     there is no photograph here. */
+  filter: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Load, error, offline and empty states
+   ─────────────────────────────────────────────────────────────────────────
+
+   The same three shapes the feed uses, so a failure looks the same wherever it
+   happens. Left aligned: centring the one sentence a person has to read puts it
+   somewhere no other sentence on the page sits.
+*/
+
+.ddp-offline {
+  height: var(--offline-h);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+}
+
+.ddp-state {
+  text-align: start;
+  padding-block: var(--s7);
+  display: grid;
+  gap: var(--s4);
+  justify-items: start;
+}
+
+.ddp-state__text {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ddp-state--error {
+  width: 100%;
+  padding: var(--s4);
+  background: var(--surface-card);
+  border-radius: var(--r-card);
+  box-shadow: var(--e1);
+  /* The one place --primary appears as a rule: it marks the thing that went
+     wrong, which is what the signature colour is for. */
+  border-inline-start: 2px solid var(--primary);
+}
+
+/* An empty section says what is missing, never "no data". */
+.ddp-empty {
+  margin: 0;
+  padding-block: var(--s6);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.ddp-skel--line {
+  height: 14px;
+  border-radius: var(--r-pill);
+}
+
+.ddp-skel--block {
+  height: 96px;
+}
+
+/*
+ * The icon default. Every glyph on these two screens is a real SVG drawn at
+ * currentColor — the build this replaces printed ligature names ("share",
+ * "bookmark", "call") into the markup and relied on a webfont to swap them for
+ * shapes, so until the font landed the page read the WORD "share", and with the
+ * font blocked it never stopped.
+ */
+.ddp-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.ddp-icon--sm {
+  width: 16px;
+  height: 16px;
+}
+
+.ddp-icon--lg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Focus
+   ─────────────────────────────────────────────────────────────────────────
+
+   THIS DIVERGES FROM design/focus.css, DELIBERATELY, AND THE DIVERGENCE IS
+   WORTH READING BEFORE IT IS "FIXED".
+
+   focus.css sets the participant policy to NOTHING — no ring on click or on
+   Tab — and says so in its own header, naming WCAG 2.4.7 as the cost and
+   calling the decision deliberate. Its selector list is explicit
+   (.dsc-shell, .dhd-header, .dsm-root, .dsh-root, .dss-screen) and .ddp-screen
+   is not in it, so these two screens inherit no policy at all and would fall
+   back to the browser's default ring — which is neither the app's look nor a
+   decision anybody made.
+
+   So the ring is drawn here, on purpose, in --focus-ring (which resolves to
+   --ink, not --primary — see the note in dedal-tokens.css). These are the two
+   screens where the primary action is a single button somebody arrives at by
+   keyboard, and an invisible caret on "Register" is the case the policy's own
+   header warns about. If the no-ring policy is later extended to cover
+   .ddp-screen, delete this block rather than fighting it from two files.
+*/
+
+.ddp-screen
+  :where(button, a[href], summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+/* Over photography the ink ring disappears into the image, so the two hero
+   controls carry a white one with the same shadow that keeps their glyphs
+   legible. */
+.ddp-hero__control:focus-visible {
+  outline-color: #ffffff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Interaction states
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (hover: hover) {
+  .ddp-button:hover:not(:disabled),
+  .ddp-more:hover {
+    background: var(--ink-dim-4);
+    border-color: var(--muted);
+  }
+
+  .ddp-more:hover::after {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+
+  .ddp-hero__control:hover {
+    background-image: linear-gradient(var(--ink-dim-2), var(--ink-dim-2));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Desktop
+   ─────────────────────────────────────────────────────────────────────────
+
+   @container queries on .ddp-screen, matching the feed. The rule is about how
+   much room THE PAGE has, and it is the only version that can be verified by
+   setting a width and measuring.
+*/
+
+@container ddp (min-width: 1024px) {
+  /*
+   * The hero gives height back on a wide screen.
+   *
+   * 16:9 across 1536px is 864px of poster, and the 56vh ceiling only cuts that
+   * to 403 — which is most of a 720px-tall window spent on one image before a
+   * single fact about the fest appears. Measured on a fest with no banner it is
+   * 403px of empty gradient above the fold. 40vh is still a banner and still
+   * full-bleed; it just stops being the whole screen.
+   */
+  .ddp-hero {
+    max-block-size: 40vh;
+  }
+
+  /*
+   * FEST DETAIL — the grid takes two thirds, the facts move into a sidebar
+   * that sticks.
+   *
+   * The sidebar holds what a person refers back to while scanning events:
+   * dates, sponsors, contingent packages, and the action. Leaving those at the
+   * top of a long page means scrolling back up to answer "when is this again?"
+   * — and the answer is three words that could simply have stayed on screen.
+   */
+  /*
+   * TWELVE COLUMNS, not `2fr 1fr`.
+   *
+   * The old pair was a ratio with no shared origin: the fest page said
+   * `2fr minmax(280px, 1fr)` and the event page said
+   * `minmax(0, 720px) minmax(260px, 320px)`, so the two halves of the same
+   * product agreed on neither the split nor the cap, and neither of them
+   * agreed with the card grids nested inside them. A twelve-track grid is the
+   * standard because twelve divides by 2, 3, 4 and 6, so the 8/4 reading split
+   * here and the three- and four-across card grids inside the reading column
+   * are all expressible against one set of lines instead of three sets that
+   * drift.
+   *
+   * 8 and 4: the reading column takes two thirds and the rail takes one, which
+   * is a genuine minority rather than the near-half a fat rail reads as. The
+   * pair fills the container exactly, so the gutters left and right are equal
+   * and the whole thing is centred by .ddp-col rather than by eye.
+   *
+   * `minmax(0, 1fr)` on every track, not `1fr`: a 1fr grid track has an `auto`
+   * minimum, so a wide child inside the reading column — the tab rail, a long
+   * unbroken venue string — would push the track past its share and shove the
+   * rail toward the edge. That asymmetry is exactly the reported symptom.
+   */
+  .ddp-split {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--s7);
+    align-items: start;
+  }
+
+  /*
+   * Placed by line, not by `order`.
+   *
+   * The rail is written FIRST in the source on both pages, because on a phone
+   * the facts and the decision belong directly under the hero and the long
+   * read belongs beneath them. Naming the lines puts each block in its column
+   * without moving a node and without an `order` value that has to be kept in
+   * sync at the far end of a second stylesheet.
+   */
+  .ddp-split > main {
+    grid-column: 1 / span 8;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .ddp-split > .ddp-aside {
+    grid-column: 9 / span 4;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .ddp-aside {
+    position: sticky;
+    /* Under the app header, which is 56px and sticky itself. */
+    top: calc(var(--header-h) + var(--s4));
+    display: grid;
+    gap: var(--s5);
+    /* Its own scroll if a fest ever has enough packages to outgrow the
+       viewport, so the sidebar can never push the CTA off screen. */
+    max-height: calc(100vh - var(--header-h) - var(--s7));
+    overflow-y: auto;
+  }
+
+  /*
+   * The bar stops being fixed and joins the sidebar. A full-width bar welded
+   * across a 1600px window to hold one button is a phone pattern wearing a
+   * desktop layout.
+   *
+   * SCOPED AWAY FROM .ddp-cta--narrow, which is the EVENT page's bar. That page
+   * has no sidebar to join — it is one 720px column — so its register button
+   * stays pinned at every width, exactly as the brief asks. Unscoped, these
+   * three rules leaked onto it and did real damage, measured at 1536px: the bar
+   * went static and dropped to y=765 in a 720px-tall window (i.e. off screen),
+   * and `width: 100%` on a column-stretched inner made each of the two team
+   * buttons 720px wide, so "Create team" ran to x=1856 and was simply not on
+   * the screen.
+   */
+  .ddp-cta:not(.ddp-cta--narrow) {
+    position: static;
+    padding: 0;
+    background: transparent;
+    border-top: 0;
+  }
+
+  .ddp-cta:not(.ddp-cta--narrow) .ddp-cta__inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ddp-cta:not(.ddp-cta--narrow) .ddp-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* The fest page loses its fixed bar and therefore no longer needs the
+     clearance for it. The event page keeps both. */
+  .ddp-screen:not(:has(.ddp-cta--narrow)) {
+    padding-bottom: var(--s8);
+  }
+}
+
+/*
+ * EVENT DETAIL — the phone bar's measure.
+ *
+ * .ddp-cta--narrow is the event page's fixed bottom bar. It is display: none
+ * from 768px up (event-detail.css), where its contents move into the sidebar,
+ * so this only ever governs the tablet band between 768px and the point the
+ * bar disappears — it keeps the fee and the button at a readable measure
+ * instead of a foot apart across the foot of the window.
+ *
+ * .ddp-col--narrow used to live here as "the event page is one centred
+ * column". It was never applied to any node — the event page builds its own
+ * container as .ded-sheet — and the page is a split now, so the rule is gone
+ * rather than left as a description of a layout that does not exist.
+ */
+@container ddp (min-width: 768px) {
+  .ddp-cta--narrow .ddp-cta__inner {
+    max-width: 720px;
+  }
+
+  /*
+   * ── THE PROSE MEASURE, ON DESKTOP. ────────────────────────────────────
+   *
+   * 68ch is the right measure when the prose owns the whole page width, which
+   * is the phone. It is the wrong one inside the split, and this was the
+   * single biggest source of the "everything feels right sided" report.
+   *
+   * Measured on the event page at 1440px: the reading column is 864px, the
+   * paragraph capped out at 697px, and the 167px that were left over all sat
+   * down the RIGHT of it — while the section heading above it, the contacts
+   * list below it and every other block in the same column ran the full 864.
+   * One block short on one side, repeated down the page, is exactly what a
+   * reader describes as text hugging the left with a void beside it.
+   *
+   * Centring the paragraph with `margin-inline: auto` would balance the void
+   * at 83px a side, but it would also indent the paragraph 83px from the
+   * heading directly above it and from every sibling section. That trades a
+   * void for a misalignment, which is worse.
+   *
+   * So the measure is raised to the width of the column it lives in rather
+   * than removed. 86ch at --body-s-size is 881px, a hair over the 864px the
+   * 8-column track reaches at the --ddp-max cap, so in practice the column IS
+   * the measure at every width and the cap only ever binds if the split is
+   * later given more room. That keeps a typographic ceiling on the file — a
+   * paragraph here can never run to 1400px — while leaving no dead band.
+   *
+   * This is the same argument the event page already made for .ded-info when
+   * its 720px clamp was removed; see the note there.
+   */
+  .ddp-prose {
+    max-width: 86ch;
+  }
+
+  /*
+   * ── THE HERO TITLE LINES UP WITH THE PAGE. ────────────────────────────
+   *
+   * Measured on the fest page at 1568px before this: the h1 burned into the
+   * hero started at x=15, because .ddp-hero__scrim carries a flat 16px of
+   * padding sized for a phone. Everything underneath it — the facts rail, the
+   * tab rail, the prose — starts at x=128, where the --page-pad ladder and the
+   * 1440px cap put it. So the first and largest piece of type on the page hung
+   * 113px to the left of the column it introduces, and the eye read the whole
+   * screen against that edge. That is the "everything is shoved to one side"
+   * report in its most literal form, and it is the first thing on the page.
+   *
+   * The scrim keeps its own padding on a phone, where 16px is right and there
+   * is no column to line up with. From 768px it reads the same ladder and caps
+   * its contents at the same --ddp-max, so the title, the sponsor lockup and
+   * the first line of the page below all share one left edge and one right
+   * edge at every width.
+   *
+   * `align-items: center` on the column-direction flex is the cross-axis, i.e.
+   * horizontal: it centres the capped block rather than stacking it left.
+   */
+  .ddp-hero__scrim {
+    padding-inline: var(--page-pad);
+    align-items: center;
+  }
+
+  /*
+   * The cap is --ddp-max MINUS two gutters, not --ddp-max, because what this
+   * has to line up with is .ddp-col's CONTENT box: .ddp-col is 1440 wide
+   * including its own padding-inline, so its text starts 64px inside that.
+   * Capping at the full 1440 here matched at 1440px and drifted 65px at
+   * 1920px, which is the bug this rule exists to remove.
+   */
+  .ddp-hero__scrim > * {
+    width: 100%;
+    max-width: calc(var(--ddp-max) - var(--page-pad) * 2);
+  }
+}

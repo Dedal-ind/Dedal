@@ -1,0 +1,544 @@
+/*
+ * post-join-addons.css — /registrations/:registrationId/add-ons.
+ *
+ * Prefixed `dpj-`, tokens only from dedal-tokens.css, for the reasons stated at
+ * the top of every sheet in this folder: it loads alongside the retired
+ * Heritage Tailwind @theme and must not be able to lose a cascade to it.
+ *
+ * THIS SCREEN IS NOT A CHECKOUT, and the design has to say so before anything
+ * else does. The seat is already confirmed by the time it renders; add-ons are
+ * genuinely optional and can be bought later from the registration. So SKIP is
+ * a real, visible, full-width control sitting directly under the primary
+ * action — not a greyed word in a corner — and nothing here is styled as a
+ * blocking step.
+ *
+ * --primary appears exactly twice: on Continue, and on a submission failure.
+ * A selected add-on takes --accent, because "chosen" is a state, not the one
+ * action on the screen.
+ */
+
+.dpj-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  /*
+   * Clears the fixed action bar. Generous on purpose — the bar carries two
+   * stacked controls and can grow by an error line, and content hidden under it
+   * is worse than a little dead space.
+   */
+  padding-bottom: calc(148px + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * WIDER THAN A FORM COLUMN, NARROWER THAN A FEED. 960px, because the offers
+ * below are a GRID rather than a list of fields: at 640 they are one column on
+ * every screen and a laptop shows four of them with 900px of empty page beside,
+ * which is the stranded-narrow-column complaint exactly. Past 960 the summary
+ * card and the context card start to look like banners.
+ */
+.dpj-col {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* No header clearance: ScreenHeader is in normal flow, and this route is
+   outside ParticipantLayout so there is no app header above it at all. */
+.dpj-intro {
+  padding-top: var(--s2);
+}
+
+.dpj-lede {
+  margin: 0;
+  max-width: 56ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+/* The forced-captaincy notice. --accent, because it is a role that has been
+   assigned, not a warning and not an error — and there is no amber in this
+   palette to reach for even if it were. */
+.dpj-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-top: var(--s4);
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: rgb(123 97 255 / 8%);
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dpj-notice svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+/* ── The context card ─────────────────────────────────────────────────────
+ *
+ * Which seat these add-ons attach to. Somebody arriving here has just redeemed
+ * a code and may well not know the event's formal name; this is the answer to
+ * "extras for what, exactly".
+ */
+
+.dpj-context {
+  margin-top: var(--s5);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dpj-context__label {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dpj-context__event {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpj-context__fest {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── The offers ───────────────────────────────────────────────────────────── */
+
+.dpj-section {
+  margin-top: var(--s7);
+}
+
+.dpj-section__title {
+  margin: 0 0 var(--s3);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpj-offers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--card-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-items: start;
+}
+
+/*
+ * Two or three columns as the room allows. 300px is the floor: an offer row has
+ * to hold a name and a price on one line, a description under it, and — once
+ * taken — a pair of steppers side by side without them wrapping.
+ */
+@media (min-width: 720px) {
+  .dpj-offers {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  }
+}
+
+.dpj-offer {
+  min-width: 0;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    background-color var(--d-quick) var(--ease-enter);
+}
+
+.dpj-offer--selected {
+  border-color: var(--accent);
+  background:
+    linear-gradient(135deg, rgb(123 97 255 / 5%), transparent 70%),
+    var(--surface-card);
+}
+
+/*
+ * The whole row is the label, so the tap target is the card rather than the
+ * 20px box. min-height 44px is belt and braces for a one-line offer with no
+ * description.
+ */
+.dpj-offer__label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.dpj-offer__box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.dpj-offer__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.dpj-offer__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.dpj-offer__name {
+  min-width: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dpj-offer__price {
+  flex: none;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpj-offer__description {
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The quantity axes, revealed only once the offer is taken — an inert stepper
+   on an unselected row invites a change that does nothing. */
+.dpj-offer__axes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s4);
+  margin-top: var(--s3);
+  /* Aligned under the label text, not under the checkbox. */
+  padding-inline-start: calc(20px + var(--s3));
+}
+
+/* ── The stepper ──────────────────────────────────────────────────────────
+ *
+ * Local rather than the shared QuantityStepper, which is still Heritage and
+ * draws its plus and minus as Material Symbols ligatures. The behaviour it
+ * encoded is kept exactly: buttons disable at the bounds instead of clamping
+ * silently, and the value is announced via role="status".
+ */
+
+.dpj-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.dpj-stepper__label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dpj-stepper__controls {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dpj-stepper__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px, the minimum comfortable touch size, on both axes. */
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dpj-stepper__button:hover:not(:disabled) {
+    background: var(--ink-dim-4);
+  }
+}
+
+.dpj-stepper__button:disabled {
+  color: var(--muted);
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dpj-stepper__value {
+  width: 48px;
+  height: 44px;
+  border: 0;
+  border-inline: 1px solid var(--divider);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The summary ──────────────────────────────────────────────────────────── */
+
+.dpj-summary {
+  margin-top: var(--s6);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dpj-summary__title {
+  margin: 0 0 var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpj-summary__lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dpj-summary__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dpj-summary__line span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dpj-summary__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--divider);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Said before the tap, not after: a free basket never opens a payment screen,
+   and a paid one always does. */
+.dpj-summary__note {
+  margin: var(--s2) 0 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* ── States ───────────────────────────────────────────────────────────────
+ *
+ * Loading is skeletons in the real shape — a context card and four offer cards
+ * in the same grid — and it is STATIC. This screen appears immediately after a
+ * successful join, which is the one moment a participant is most likely to read
+ * it as "did something go wrong"; a pulsing page reinforces that, a still one
+ * does not.
+ */
+
+.dpj-skeleton {
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dpj-skeleton--context {
+  height: 84px;
+  margin-top: var(--s5);
+}
+
+.dpj-skeleton--offer {
+  height: 92px;
+}
+
+/* A neutral note for "no add-ons here" and for a failed load. Left-aligned, in
+   the flow: the screen is not empty — the context card above it is real — so
+   the shared centred EmptyState would be centring a caveat, not a page. */
+.dpj-note {
+  margin-top: var(--s5);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dpj-note p {
+  margin: 0;
+}
+
+.dpj-error {
+  margin-top: var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* An offline caveat above the action bar. Writes are disabled while offline and
+   the reason is stated rather than implied by a dead button. */
+.dpj-offline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  margin-bottom: var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* ── The action bar ───────────────────────────────────────────────────────
+ *
+ * Fixed, because it holds the two ways out of the screen and both must be
+ * reachable without scrolling a list that can run to twenty offers.
+ *
+ * SKIP IS A BUTTON, not an underlined afterthought. It is the correct answer
+ * for most people who land here — they joined by code, the seat is confirmed,
+ * they want nothing else — and it is given a real 44px control that says so.
+ */
+
+.dpj-actions {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  border-top: 1px solid var(--divider);
+  background: var(--surface);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.dpj-actions__inner {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+  padding: var(--s3) var(--page-pad) var(--s4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dpj-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--s5);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform var(--d-instant) var(--ease-exit),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+.dpj-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.dpj-button--primary {
+  background: var(--primary);
+  color: var(--surface-card);
+}
+
+.dpj-button--primary:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dpj-button--quiet {
+  border-color: var(--divider);
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+/* On a wide window the two controls sit side by side rather than stacking to
+   96px of bar over a page that has plenty of width to spare. */
+@media (min-width: 720px) {
+  .dpj-actions__inner {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+  }
+
+  .dpj-button {
+    width: auto;
+    min-width: 200px;
+  }
+
+  /* The offline caveat is a note about the row, not a member of it, so it takes
+     a line of its own rather than being pushed to one end by row-reverse. */
+  .dpj-offline {
+    order: -1;
+    flex-basis: 100%;
+    margin-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpj-button:active:not(:disabled) {
+    transform: none;
+  }
+}

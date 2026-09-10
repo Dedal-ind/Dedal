@@ -1,0 +1,181 @@
+/*
+ * view-transitions.css
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Page transitions, driven by the browser's View Transitions API and by React
+ * Router's own `viewTransition` support. There is no JavaScript animation here
+ * and no GSAP: the API snapshots the old page, snapshots the new one, and
+ * interpolates between them natively, off the main thread, outside the layout
+ * tree.
+ *
+ * THE MECHANISM YOU CANNOT SEE FROM THIS FILE (read this before editing).
+ *
+ * `::view-transition-*` pseudo-elements hang off the DOCUMENT ROOT, not off
+ * the link that was tapped. There is no way to say "this Link slides forward"
+ * in CSS — by the time the pseudo-elements exist, the link is gone. So the
+ * direction has to be published somewhere global, and it has to be published
+ * BEFORE the transition starts, because the animations are matched and started
+ * at the moment the snapshot is taken.
+ *
+ * That "somewhere global" is a data attribute on <html>:
+ *
+ *     document.documentElement.dataset.navDirection = 'forward' | 'back' | 'same'
+ *
+ * written by useTransitionNavigate() (components/route-transition/) in the same
+ * synchronous tick as the navigate() call, and — for the browser Back button,
+ * which has no call site — by a `popstate` listener that fires before React
+ * Router has processed the entry. It is cleared once the transition can no
+ * longer be running. Every selector below is keyed off that attribute.
+ *
+ * FALLBACK. A browser with no `document.startViewTransition` never enters any
+ * of this: React Router applies the DOM update directly and none of these
+ * pseudo-elements are ever generated, so the app simply navigates. Nothing in
+ * this file needs a feature query, because a pseudo-element that is never
+ * created cannot mis-style anything.
+ *
+ * FIXED CHROME. `position: fixed` elements are a classic source of jank inside
+ * a view transition — but only when they are captured as their OWN snapshot
+ * (a named element), because the snapshot is then painted outside the layout
+ * tree and loses its viewport anchoring. Here the sticky app header, the fest
+ * detail tab rail and the fixed CTA bars carry NO `view-transition-name`, so
+ * they are painted into the single full-viewport `root` snapshot and travel
+ * with the page as pixels. They cannot detach, because during the transition
+ * they are not layout at all. This is precisely the failure the old JS route
+ * fade could not avoid (see the "Route transitions" note in index.css: a
+ * transform on a wrapper element makes it the containing block for every fixed
+ * descendant). The API has no such side effect — that is why we moved here.
+ */
+
+/*
+ * Durations. Tokens where they exist, literals only where the brief pins a
+ * number the token set does not carry:
+ *   forward 200ms — NO token has this value (--d-move is 240, --d-quick 150).
+ *                   Literal, with its own reduced-motion override below.
+ *   back    180ms — --d-exit, exactly.
+ *   same    150ms — --d-quick, exactly.
+ * Back is deliberately faster than forward: returning to a page you have
+ * already seen should not cost you the same time as discovering a new one.
+ */
+:root {
+  --vt-forward: 200ms; /* literal: no --d-* token is 200ms */
+  --vt-back: var(--d-exit);
+  --vt-same: var(--d-quick);
+  /* The slide distance. Far enough to read as a direction, short enough that
+     the incoming page is legible before it lands. */
+  --vt-slide: 24px;
+}
+
+/* ── Kill the browser default ──────────────────────────────────────────────
+   Without this, the UA's own ~250ms root cross-fade runs underneath every rule
+   below and every navigation costs 250ms whatever we asked for. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@keyframes vt-slide-out-left {
+  to { transform: translate3d(calc(var(--vt-slide) * -1), 0, 0); opacity: 0; }
+}
+@keyframes vt-slide-in-right {
+  from { transform: translate3d(var(--vt-slide), 0, 0); opacity: 0; }
+}
+@keyframes vt-slide-out-right {
+  to { transform: translate3d(var(--vt-slide), 0, 0); opacity: 0; }
+}
+@keyframes vt-slide-in-left {
+  from { transform: translate3d(calc(var(--vt-slide) * -1), 0, 0); opacity: 0; }
+}
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
+
+/*
+ * ── Same level: a crossfade, no slide ────────────────────────────────────
+ * Declared FIRST so the directional rules below win on source order at equal
+ * specificity. This block is also the default when no attribute is set at all
+ * — an unattributed transition is one we could not classify, and a neutral
+ * crossfade is the honest animation for "something changed" with no direction
+ * to report.
+ */
+::view-transition-old(root),
+:root[data-nav-direction='same']::view-transition-old(root) {
+  animation: vt-fade-out var(--vt-same) var(--ease-exit) both;
+}
+::view-transition-new(root),
+:root[data-nav-direction='same']::view-transition-new(root) {
+  animation: vt-fade-in var(--vt-same) var(--ease-enter) both;
+}
+
+/* ── Forward: deeper into the ladder ─────────────────────────────────────── */
+:root[data-nav-direction='forward']::view-transition-old(root) {
+  animation: vt-slide-out-left var(--vt-forward) var(--ease-exit) both;
+}
+:root[data-nav-direction='forward']::view-transition-new(root) {
+  animation: vt-slide-in-right var(--vt-forward) var(--ease-enter) both;
+}
+
+/* ── Back: retracing a step, and quicker for it ──────────────────────────── */
+:root[data-nav-direction='back']::view-transition-old(root) {
+  animation: vt-slide-out-right var(--vt-back) var(--ease-exit) both;
+}
+:root[data-nav-direction='back']::view-transition-new(root) {
+  animation: vt-slide-in-left var(--vt-back) var(--ease-enter) both;
+}
+
+/*
+ * ── The one shared element: fest card poster → fest detail hero ──────────
+ *
+ * ONE. Not a system of them. A second morph running alongside the first reads
+ * as the page coming apart, and every extra name is another chance for the
+ * duplicate-name throw that skips the whole transition.
+ *
+ * When the name `fest-poster` is present on both sides, the group animation
+ * below takes over the poster and the root slide still runs underneath it —
+ * the page moves, the poster travels. The 200ms matches the forward duration
+ * so the two finish together; a morph that lands after the page has settled
+ * looks like a bug.
+ */
+::view-transition-group(fest-poster) {
+  animation-duration: var(--vt-forward);
+  animation-timing-function: var(--ease-enter);
+}
+/*
+ * The two snapshots are a card-sized crop and a hero-sized crop of the same
+ * photograph, and the default old/new cross-fade over a scaling group is what
+ * sells the morph. Both sides are `object-fit: cover`, so the framing differs;
+ * the cross-fade hides that. Matching the durations explicitly stops the fade
+ * outrunning the geometry.
+ */
+::view-transition-old(fest-poster),
+::view-transition-new(fest-poster) {
+  animation-duration: var(--vt-forward);
+  /* Height is the axis that changes most between a 16:9 card and a 56vh hero;
+     letting the snapshot fill rather than letterbox keeps the crop stable. */
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * ── Reduced motion ───────────────────────────────────────────────────────
+ *
+ * The durations collapse to effectively zero — but the transition still runs
+ * inside startViewTransition. We do NOT bypass the API: that callback is where
+ * React Router commits the DOM update, and skipping the wrapper to "save" an
+ * animation would change the navigation path itself, so the reduced-motion
+ * build would be exercising code the default build never runs. Collapse the
+ * time, keep the machinery.
+ *
+ * (--d-exit and --d-quick are already collapsed to 0.001ms by
+ * dedal-tokens.css under the same query; --vt-forward is a literal, so it
+ * needs its own line here.)
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --vt-forward: 0.001ms;
+    --vt-slide: 0px;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.001ms !important;
+  }
+}

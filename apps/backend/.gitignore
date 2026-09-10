@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+dist/
+build/
+.DS_Store
+*.log
+
+
+# Locally rendered certificate PDFs (cloud storage deferred)
+generated-certificates/
+
+# Local dev image uploads (served at /uploads; production uses S3)
+uploads/
+
+deploy.config.ps1
+
+.claude

@@ -1,0 +1,492 @@
+/*
+ * search.css — the search panel and the desktop modal that holds it.
+ *
+ * `dsr-` for the panel (shared by both surfaces), `dsm-` for the modal chrome.
+ * Prefixed for the same reason every other stylesheet here is: this loads
+ * alongside a Tailwind @theme from the older design system, and an unprefixed
+ * `.modal` or `.chip` would sooner or later be won or lost by a utility class
+ * nobody was thinking about.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The panel — identical inside the modal and inside the mobile page
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsr-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  font-family: var(--font);
+  color: var(--ink);
+}
+
+.dsr-field {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 48px;
+  padding-inline: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  flex: 0 0 auto;
+}
+
+.dsr-field__icon {
+  display: flex;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.dsr-field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  outline: none;
+}
+
+/* The real placeholder attribute is empty — the suggestion is a real element
+   layered over the field so it can actually move. See RotatingPlaceholder. */
+.dsr-field__input::placeholder {
+  color: var(--muted);
+}
+
+/* ── The rotating suggestion ────────────────────────────────────────────── */
+
+/*
+ * Sits over the input, occupying the same box as its text so the two are
+ * indistinguishable until you type. It never takes a pointer: clicks fall
+ * through to the field underneath, which is the thing you meant to focus.
+ */
+.dsr-ghost {
+  position: absolute;
+  inset-inline: 0;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  /*
+   * `pre`, not `nowrap`. The prefix ends in a space — "Search for " — and HTML
+   * collapses a trailing space sitting immediately before a nested element,
+   * which rendered "Search forhackathons". `pre` preserves it; `nowrap` alone
+   * does not.
+   */
+  white-space: pre;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/*
+ * A one-line window around the WHOLE phrase. It travels vertically through
+ * this, so the outgoing line leaves the top and the incoming one arrives from
+ * the bottom, clipped at both edges rather than sliding over the field's
+ * border.
+ */
+.dsr-ghost__mask {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  height: var(--body-m-line);
+  min-width: 0;
+  width: 100%;
+}
+
+.dsr-ghost__term {
+  display: inline-block;
+  will-change: transform, opacity;
+}
+
+/* The field becomes the positioning context for the ghost, and the input keeps
+   its own leading space so the two strings start at the same x. */
+.dsr-field {
+  position: relative;
+}
+
+.dsr-field__slot {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.dsr-field__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* ── Chips ──────────────────────────────────────────────────────────────── */
+
+.dsr-chips {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  scrollbar-width: none;
+  padding-block: var(--s3);
+  flex: 0 0 auto;
+}
+
+.dsr-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.dsr-chip {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter);
+}
+
+.dsr-chip[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+/* ── Heading and notes ──────────────────────────────────────────────────── */
+
+/* Sentence case. Not an ALL-CAPS eyebrow — caps at this size is the commonest
+   tell of a generated page and it reads slower. */
+.dsr-heading {
+  margin: var(--s2) 0 var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.dsr-note {
+  margin: 0;
+  padding-block: var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ── The grid ───────────────────────────────────────────────────────────── */
+
+/*
+ * Two columns, and two only. Unlike the feed — which lets auto-fill decide,
+ * because a fest card is a picture worth giving room to — a search result is a
+ * 56px thumbnail and two lines of text. Letting it fan out to five columns on a
+ * wide screen turns a list you scan top-to-bottom into a grid you have to hunt
+ * across, and the whole point of these rows is that they are scannable in order.
+ */
+.dsr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2) var(--s3);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
+  flex: 1 1 auto;
+  padding-bottom: var(--s4);
+}
+
+/* One column where two would leave each row under ~150px and the title would
+   ellipsise after three words. */
+@media (max-width: 380px) {
+  .dsr-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dsr-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s2);
+  border: 0;
+  border-radius: var(--r-card);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+.dsr-row--inert {
+  cursor: default;
+}
+
+.dsr-row__thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--ink-dim-4);
+  line-height: 0;
+}
+
+.dsr-row__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dsr-row__thumb-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--ink));
+}
+
+.dsr-row__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.dsr-row__title {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  /* One line: every row is then the same height and the column scans cleanly. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsr-row__type {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsr-row__date {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Subtle by design — the same restraint as the feed's pill. It has to be
+   unmissable if you look for it and unremarkable if you do not. */
+.dsr-promoted {
+  padding: 1px var(--s1);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The desktop modal
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsm-root {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+
+/* GSAP drives the opacity on open and close (150ms); this is only the resting
+   appearance and the start value. */
+.dsm-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  opacity: 0;
+}
+
+.dsm-dialog {
+  position: absolute;
+  left: 50%;
+  /*
+   * The UPPER THIRD, not the middle. A search box centred in a tall viewport
+   * sits below where the eye already is after clicking an icon in the header,
+   * and the results that appear under it then run off the bottom. Anchoring at
+   * 12% keeps the field near the top and leaves the rest of the height for
+   * what the search is actually for.
+   */
+  top: 12vh;
+  transform: translateX(-50%);
+  width: min(640px, calc(100vw - var(--s8)));
+  max-height: 72vh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--s4);
+  background: var(--surface-card);
+  border-radius: var(--r-sheet);
+  box-shadow: var(--e2);
+  opacity: 0;
+  outline: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The tappable bar on Discover (mobile only)
+   ─────────────────────────────────────────────────────────────────────────
+
+   It looks like a field and is not one. Tapping it goes to /search, which is a
+   real page with a real field and a keyboard — the District pattern. Making it
+   an actual input here would open a keyboard against a screen that cannot show
+   results, and then have to hand focus to a second field on the next page.
+   It is a button, and it says so to assistive technology.
+*/
+
+.dsb-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  height: 44px;
+  /* Tight to the header. It used to carry --s3 above it; the bar is the first
+     thing under a 56px header and does not need a gap to be read as separate
+     from it — the header's own border already does that. */
+  margin-block: var(--s2) 0;
+  /*
+   * CAPPED, and left-aligned. Full width is right on a phone, where the bar is
+   * the width of everything. On a 1900px desktop a field stretching the whole
+   * window reads as a broken layout rather than a generous one — and it is a
+   * lie about the target, since what it opens is a 640px modal. Measured at
+   * 1408px before this cap.
+   */
+  max-width: 520px;
+  padding-inline: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dsb-bar__text {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: var(--body-s-line);
+}
+
+/* Inside the bar the ghost is the ONLY text, so it sizes to the bar's type
+   scale rather than the field's. Everything else about it is unchanged — one
+   component, one behaviour, two sizes. */
+.dsb-bar .dsr-ghost {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dsb-bar .dsr-ghost__mask {
+  height: var(--body-s-line);
+}
+
+/*
+ * MOBILE ONLY. At ≥1024px the magnifier in the header opens the modal instead,
+ * and two entry points at one width would be two doors to one room — with
+ * different behaviour behind each, which is how they drift.
+ */
+@media (min-width: 1024px) {
+  .dsb-bar {
+    display: none;
+  }
+}
+
+/*
+ * The mirror of the rule above: the header's magnifier is hidden BELOW 1024px,
+ * where the bar is doing the job. Declared here, next to the rule it pairs
+ * with, so the two can never be changed independently.
+ *
+ * THE DOUBLED CLASS IS LOAD-BEARING. `.dhd-iconbutton--search` alone ties on
+ * specificity with `.dhd-iconbutton { display: inline-flex }` in
+ * app-header.css, so which one won came down to which stylesheet the bundler
+ * happened to emit last. That is a coin toss, and it landed the wrong way the
+ * moment new design stylesheets were added to main.jsx: the magnifier came
+ * back on mobile, giving the phone two doors into search — the exact thing the
+ * rule above exists to prevent. Doubling the class takes it to (0,2,0) and the
+ * outcome stops depending on import order.
+ *
+ * This also governs the header's NOTIFICATIONS bell, which carries the same
+ * class deliberately: it is desktop-only for the same reason, because on a
+ * phone notifications are the /notifications page.
+ */
+@media (max-width: 1023.98px) {
+  .dhd-iconbutton.dhd-iconbutton--search {
+    display: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Interaction states
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (hover: hover) {
+  .dsr-row:hover:not(.dsr-row--inert),
+  .dsr-chip:hover,
+  .dsb-bar:hover,
+  .dsr-field__clear:hover {
+    background-image: linear-gradient(var(--ink-dim-2), var(--ink-dim-2));
+  }
+}
+
+.dsr-row:active:not(.dsr-row--inert),
+.dsr-chip:active,
+.dsb-bar:active {
+  transform: scale(0.97);
+}

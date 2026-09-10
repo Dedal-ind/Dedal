@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Documents the policy Google Sign-In's popup needs; the HTTP header is what
+      actually applies it (see vite.config.js and the backend's helmet config).
+      COOP is header-only in every current browser, so this tag is a marker for
+      whoever configures the host, not a working fallback.
+    -->
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin-allow-popups" />
+    <meta
+      name="description"
+      content="Dedal — discover college fests, register for events, carry your pass, and collect your certificates. Your pass to every fest."
+    />
+
+    <!--
+      Fonts for BOTH design systems load here (never in src/index.css, which holds
+      only tokens + base resets):
+        · Participant (Heritage Institutional): Playfair Display 700 + Inter
+        · Admin (Executive Precision): Hanken Grotesk + Inter
+        · Icons: Material Symbols Outlined
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!--
+      THE typeface: Plus Jakarta Sans, variable, one request, Latin + digits.
+      Preloaded as a stylesheet and swapped in with the print/onload trick so it
+      never blocks the first paint, and font-display:swap (in the CSS Google
+      returns) means text is readable in the fallback until it lands.
+      Weights 400–700 come as ONE variable file, so 500 and 600 cost nothing
+      extra over 400 and 700.
+    -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..700&display=swap"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Dedal — Your pass to every fest</title>
+
+    <!-- Google Identity Services — powers "Continue with Google" on the sign-in screen -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

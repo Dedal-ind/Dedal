@@ -1,0 +1,257 @@
+/*
+ * policy-document.css — Terms of Service, Privacy Policy, and past-version
+ * screens. Prefix `dpd-`.
+ *
+ * These three routes are one shared frame (PolicyDocumentScreen) around one
+ * shared body (PolicyDocument): a top bar and a column of legal text. There is
+ * no sidebar and no decoration — the text is the entire screen, so the only
+ * job here is to keep it readable at any width and honest about its own
+ * loading/error/offline states.
+ *
+ * Tokens only, from dedal-tokens.css.
+ */
+
+.dpd-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────
+   56px (--header-h), surface-card, 1px divider bottom border. Not sticky by
+   spec — a legal document is read top to bottom, once, and a floating bar
+   over 68ch of text would shadow the first line on every scroll frame. */
+.dpd-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  height: var(--header-h);
+  padding-inline: var(--s2);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dpd-topbar__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dpd-topbar__back:hover {
+    background: var(--ink-dim-4);
+  }
+}
+
+.dpd-topbar__back:active {
+  background: var(--ink-dim-4);
+  transform: scale(0.96);
+}
+
+.dpd-topbar__title {
+  flex: 1 1 auto;
+  margin: 0;
+  /* Centred against the bar, not against the remaining space after the back
+     button — a negative margin the width of the button keeps the title
+     visually centred on the whole bar instead of drifting right. */
+  margin-right: 44px;
+  text-align: center;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Content column ─────────────────────────────────────────────────────
+   Centred, capped at 720px so the column itself never runs edge-to-edge on
+   desktop, and the text inside it capped again at 68ch so a wide 720px column
+   on a large system font doesn't still produce an unreadable line length. */
+.dpd-main {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding: var(--s6) var(--s4) var(--s8);
+}
+
+@media (min-width: 1024px) {
+  .dpd-main {
+    padding-block: var(--s8);
+  }
+}
+
+.dpd-measure {
+  max-width: 68ch;
+  margin-inline: auto;
+}
+
+/* ── Version header ──────────────────────────────────────────────────────
+   Micro 11, --muted: this is metadata about the text, not the text itself,
+   and should read quieter than even the body copy below it. */
+.dpd-version {
+  margin: 0 0 var(--s7);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dpd-version__label {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpd-version__superseded {
+  display: block;
+  margin-top: var(--s2);
+}
+
+/* ── Document body ───────────────────────────────────────────────────────
+   32px between sections, 16px body text at --ink, display 20 for headings.
+   `article` itself carries no horizontal padding — that's --s4 on .dpd-main
+   already — this is purely typography. */
+.dpd-article {
+  display: flex;
+  flex-direction: column;
+}
+
+.dpd-article > * + * {
+  margin-top: var(--s7);
+}
+
+.dpd-title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.dpd-heading {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpd-paragraph {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+  white-space: pre-line;
+}
+
+/* A heading directly followed by its first paragraph should sit closer to it
+   than the 32px section gap — that gap is for the space BETWEEN sections, not
+   between a heading and its own text. */
+.dpd-heading + .dpd-paragraph {
+  margin-top: var(--s3);
+}
+
+/* ── Loading skeleton ───────────────────────────────────────────────────
+   Static bars, not a pulse: the brief prefers a still shape over motion for a
+   page whose entire content is about-to-appear text — a pulsing skeleton over
+   68ch of "coming soon" reads busier than the document it is standing in for. */
+.dpd-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.dpd-skeleton__bar {
+  height: var(--body-m-line);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dpd-skeleton__bar--title {
+  height: var(--display-m-line);
+  width: 55%;
+  margin-bottom: var(--s2);
+}
+
+.dpd-skeleton__bar--meta {
+  width: 35%;
+  height: var(--micro-line);
+}
+
+.dpd-skeleton__bar--gap {
+  margin-top: var(--s5);
+}
+
+/* ── Error / offline state ──────────────────────────────────────────────
+   No icon-in-a-tinted-circle composition here — that's ScreenState's grammar
+   for empty lists, and this is a single legal document failing to load, not a
+   collection with nothing in it. A short, plain message reads more honestly
+   for something people may need to consent against. */
+.dpd-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s4);
+  padding: var(--s6) 0;
+}
+
+.dpd-state__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+}
+
+.dpd-state__message {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dpd-state__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: #fff;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform var(--d-instant) var(--ease-enter),
+    filter var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dpd-state__retry:hover {
+    filter: brightness(1.08);
+  }
+}
+
+.dpd-state__retry:active {
+  transform: scale(0.97);
+}

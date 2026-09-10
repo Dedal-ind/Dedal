@@ -1,0 +1,529 @@
+/*
+ * registration-form.css — what is ONLY the registration form's.
+ *
+ * The screen is drawn almost entirely from design/registration.css (`drg-`):
+ * the sticky context card, the step bar, the field states, the fixed action
+ * bar, the offline strip. What is left here is the furniture no other screen in
+ * the flow has — the roster slots, the add-on rows with their steppers, and the
+ * fee summary — plus the two places this screen has to override a shared rule.
+ *
+ * Tokens only, from dedal-tokens.css. --primary appears on exactly two things:
+ * the single action (via .drg-button) and error state. Nothing here takes it
+ * for decoration.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Page top
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drf-top {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: var(--header-h);
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+.drf-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px is the smallest target that is reliably hittable with a thumb; the
+     icon inside is 24px and the rest is slop. */
+  width: 44px;
+  height: 44px;
+  margin-inline-start: calc(var(--s3) * -1);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+
+.drf-back:active {
+  background: var(--ink-dim-4);
+}
+
+.drf-title {
+  margin: var(--s2) 0 var(--s1);
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.drf-lede {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Read-only facts: the captain's own row, and the review step
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drf-facts {
+  display: grid;
+  gap: var(--s3);
+  margin: 0;
+  padding: var(--s4);
+  background: var(--surface-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+}
+
+.drf-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.drf-fact__key {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.drf-fact__value {
+  min-width: 0;
+  text-align: end;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Roster slots
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drf-slots {
+  display: grid;
+  gap: var(--s3);
+}
+
+/* The label, the input and the remove control on one row at 360px. The input
+   is the only thing allowed to shrink. */
+.drf-slot__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.drf-slot__row .drg-input {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.drf-remove {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.drf-remove:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* The minus bar, drawn rather than iconised: DetailIcons has no remove glyph
+   and the brief forbids adding one. */
+.drf-remove::before {
+  content: "";
+  width: 14px;
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: currentcolor;
+}
+
+.drf-add {
+  justify-self: start;
+  padding: var(--s2) var(--s4);
+  min-height: 44px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.drf-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Chips — the optional category selectors
+   ─────────────────────────────────────────────────────────────────────────
+
+   Real radios inside real labels, so the arrow keys and the screen-reader
+   grouping are the browser's. They wrap rather than scroll horizontally: a
+   hidden option in a horizontal scroller is an option nobody picks.
+*/
+
+.drf-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-inline-size: 0; /* a fieldset defaults to min-content and would not wrap */
+}
+
+.drf-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--s2) var(--s4);
+  min-height: 40px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  cursor: pointer;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    background-color var(--d-quick) var(--ease-enter);
+}
+
+/* The input is visually gone but still focusable and still the thing the
+   keyboard drives — never display:none, which removes it from the tab order. */
+.drf-chip input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.drf-chip:has(input:checked) {
+  border-color: var(--ink);
+  background: var(--ink-dim-4);
+  font-weight: 600;
+}
+
+.drf-chip:has(input:focus-visible) {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Checkbox rows — medical declaration, add-on selection
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drf-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  cursor: pointer;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.drf-check input {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Add-ons
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drf-addon {
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.drf-addon + .drf-addon {
+  margin-top: var(--s2);
+}
+
+.drf-addon--on {
+  border-color: var(--ink);
+}
+
+.drf-addon__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.drf-addon__price {
+  flex: 0 0 auto;
+  text-align: end;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.drf-addon__scope {
+  display: block;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.drf-addon__note {
+  margin: var(--s1) 0 0;
+  /* Aligned under the label rather than the checkbox: 22px box + 12px gap. */
+  padding-inline-start: 34px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drf-addon__body {
+  display: grid;
+  gap: var(--s3);
+  margin-top: var(--s3);
+  padding-inline-start: 34px;
+}
+
+/* ── Stepper. Local, because components/quantity-stepper is still built from
+      the retired Heritage utilities and a material-symbols icon font, both of
+      which this screen may not carry. Same behaviour: bounds disable rather
+      than clamp silently, and the value is announced. ── */
+
+.drf-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.drf-stepper__label {
+  flex: 1 1 auto;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drf-stepper__controls {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.drf-stepper__button {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.drf-stepper__button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.drf-stepper__button:active:not(:disabled) {
+  background: var(--ink-dim-4);
+}
+
+/* The bars are drawn, for the same reason the remove control's is. */
+.drf-stepper__button::before,
+.drf-stepper__button::after {
+  content: "";
+  position: absolute;
+  background: currentcolor;
+  border-radius: var(--r-pill);
+}
+
+.drf-stepper__button::before {
+  width: 14px;
+  height: 2px;
+}
+
+.drf-stepper__button--plus::after {
+  width: 2px;
+  height: 14px;
+}
+
+.drf-stepper__value {
+  min-width: 40px;
+  text-align: center;
+  font-size: var(--body-m-size);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Fee summary
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drf-sum {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s4);
+  background: var(--surface-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+}
+
+.drf-sum__line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drf-sum__amount {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.drf-sum__line--total {
+  margin-top: var(--s1);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--divider);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The action bar's extras
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* The pending-payment conflict puts two controls side by side — the ONE
+   overriding case for "one action per screen", because the state itself is a
+   fork: resume the payment already open, or throw it away. */
+.drf-pair {
+  display: flex;
+  gap: var(--s2);
+}
+
+.drf-pair .drg-button {
+  flex: 1 1 0;
+}
+
+/*
+ * SUCCESS. The label crossfades to a mark for the beat between the request
+ * returning and the navigation, so the tap is visibly acknowledged instead of
+ * the screen simply changing under the thumb.
+ */
+.drf-tick {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity var(--d-quick) var(--ease-enter);
+}
+
+.drg-button--done .drf-tick {
+  opacity: 1;
+}
+
+.drg-button--done .drg-button__label {
+  opacity: 0;
+}
+
+/* Drawn, not iconised: DetailIcons carries no check and the brief forbids
+   adding one. Two borders on a rotated box is the whole mark. */
+.drf-tick::before {
+  content: "";
+  width: 8px;
+  height: 15px;
+  border-inline-end: 2px solid currentcolor;
+  border-block-end: 2px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Loading placeholder
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drf-skel-stack {
+  display: grid;
+  gap: var(--s3);
+  padding-block: var(--s5);
+}
+
+/*
+ * OVERRIDE of a shared rule, made here rather than in registration.css because
+ * that file is shared with four other screens. .drg-state justifies its
+ * children to the start, which is right for the text but leaves a full-bleed
+ * retry button under a 40ch paragraph; capping it keeps the block readable.
+ */
+.drf-screen .drg-state .drg-button {
+  max-width: 320px;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MEMBER SLOTS ON DESKTOP — the roster reads as a roster
+   ─────────────────────────────────────────────────────────────────────────
+
+   On a phone each slot is a stacked label-then-input, which is the only thing
+   that fits. From 768px the label moves beside the field, so five members read
+   as five aligned rows — a table-like list you can scan down — instead of ten
+   stacked blocks you have to read in pairs.
+
+   The brief asks for "name and email side by side". THERE IS NO NAME FIELD: the
+   server's roster endpoint takes `memberEmails` and nothing else, and a name box
+   here would be typed, validated and then dropped on the floor. So the two
+   columns are the member's LABEL and their email — the same scannable shape the
+   brief is after, without inventing a field that cannot persist.
+*/
+
+@media (min-width: 768px) {
+  .drf-slots .drg-field {
+    display: grid;
+    grid-template-columns: 120px minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s3);
+    padding-block: var(--s2);
+  }
+
+  /* The error message belongs under the input, not under the label, so it
+     starts in the second column rather than spanning both. */
+  .drf-slots .drg-field__error {
+    grid-column: 2;
+  }
+}

@@ -1,0 +1,65 @@
+/*
+ * screen-header.css — the title that sits BESIDE the back control.
+ *
+ * WHY THE TITLE MOVED UP HERE.
+ *
+ * Every list screen used to render this pair: a floating back arrow at the top
+ * of the viewport, and then, well below it, a display-size <h1> repeating the
+ * screen's name. Two rows of chrome to say one thing. On /my-certificates that
+ * cost about 120px before the first certificate — on a phone, most of the fold —
+ * and the arrow and the word it belonged to were nowhere near each other.
+ *
+ * Putting the title next to the arrow is what essentially every app does with a
+ * navigation bar, for two reasons worth stating: the control and the label form
+ * one unit ("back, from Certificates"), and the screen gets the vertical space
+ * back for its actual content.
+ *
+ * It is still NOT a bar. ScreenHeader's whole argument is that these controls
+ * float over the content rather than reserving a 56px band with a background
+ * and a hairline; that is unchanged. The title floats with them.
+ *
+ * SIZE. A navigation label, not a headline — the screen's name is the least
+ * surprising thing on the page, since you just tapped the thing that brought
+ * you here. Exact values and their reasoning are on the rule itself.
+ */
+
+/*
+ * `shd-`, NOT `dsh-`. `dsh-title` already belongs to BottomSheet (its rule sits
+ * in app-header.css and sets --display-m), and this file's first version reused
+ * that name — so the nav title silently rendered at 24px/700, the sheet's
+ * heading size, because the two rules tie on specificity and the other one is
+ * emitted later. A prefix collision does not error; it quietly gives you
+ * someone else's design.
+ */
+.shd-title {
+  min-width: 0;
+  margin: 0;
+  /*
+   * 17px/600 — a navigation label, not a heading. The platforms agree closely
+   * here: iOS nav titles are 17pt semibold, Android's around 20px medium.
+   * Anything larger competes with the content directly beneath it, which was
+   * the whole problem with the display-size headings this replaced.
+   */
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  /* One line, always. A wrapped title would push the floating strip over the
+     content it is floating above. */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/*
+ * The gap the back button already occupies is 44px plus the row's own padding,
+ * so the title needs no left margin of its own — it is a flex sibling. This
+ * rule exists only to stop it stretching into the action slot on the right.
+ */
+.shd-wrap {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: var(--s2);
+}

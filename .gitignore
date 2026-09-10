@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+
+# Environment files (SECRETS — only .env.example files are tracked)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build outputs
+dist/
+build/
+
+# Vite cache
+.vite/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Design references (heavy binary files)
+design-references/
+
+# Claude Code local state
+.claude/
+.claude.json
+
+# Local dev uploads (production uses S3)
+uploads/
+
+# Locally rendered certificate PDFs
+generated-certificates/
+
+# Test coverage
+coverage/
+
+# Backup files
+*.bak
+*.backup
+
+# Deploy configs (contain machine-specific secrets — SSH key path, server IP)
+deploy.config.ps1
+
+
+
+.claude
+.vscode

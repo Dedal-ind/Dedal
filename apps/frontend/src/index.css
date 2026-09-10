@@ -1,0 +1,805 @@
+@import "tailwindcss";
+
+/*
+ * Tailwind v4 inline theme. Every value here mirrors a constant in src/brand.
+ * The brand JavaScript modules remain the single source of truth for code that
+ * reads tokens directly; this @theme block exposes the same values to Tailwind
+ * utility classes. When a token changes in src/brand, change it here too.
+ */
+@theme {
+  /* Fonts -> font-display / font-body / font-mono */
+  --font-display: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /*
+   * ── Heritage Institutional (participant) ───────────────────────────────────
+   * Mirrors src/brand/brand-colors.js. Token names match the Stitch design
+   * system exactly, so a class in the Stitch HTML (bg-surface-container,
+   * text-on-surface-variant, border-outline-variant, bg-inverse-surface…)
+   * resolves to the same colour here.
+   */
+  /*
+   * ALIGNED TO --surface (#fafafa), not the retired Heritage cream (#fafaeb).
+   *
+   * Every layout wrapper in the app paints `bg-background`, so this single
+   * value was the page canvas behind every migrated screen — a warm cream
+   * showing around the edges of surfaces that are all neutral grey. It read as
+   * a rendering fault rather than a colour choice, most visibly wherever a
+   * screen's own column stopped short of the viewport.
+   *
+   * Changed here rather than by rewriting ~40 `bg-background` usages: one
+   * token, one canvas, and the Tailwind classes keep working.
+   */
+  --color-background: #fafafa;
+  --color-on-background: #1b1c14;
+  --color-surface: #fafaeb;
+  --color-surface-dim: #dbdbcd;
+  --color-surface-bright: #fafaeb;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f4f5e6;
+  --color-surface-container: #efefe0;
+  --color-surface-container-high: #e9e9db;
+  --color-surface-container-highest: #e3e3d5;
+  --color-surface-variant: #e3e3d5;
+  --color-on-surface: #1b1c14;
+  --color-on-surface-variant: #44474e;
+
+  --color-primary: #000a1e; /* Oxford navy, deepest */
+  --color-on-primary: #ffffff;
+  --color-primary-container: #002147;
+  --color-on-primary-container: #708ab5;
+  --color-primary-fixed-dim: #aec7f6;
+
+  --color-secondary: #725a42; /* Tweed brown */
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #fedcbe;
+  --color-on-secondary-container: #796048;
+
+  --color-tertiary: #060d00;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #182600; /* Deep olive */
+  --color-on-tertiary-container: #799151; /* Muted olive — focus outlines */
+  /* The call-to-action olive: "Login with OTP", "Verify and Continue". */
+  --color-olive-accent: #556b2f;
+
+  --color-outline: #74777f;
+  --color-outline-variant: #c4c6cf;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  /* The warm cream canvas some Heritage list screens sit on (My Registrations). */
+  --color-brand-cream: #f5f5dc;
+
+  /*
+   * The Discover/home brand accents from the premium-ad-carousel Stitch frame:
+   * forest green primary + light-green secondary, with the navy/beige/brown
+   * the frame names explicitly. brand-beige === background; named anyway so
+   * the design's own vocabulary maps 1:1.
+   */
+  --color-brand-primary: #3d6b27;
+  --color-brand-secondary: #c5e4a0;
+  --color-brand-navy: #000a1e;
+  --color-brand-beige: #fafaeb;
+  --color-brand-brown: #725a42;
+
+  --color-inverse-surface: #2f3128; /* The dark hero band */
+  --color-inverse-on-surface: #f1f2e3;
+  --color-inverse-primary: #aec7f6;
+
+  /* Heritage radii -> rounded-heritage / rounded-pill */
+  --radius-heritage: 16px;
+  --radius-pill: 9999px;
+
+  /* The one Heritage shadow: a 1px lift under a white card. */
+  --shadow-subtle: 0 4px 6px -1px rgba(0, 10, 30, 0.1), 0 2px 4px -2px rgba(0, 10, 30, 0.1);
+
+  /* Tracking for Heritage's 12px uppercase micro-labels */
+  --tracking-label-caps: 0.08em;
+
+  /*
+   * ── Survivors of the retired brutalist system ──────────────────────────────
+   * The brutalist design system is GONE — no screen paints with it any more.
+   * The handful of tokens below are all that outlived it, kept only because a
+   * live Heritage surface still references each one (call sites noted). They
+   * are not a design system; do not add to this block, and retire each token
+   * as its last call site moves onto a Heritage equivalent.
+   */
+  --color-ink-black: #1B1C1B; /* App/PublicOnlyRoute route spinner */
+  --color-ink-gray-200: #DCD9D8; /* App/PublicOnlyRoute route spinner track */
+  --color-surface-gray-light: #E4E2E0; /* UserAvatar photo/monogram backing */
+
+  /* Corner radii */
+  --radius-standard: 4px;
+  --radius-large: 8px;
+
+  /* Hard-offset shadow: two toast surfaces still cast it. */
+  --shadow-hard: 4px 4px 0px 0px #000000;
+
+  /*
+   * ── Admin console (Executive Precision) ────────────────────────────────────
+   * The admin surface is a SECOND, fully isolated design system living in the
+   * same Tailwind build. Every admin token is namespaced with `admin-` so its
+   * utilities (bg-admin-primary-blue, font-admin-display, tracking-admin-label…)
+   * can never collide with the participant tokens above. Admin
+   * components import ONLY from src/brand-admin and use ONLY these utilities;
+   * participant components use ONLY the tokens above. These mirror the constants
+   * in src/brand-admin — change both together.
+   *
+   * Radii (rounded-sm/md/lg/xl) are intentionally NOT redefined here: the admin
+   * spec's values (2/6/8/12px) equal Tailwind's defaults, so admin components
+   * reuse the stock radius utilities.
+   */
+  --color-admin-primary-blue: #2563EB;
+  --color-admin-primary-blue-dark: #004AC6;
+  --color-admin-neutral-ink: #0F172A;
+  --color-admin-slate-600: #64748B;
+  /* Mid-slate, for structural lines that must read as connections rather than
+     as a card's own edge — the org chart's connectors. Slate-200 is the border
+     colour and disappeared against white at the 2px the chart needs. */
+  --color-admin-slate-400: #94A3B8;
+  /* Connector lines on the structure canvas: light enough not to compete with
+     the boxes at 1.5px, dark enough to read against the dot grid. */
+  --color-admin-slate-300: #CBD5E1;
+  --color-admin-slate-200: #E2E8F0;
+  --color-admin-surface-off-white: #F8FAFC;
+  --color-admin-surface-white: #FFFFFF;
+  --color-admin-status-success-green: #10B981;
+  --color-admin-status-warning-amber: #F59E0B;
+  --color-admin-status-error-red: #EF4444;
+
+  --font-admin-display: "Hanken Grotesk", sans-serif;
+  --font-admin-body: "Inter", sans-serif;
+  --font-admin-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* The one admin shadow: modals/menus only. Cards use a 1px border. */
+  --shadow-admin-modal: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+
+  /* Tracking for the admin's 12px uppercase labels */
+  --tracking-admin-label: 0.06em;
+}
+
+/*
+ * ── Dark mode ──────────────────────────────────────────────────────────────
+ * Activated by adding class="dark" to <html>. Overrides the Heritage
+ * Institutional surface/text tokens so every bg-background, text-on-surface,
+ * etc. utility flips automatically — no per-component changes needed.
+ */
+html.dark {
+  /* The dark counterpart, matched to --ink for the same reason. */
+  --color-background: #0f1729;
+  --color-on-background: #e3e3d5;
+  --color-surface: #1a1b14;
+  --color-surface-dim: #1a1b14;
+  --color-surface-bright: #2f3128;
+  --color-surface-container-lowest: #111210;
+  --color-surface-container-low: #1f2018;
+  --color-surface-container: #24251d;
+  --color-surface-container-high: #2e2f27;
+  --color-surface-container-highest: #393a31;
+  --color-surface-variant: #44474e;
+  --color-on-surface: #e3e3d5;
+  --color-on-surface-variant: #c4c6cf;
+
+  --color-primary: #aec7f6;
+  --color-on-primary: #002147;
+  --color-primary-container: #003670;
+  --color-on-primary-container: #d6e3ff;
+
+  --color-secondary: #e2c1a5;
+  --color-on-secondary: #42301e;
+  --color-secondary-container: #5b4632;
+  --color-on-secondary-container: #fedcbe;
+
+  --color-tertiary: #c2ce9a;
+  --color-on-tertiary: #182600;
+  --color-tertiary-container: #2d3e10;
+  --color-on-tertiary-container: #deeab4;
+  --color-olive-accent: #a0b56f;
+
+  --color-outline: #8e9099;
+  --color-outline-variant: #44474e;
+
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  --color-brand-cream: #2a2a1e;
+  --color-brand-primary: #a0b56f;
+  --color-brand-secondary: #3d5020;
+  --color-brand-navy: #aec7f6;
+  --color-brand-beige: #1a1b14;
+  --color-brand-brown: #e2c1a5;
+
+  --color-inverse-surface: #e3e3d5;
+  --color-inverse-on-surface: #2f3128;
+  --color-inverse-primary: #000a1e;
+
+  --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
+
+  color-scheme: dark;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Heritage base: ivory canvas, on-surface ink, Inter throughout. */
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/*
+ * Material Symbols Outlined. Icons are written as
+ * <span className="material-symbols-outlined">icon_name</span>; without this
+ * rule the ligature never forms and the raw icon name shows as text.
+ */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * The text-selection highlight, app-wide.
+ *
+ * It was the brutalist orange #FF4B1F on white — the last thing in the app
+ * still painting with that palette, and the reason selecting text in the
+ * search field produced an orange rectangle. It is now the design system's own
+ * --selection tint, and the text keeps its own colour rather than being
+ * inverted to white, which is what makes it readable through the wash.
+ */
+::selection {
+  background-color: var(--selection);
+}
+
+/* Hide scrollbars everywhere while keeping scroll functionality intact. Applies
+ * to the document and every scrolling surface (Discover, forms, rails). */
+html,
+body,
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and legacy Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Chromium Edge */
+}
+
+/* Horizontal scrollers that must not show a scrollbar (carousel, chip rows). */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Pressed-paper card edge from the Discover Stitch frame: hairline warm border
+ * with a 2px "stacked sheet" drop. */
+.pressed-paper {
+  border: 1px solid #e5e5d5;
+  box-shadow: 0 4px 6px -1px rgba(0, 10, 30, 0.1), 0 2px 4px -2px rgba(0, 10, 30, 0.1);
+}
+
+/* Fully transparent glass badge — for solo/team indicator on poster cards. */
+.glass-badge {
+  background: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Live-event glow: light from behind leaking around corners. */
+@keyframes live-glow-behind {
+  0%, 100% {
+    background: rgba(254, 242, 242, 0.3);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0), inset 0 0 0 rgba(220, 38, 38, 0);
+  }
+  40% {
+    background: rgba(254, 226, 226, 0.7);
+    box-shadow: 0 0 20px 8px rgba(220, 38, 38, 0.15), inset 0 0 20px rgba(220, 38, 38, 0.08);
+  }
+  55% {
+    background: rgba(254, 226, 226, 0.8);
+    box-shadow: 0 0 28px 10px rgba(220, 38, 38, 0.2), inset 0 0 25px rgba(220, 38, 38, 0.1);
+  }
+  70% {
+    background: rgba(254, 226, 226, 0.7);
+    box-shadow: 0 0 20px 8px rgba(220, 38, 38, 0.15), inset 0 0 20px rgba(220, 38, 38, 0.08);
+  }
+}
+.live-glow-active {
+  animation: live-glow-behind 3.5s ease-in-out infinite;
+  border-color: rgba(220, 38, 38, 0.2);
+  overflow: visible;
+}
+.live-glow-active span {
+  color: #dc2626;
+}
+
+/* Live badge text glow: bright fast pulse on the LIVE word only. */
+@keyframes live-text-glow {
+  0%, 100% {
+    text-shadow: 0 0 6px rgba(255, 50, 50, 0.4), 0 0 12px rgba(255, 50, 50, 0.2);
+    opacity: 0.5;
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(255, 50, 50, 1), 0 0 40px rgba(255, 50, 50, 0.6), 0 0 60px rgba(255, 50, 50, 0.3);
+    opacity: 1;
+  }
+}
+.live-text-pulse {
+  animation: live-text-glow 1.2s ease-in-out infinite;
+}
+
+/* ── Heritage interactive-state transitions (CSS only, no animation layer) ──*/
+
+/* There is no focus glow. Every input in the app used to get a soft olive ring
+   here; the app-wide focus policy is now "nothing", and it lives in one file —
+   see design/focus.css, including what that costs and how to reverse it.
+   The transition stays: border-color still changes on hover and on error. */
+input,
+textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Card hover lift — pointer devices only; touch gets nothing. */
+@media (hover: hover) {
+  .heritage-card {
+    transition:
+      transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+      box-shadow 0.25s ease;
+  }
+  .heritage-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 10, 30, 0.1);
+  }
+}
+
+/* ── Payment-flow status animations (CSS only) ──
+ * Celebratory / status moments: the success check bounces in, the processing
+ * arc spins, the failure icon breathes. All gated on no-preference so a
+ * reduced-motion user sees the static state (the global reduce block below
+ * additionally hard-kills everything). */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes bounce-scale {
+    0% { transform: scale(0.5); opacity: 0; }
+    60% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .bounce-scale-in { animation: bounce-scale 0.5s ease-out both; }
+
+  @keyframes pulse-alert {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+  .pulse-alert { animation: pulse-alert 1.8s ease-in-out infinite; }
+
+  /* Sign-out transition: staggered waiting dots + a gentle screen fade-in. */
+  @keyframes dot-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  .dot-pulse { animation: dot-pulse 1.2s ease-in-out infinite; }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .fade-in { animation: fade-in 0.3s ease-out both; }
+
+  @keyframes confetti-fall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(240px) rotate(240deg); opacity: 0; }
+  }
+  .confetti-dot { animation: confetti-fall 2.4s ease-in both; }
+}
+
+/* Interactive elements ease their colour changes rather than snapping. */
+button,
+a {
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+/* Accessibility: honour reduced motion — kill all transforms and transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Accessibility: honour reduced transparency — force solid surfaces. */
+@media (prefers-reduced-transparency: reduce) {
+  * {
+    backdrop-filter: none !important;
+  }
+}
+
+/* A newly created round rises into place rather than appearing.
+ * The movement is the feedback: the form closes, the list reflows, and without
+ * this the new card is indistinguishable from the ones already there — a
+ * coordinator cannot tell the save landed. Overshoot slightly then settle so it
+ * reads as arriving, not sliding.
+ * Respects prefers-reduced-motion: it fades instead. */
+@keyframes round-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.005);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.round-rise {
+  animation: round-rise 1260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .round-rise {
+    animation: fade-in 200ms ease both;
+  }
+}
+
+/* Platform UI face, applied only where it is asked for.
+ * `-apple-system` resolves to San Francisco on iOS/macOS and is ignored
+ * everywhere else, so Android falls through to Roboto. The cascade alone does
+ * the switch — no user-agent sniffing, and nothing to download.
+ * Scoped to a class rather than --font-body so the rest of the app keeps Inter. */
+/*
+ * :not(.material-symbols-outlined) is load-bearing. The descendant selector
+ * overrode the icon font on every glyph inside this screen, so `arrow_back` and
+ * `notifications_none` rendered as their literal ligature text — the icon font
+ * is selected BY font-family, so restyling all descendants silently unstyles it.
+ */
+.font-platform,
+.font-platform *:not(.material-symbols-outlined) {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", "Inter", sans-serif;
+}
+
+/*
+ * Soft glass panel — used by the Featured Events box on the fest detail page.
+ *
+ * No border by design: the shadow alone lifts it off the page. The shadow is
+ * tinted green rather than grey so it reads as the panel's own depth instead of
+ * a generic drop shadow underneath it.
+ *
+ * The tint is deliberately faint. backdrop-filter blurs whatever sits behind,
+ * and over the flat ivory page there is little to blur — the effect only
+ * becomes real once the fest banner scrolls behind the panel. A heavier tint
+ * would just look like a solid green box.
+ *
+ * Dark text on a pale tint, so this needs no separate dark-mode treatment.
+ */
+.glass-panel {
+  border: none;
+  background: linear-gradient(
+    155deg,
+    rgba(124, 199, 74, 0.13),
+    rgba(85, 150, 47, 0.08) 60%,
+    rgba(60, 120, 35, 0.10)
+  );
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  box-shadow:
+    0 10px 26px -10px rgba(45, 95, 25, 0.26),
+    0 3px 10px -5px rgba(45, 95, 25, 0.16);
+}
+
+/* Chips inside the panel sit on frosted white so they stay legible against
+ * whatever the blur picks up behind them. */
+.glass-panel-chip {
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ── Broadcast ──────────────────────────────────────────────────────────────
+ * Chat-shaped, because a broadcast is a short frequent act rather than a form.
+ */
+
+/* Tiled broadcast marks. The backdrop states what the page is, which is why the
+ * thread needs no empty-state copy when there is nothing in it yet. Inline SVG:
+ * nothing to download, scales cleanly, and tints with the brand olive. */
+.broadcast-canvas {
+  background-color: #f7f6e9;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='104' height='104' viewBox='0 0 104 104'%3E%3Cg fill='none' stroke='%23556b2f' stroke-opacity='0.09' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M18 30 l14-7 v18 l-14-7 z'/%3E%3Cpath d='M36 26 q5 4 0 8'/%3E%3Cpath d='M40 22 q9 8 0 16'/%3E%3Cpath d='M70 78 l14-7 v18 l-14-7 z'/%3E%3Cpath d='M88 74 q5 4 0 8'/%3E%3Cpath d='M92 70 q9 8 0 16'/%3E%3Ccircle cx='78' cy='26' r='3'/%3E%3Cpath d='M78 30 v8'/%3E%3Cpath d='M72 20 q6 -6 12 0'/%3E%3Ccircle cx='26' cy='78' r='3'/%3E%3Cpath d='M26 82 v8'/%3E%3Cpath d='M20 72 q6 -6 12 0'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* The bubble hugs its text rather than reserving a block — a three-word message
+ * in a full-width card looks like a rendering fault. */
+.broadcast-bubble {
+  align-self: flex-end;
+  width: fit-content;
+  max-width: 78%;
+  border: 1px solid;
+  border-radius: 14px;
+  padding: 6px 9px 5px;
+  margin-bottom: 5px;
+  animation: broadcast-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+/* Floating the timestamp collapses the bubble's height without this. */
+.broadcast-bubble::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+@keyframes broadcast-pop {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.9); }
+  60%  { opacity: 1; transform: translateY(-2px) scale(1.02); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.broadcast-bubble-text {
+  display: inline;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+/* Rides the last line and only drops when the text genuinely fills the width. */
+.broadcast-bubble-meta {
+  float: right;
+  margin: 5px 0 0 8px;
+  font-size: 9.5px;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+/* Audience by tint, so no chip is needed on every row. */
+.broadcast-bubble-both {
+  background: linear-gradient(150deg, rgba(138, 220, 80, 0.30), rgba(96, 178, 52, 0.22) 60%, rgba(72, 150, 42, 0.26));
+  border-color: rgba(85, 150, 47, 0.24);
+  color: #14290a;
+}
+.broadcast-bubble-participants {
+  background: linear-gradient(150deg, rgba(120, 200, 215, 0.30), rgba(70, 160, 180, 0.22) 60%, rgba(50, 135, 155, 0.26));
+  border-color: rgba(60, 150, 170, 0.24);
+  color: #0d2a30;
+}
+.broadcast-bubble-volunteers {
+  background: linear-gradient(150deg, rgba(230, 190, 90, 0.32), rgba(200, 155, 55, 0.24) 60%, rgba(175, 130, 40, 0.28));
+  border-color: rgba(190, 150, 55, 0.26);
+  color: #33260a;
+}
+
+.broadcast-sheet {
+  animation: broadcast-sheet-up 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes broadcast-sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .broadcast-bubble,
+  .broadcast-sheet {
+    animation: fade-in 180ms ease both;
+  }
+}
+
+/*
+ * ── Route transitions ───────────────────────────────────────────────────────
+ *
+ * One orchestrated moment per navigation and nothing else — no fade-ups
+ * sprinkled across cards and sections, which read as filler.
+ *
+ * This is a crossfade, NOT a directional slide, and that is a constraint rather
+ * than a preference. Any transform on this wrapper — including the identity
+ * transform an animation settles on — makes it the containing block for every
+ * position:fixed descendant, which unpins the bottom tab bar and the sticky
+ * save bars from the viewport. Measured: with a 14px slide the tab bar sat at
+ * 1148px inside a 932px viewport. Opacity creates no containing block, so the
+ * fixed chrome stays anchored.
+ *
+ * A directional slide would need the View Transitions API, which animates a
+ * snapshot outside the layout tree and so has no such side effect.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes route-enter {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .route-forward,
+  .route-back {
+    animation: route-enter 180ms ease-out;
+  }
+}
+
+/*
+ * ── Home feed entrance ──────────────────────────────────────────────────────
+ *
+ * One orchestrated arrival, not an effect per component. The sections rise in
+ * sequence so the eye is led down the page in the order the content matters —
+ * search, then your pass, then what is on this week — and then the motion stops
+ * and stays stopped. Nothing re-animates on scroll, because a page that keeps
+ * moving after you have arrived is harder to read, not livelier.
+ *
+ * The stagger is a custom property so a section sets only its position in the
+ * sequence and inherits the timing.
+ *
+ * translate3d keeps the whole thing on the compositor: no layout, no paint, so
+ * it holds 60fps on the mid-range Android a fest crowd is actually carrying.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes feed-rise {
+    from { opacity: 0; transform: translate3d(0, 16px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  .feed-rise {
+    animation: feed-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--rise-index, 0) * 70ms);
+  }
+}
+
+/*
+ * Cards get a real press: a spring-eased settle rather than a linear snap, so
+ * the tap feels answered. This is motion triggered BY the person, which is the
+ * kind worth spending frames on.
+ */
+.press-card {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease;
+}
+.press-card:active {
+  transform: scale(0.975);
+}
+@media (prefers-reduced-motion: reduce) {
+  .press-card { transition: none; }
+  .press-card:active { transform: none; }
+}
+
+/*
+ * ── Nav panel: a sheet that unfolds from the control that opened it ───────
+ *
+ * The bottom-origin variant belonged to the deleted tab capsule; what still
+ * uses these curves is the `--from-top` search filter panel on /search.
+ *
+ * Apple's sheets are driven by springs, not by eases, and that is the whole
+ * difference in feel. A cubic-bezier can only accelerate and decelerate between
+ * two points; it cannot arrive slightly past its target and settle back, which
+ * is what makes a real sheet feel like it has mass instead of like it is being
+ * dragged along a curve.
+ *
+ * CSS can express a spring now, via linear() — an easing sampled at fixed
+ * intervals. Both curves below were computed from a damped harmonic oscillator
+ * rather than hand-tuned:
+ *
+ *   opening  ζ = 0.86, response 0.42s, sampled over 600ms. Just under critical
+ *            damping, so it overshoots by half a percent and settles — present
+ *            enough to feel alive, far too small to read as a bounce.
+ *   closing  ζ = 1.0 (critically damped), 300ms. No overshoot at all: dismissal
+ *            should feel immediate and final, never springy. Getting out of the
+ *            way is not a moment that wants personality.
+ *
+ * The sheet also grows from the capsule it was tapped on — origin pinned to the
+ * bottom edge — so it reads as that control unfolding rather than as a separate
+ * card fading in over the page.
+ */
+.nav-panel {
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+}
+
+.nav-panel-closed {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0) scale(0.94);
+  /*
+   * The exit ACCELERATES — the opposite of the entrance.
+   *
+   * The first version dismissed on the same settling spring it arrived on, and
+   * that is what made closing feel slow: a curve that decelerates into its
+   * final position is describing something arriving somewhere, and on the way
+   * out there is nowhere to arrive. Easing IN instead lets the sheet start
+   * slowly, as if released, then fall away — it reads as leaving rather than as
+   * being lowered.
+   *
+   * Opacity finishes at 150ms, well before the movement at 260ms, so the sheet
+   * is visually gone while the last of the motion plays out. Waiting to see it
+   * fade all the way down is what makes a dismissal feel like it is holding you
+   * up.
+   */
+  transition:
+    opacity 150ms cubic-bezier(0.4, 0, 1, 1),
+    transform 260ms cubic-bezier(0.32, 0, 0.67, 0);
+}
+
+.nav-panel-open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    /* Opacity lands well before the movement does, so the sheet is readable
+       while it is still settling rather than fading in for the whole 600ms. */
+    opacity 240ms linear(0.0000, 0.0567, 0.1780, 0.3173, 0.4509, 0.5685, 0.6667, 0.7460, 0.8086, 0.8570, 0.8939, 0.9219, 0.9427, 0.9582, 0.9696, 0.9780, 0.9841, 0.9886, 0.9918, 1.0000),
+    transform 600ms linear(0.0000, 0.0355, 0.1203, 0.2296, 0.3465, 0.4604, 0.5650, 0.6571, 0.7356, 0.8006, 0.8532, 0.8948, 0.9269, 0.9513, 0.9693, 0.9822, 0.9913, 0.9973, 1.0012, 1.0035, 1.0046, 1.0050, 1.0049, 1.0045, 1.0040, 1.0034, 1.0029, 1.0023, 1.0018, 1.0014, 1.0011, 1.0000);
+}
+
+/*
+ * Rows follow the sheet on the same spring, one after another, so the list
+ * assembles itself instead of arriving as a finished block. 30ms apart: enough
+ * to read as a sequence, quick enough that the last row is in place before a
+ * thumb could reach it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .nav-panel-open .nav-panel-row {
+    animation: nav-row-in 420ms linear(0.0000, 0.0355, 0.1203, 0.2296, 0.3465, 0.4604, 0.5650, 0.6571, 0.7356, 0.8006, 0.8532, 0.8948, 0.9269, 0.9513, 0.9693, 0.9822, 0.9913, 0.9973, 1.0012, 1.0035, 1.0046, 1.0050, 1.0049, 1.0045, 1.0040, 1.0034, 1.0029, 1.0023, 1.0018, 1.0014, 1.0011, 1.0000) both;
+    animation-delay: calc(60ms + var(--row-index, 0) * 30ms);
+  }
+  @keyframes nav-row-in {
+    from { opacity: 0; transform: translate3d(0, 10px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-panel-closed,
+  .nav-panel-open {
+    transition: opacity 120ms ease;
+    transform: none;
+  }
+}
+
+/*
+ * A panel that drops FROM a control rather than rising to one — the search
+ * filter under the Explore field. Same curves and durations as the nav sheet,
+ * only the origin is inverted: it unfolds downward out of the field it belongs
+ * to, so the two panels read as the same object behaving consistently at
+ * opposite ends of the screen.
+ */
+.nav-panel--from-top {
+  transform-origin: top center;
+}
+.nav-panel--from-top.nav-panel-closed {
+  transform: translate3d(0, -10px, 0) scale(0.97);
+}
+.nav-panel--from-top.nav-panel-open {
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* The scrim rides the same spring as the sheet, so the dim and the movement
+   read as one event rather than two overlapping ones. */
+.nav-scrim {
+  transition: opacity 240ms linear(0.0000, 0.0567, 0.1780, 0.3173, 0.4509, 0.5685, 0.6667, 0.7460, 0.8086, 0.8570, 0.8939, 0.9219, 0.9427, 0.9582, 0.9696, 0.9780, 0.9841, 0.9886, 0.9918, 1.0000);
+}
+.nav-scrim.pointer-events-none {
+  transition: opacity 160ms cubic-bezier(0.4, 0, 1, 1);
+}

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service • dedal</title>
+    <meta name="description" content="Dedal.in Corporation Private Limited - Terms of Service governing platform usage, subscription terms, customer satisfaction, refunds, and user obligations."/>
+    
+    <!-- Google Fonts: Libre Caslon Text + Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols Outlined -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-container": "#585949",
+                        "tertiary": "#404233",
+                        "tertiary-fixed": "#e4e4cf",
+                        "primary-fixed-dim": "#bbce94",
+                        "on-error": "#ffffff",
+                        "on-surface": "#1a1c15",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fbfbf2",
+                        "inverse-primary": "#bbce94",
+                        "secondary": "#596242",
+                        "outline-variant": "#c6c8b9",
+                        "on-primary-fixed": "#141f00",
+                        "on-primary-fixed-variant": "#3d4c1f",
+                        "secondary-fixed-dim": "#c1cba4",
+                        "on-secondary-fixed-variant": "#414a2c",
+                        "surface-container-low": "#f4f5ea",
+                        "inverse-surface": "#2f3129",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#4d5d2e",
+                        "background": "#fbfbf2",
+                        "secondary-fixed": "#dde7be",
+                        "on-tertiary-container": "#cfcfbb",
+                        "on-tertiary-fixed-variant": "#464839",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#c2d59a",
+                        "surface-container-highest": "#e3e4d8",
+                        "tertiary-fixed-dim": "#c7c8b4",
+                        "error-container": "#ffdad6",
+                        "outline": "#76786c",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#eeefe3",
+                        "on-background": "#1a1c15",
+                        "surface-dim": "#dadbcf",
+                        "primary": "#324116",
+                        "primary-hover": "#253110",
+                        "brand-dot": "#E53935",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#546434",
+                        "on-tertiary-fixed": "#1b1d10",
+                        "on-secondary-fixed": "#161e05",
+                        "on-surface-variant": "#45483d",
+                        "surface-container-high": "#e8e9dc"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "1.75rem",
+                        "xl": "2.25rem",
+                        "2xl": "2.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Libre Caslon Text", "serif"],
+                        "display-lg": ["Libre Caslon Text", "serif"],
+                        "body-md": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+                        "body-lg": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+                        "label-md": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+                        "label-sm": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"]
+                    },
+                    boxShadow: {
+                        "soft": "0 8px 24px -4px rgba(50, 65, 22, 0.08), 0 2px 8px -2px rgba(0,0,0,0.03)",
+                        "glass": "0 8px 32px 0 rgba(31, 38, 135, 0.07)",
+                        "stat": "0 12px 30px -8px rgba(50, 65, 22, 0.09), 0 2px 6px rgba(0,0,0,0.03)"
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        html, body { 
+            color: #1a1c15; 
+            background-color: #fbfbf2;
+            overflow-x: hidden;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .fluid-container {
+            width: 100%;
+            max-width: 1360px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: clamp(1rem, 4vw, 3rem);
+            padding-right: clamp(1rem, 4vw, 3rem);
+        }
+
+        /* Brand Red Dot for Dedal Logo */
+        .brand-dot {
+            display: inline-block;
+            color: #E53935;
+            font-size: 0.58em;
+            margin-left: 0.06em;
+            vertical-align: baseline;
+            line-height: 1;
+            transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .brand-logo-group:hover .brand-dot,
+        a:hover .brand-dot {
+            transform: scale(1.15) translate3d(0, -1px, 0);
+        }
+
+        /* Content section headings: font size 12 */
+        .legal-content h2,
+        .legal-content h3,
+        .legal-content h4,
+        .legal-content .content-heading {
+            font-size: 12px !important;
+            line-height: 1.45 !important;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        /* Content body text: font size 11 with San Francisco (iOS) & Roboto (Android) */
+        .legal-content p, 
+        .legal-content ul, 
+        .legal-content ol, 
+        .legal-content li, 
+        .legal-content span:not(.material-symbols-outlined), 
+        .legal-content a,
+        .legal-body {
+            font-size: 11px !important;
+            line-height: 1.6 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .legal-content p {
+            margin-bottom: 0.5rem;
+            color: #45483d;
+        }
+
+        .legal-content .bg-primary p,
+        .legal-content .bg-primary,
+        .bg-primary p {
+            color: #ffffff !important;
+        }
+
+        .legal-content ul, .legal-content ol {
+            margin-bottom: 0.5rem;
+            padding-left: 1.25rem;
+            color: #45483d;
+        }
+
+        .legal-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        .btn-interactive {
+            min-height: 40px;
+            transition: transform 160ms cubic-bezier(0.2, 0, 0, 1), box-shadow 160ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        .btn-interactive:hover {
+            transform: translate3d(0, -1px, 0);
+        }
+
+        @media print {
+            header, footer, #quick-actions, .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt !important;
+            }
+            .legal-content p, .legal-content li {
+                color: #222 !important;
+            }
+            .fluid-container {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary-fixed selection:text-on-primary-fixed font-body-md">
+
+<!-- Top Navigation Bar (Clean: Brand Logo on Left, Back to Home Button on Right) -->
+<header class="fixed top-0 w-full z-50 bg-[#fbfbf2]/92 backdrop-blur-md border-b border-outline-variant/30 transition-all duration-300">
+    <div class="fluid-container py-3.5 flex justify-between items-center">
+        <!-- Logo (Dark Black with Red Dot for dedal.) -->
+        <a class="group inline-block font-display-lg text-2xl sm:text-3xl text-[#111111] tracking-tight font-bold" href="index.html" aria-label="dedal home">dedal<span class="brand-dot">.</span></a>
+        
+        <!-- Header Actions: Clean Back Button -->
+        <div class="flex items-center gap-2">
+            <a href="index.html" class="btn-interactive inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-primary text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-hover">
+                <span class="material-symbols-outlined text-[17px]">arrow_back</span>
+                <span class="hidden xs:inline">Back to Home</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<!-- Main Header Banner (Clean without quick action pills) -->
+<div class="pt-24 pb-8 sm:pt-32 sm:pb-12 bg-gradient-to-b from-surface-container-low to-[#fbfbf2] border-b border-outline-variant/30">
+    <div class="fluid-container">
+        <div class="max-w-4xl mx-auto">
+            <!-- Badge -->
+            <div class="flex items-center gap-3 mb-3.5">
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-secondary-container/80 text-on-secondary-container font-label-sm text-xs font-bold uppercase tracking-wider">
+                    <span class="material-symbols-outlined text-[16px] text-primary">gavel</span>
+                    Legal Agreement
+                </span>
+            </div>
+
+            <!-- Title (Large heading design preserved, NO red dot) -->
+            <h1 class="font-display-lg text-3xl sm:text-4xl md:text-5xl text-primary font-bold tracking-tight mb-3">
+                Terms of Service
+            </h1>
+
+            <p class="font-body-lg text-on-surface-variant text-sm sm:text-base leading-relaxed">
+                Governing your use of the Dedal.in suite of online business productivity, fest operations, and collaboration software.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Body Layout: Legal Content -->
+<div class="fluid-container py-8 sm:py-12">
+    <div class="max-w-4xl mx-auto">
+        <!-- Main Document Content Column (Single Unified Box Layout) -->
+        <main class="w-full legal-content">
+            
+            <!-- Unified Single Container Box -->
+            <div class="bg-white rounded-3xl p-6 sm:p-9 md:p-10 border border-outline-variant/40 shadow-soft">
+                
+                <!-- Plain-Language Executive Summary -->
+                <div class="pb-4 mb-4 border-b border-outline-variant/20">
+                    <div class="flex items-center gap-2 mb-1.5 text-primary font-bold text-[12px]">
+                        <span class="material-symbols-outlined text-[18px] text-primary">info</span>
+                        <span>Summary of Terms (In Plain Language)</span>
+                    </div>
+                    <p class="text-[11px] text-on-surface leading-relaxed mb-0">
+                        This document sets out the legal terms for using Dedal.in / Dedal services. It explains your account obligations, permitted use, subscription and refund guarantees, data rights, and limitation of liability. Please review the full agreement below.
+                    </p>
+                </div>
+
+                <!-- Preamble Section -->
+                <section id="preamble" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <div class="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-surface-container text-[11px] font-bold text-primary mb-2">
+                        <span>Terms of Service - India</span>
+                    </div>
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-2">Agreement Between User &amp; Dedal.in</h2>
+                    <p class="text-on-surface leading-relaxed">
+                        THIS IS AN AGREEMENT BETWEEN YOU OR THE ENTITY THAT YOU REPRESENT (HEREINAFTER “YOU” OR “YOUR”) AND DEDAL.IN CORPORATION PRIVATE LIMITED (HEREINAFTER “DEDAL.IN”) GOVERNING YOUR USE OF DEDAL.IN SUITE OF ONLINE BUSINESS PRODUCTIVITY AND COLLABORATION SOFTWARE IF YOU ARE BASED IN INDIA. IF YOU ARE NOT BASED IN INDIA, OUR <a href="global-terms.html" class="underline font-bold text-primary hover:text-primary-container">GLOBAL TERMS OF SERVICE</a> WILL APPLY.
+                    </p>
+                </section>
+
+                <!-- 1. Parts of this Agreement -->
+                <section id="parts-of-agreement" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">1. Parts of this Agreement</h2>
+                    <p>
+                        This Agreement consists of the following terms and conditions (hereinafter the <strong>“General Terms”</strong>) and terms and conditions, if any, specific to use of individual Services (hereinafter the <strong>“Service Specific Terms”</strong>). In the event of a conflict between the General Terms and Service Specific Terms, the <strong>Service Specific Terms</strong> shall prevail.
+                    </p>
+                </section>
+
+                <!-- 2. Acceptance of the Agreement -->
+                <section id="acceptance" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">2. Acceptance of the Agreement</h2>
+                    <p>
+                        You must be of legal age to enter into a binding agreement in order to accept the Agreement. If you do not agree to the General Terms, do not use any of our Services. If you agree to the General Terms and do not agree to any Service Specific Terms, do not use the corresponding Service. You can accept the Agreement by checking a checkbox or clicking on a button indicating your acceptance of the Agreement or by actually using the Services.
+                    </p>
+                </section>
+
+                <!-- 3. Description of Service -->
+                <section id="description-of-service" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">3. Description of Service</h2>
+                    <p>
+                        We provide integrated fest management system and applications for businesses, including associated offline and mobile applications (<strong>"Service"</strong> or <strong>"Services"</strong>). You may use the Services for your personal and business use in the organization that you represent. You may connect to the Services using any Internet browser supported by the Services. You are responsible for obtaining access to the Internet and the equipment necessary to use the Services. You can create and edit content with your user account and if you choose to do so, you can publish and share such content.
+                    </p>
+                </section>
+
+                <!-- 4. Beta Service -->
+                <section id="beta-service" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">4. Beta Service</h2>
+                    <p>
+                        We may offer certain Services as closed or open beta services (<strong>"Beta Service"</strong> or <strong>“Beta Services”</strong>) for the purpose of testing and evaluation. You agree that we have the sole authority and discretion to determine the period of time for testing and evaluation of Beta Services. We will be the sole judge of the success of such testing and the decision, if any, to offer the Beta Services as commercial services. You will be under no obligation to acquire a subscription to use any paid Service as a result of your subscription to any Beta Service. We reserve the right to fully or partially discontinue, at any time and without notice, any of the Beta Services. You agree that Dedal.in will not be liable to you or to any third party for any harm arising out of the modification, suspension or discontinuance of any Beta Services.
+                    </p>
+                </section>
+
+                <!-- 5. Free Trial -->
+                <section id="free-trial" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">5. Free Trial</h2>
+                    <p>
+                        If you register for a free trial of one or more Services, Dedal.in will make the applicable Services available to you on a trial basis free of charge until the earlier of (i) the end of the free trial period of the applicable Services, (ii) the start date of the paid subscription period, or (iii) termination by Dedal.in in its sole discretion. Any data entered and any customizations made during the free trial will be permanently lost unless you (i) purchase the corresponding paid subscription plan, (ii) purchase applicable Service upgrades, or (iii) export such data before the end of the trial period. Services are offered as-is during the free trial, without any warranty, covenant, support or liability whatsoever.
+                    </p>
+                </section>
+
+                <!-- 6. User Sign up Obligations -->
+                <section id="user-signup" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">6. User Sign up Obligations</h2>
+                    <p>
+                        You need to sign up for a user account by providing all required information in order to access or use the Services. If you represent an organization, we recommend that you use your corporate email address. You agree to: (i) provide true, accurate, current and complete information about yourself as prompted by the sign up process; and (ii) maintain and promptly update the information provided during sign up to keep it true, accurate, current, and complete. If you provide any information that is untrue, inaccurate, outdated, or incomplete, Dedal.in may terminate your user account and refuse current or future use of any or all of the Services.
+                    </p>
+                </section>
+
+                <!-- 7. Restrictions on Use -->
+                <section id="restrictions" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">7. Restrictions on Use</h2>
+                    <p>
+                        In addition to all other terms and conditions of this Agreement, you shall not:
+                    </p>
+                    <ul class="list-disc space-y-1">
+                        <li>(i) transfer the Services or otherwise make it available to any third party;</li>
+                        <li>(ii) provide any service based on the Services without prior written permission;</li>
+                        <li>(iii) allow user licenses to be shared or used by more than one individual other than by way of reassigning the user license to a new user;</li>
+                        <li>(iv) except as permitted under applicable law, attempt to disassemble, reverse engineer or decompile the Services;</li>
+                        <li>(v) use third party links to sites without agreeing to their website terms &amp; conditions;</li>
+                        <li>(vi) post links to third party sites or use their logo, company name, etc. without prior written permission;</li>
+                        <li>(vii) attempt to gain unauthorized access to the Services or its related systems or network;</li>
+                        <li>(viii) use the Services in any manner that could damage, disable, overburden, impair or harm any server, network, computer system, or resource of Dedal.in;</li>
+                        <li>(ix) use the Services to send or store material containing software viruses, worms or other harmful computer codes, files, scripts or programs;</li>
+                        <li>(x) use the Services in any manner that interferes with or disrupts the integrity, security or performance of the Services, its components and the data contained therein;</li>
+                        <li>(xi) host, display, upload, modify, publish, transmit, store, update or share any information that belongs to another person or entity and to which you do not have any right, including personal or confidential information without required consent;</li>
+                        <li>(xii) violate any applicable local, state, national or international law;</li>
+                        <li>(xiii) use the Services for any form of competitive or benchmarking purposes;</li>
+                        <li>(xiv) remove or obscure any proprietary or other notices contained in the Services;</li>
+                        <li>(xv) use our Services in any manner that threatens the unity, integrity, defence, security or sovereignty of India, friendly relations of India with other countries, or public order;</li>
+                        <li>(xvi) create a false identity to mislead any person as to the identity or origin of any communication;</li>
+                        <li>(xvii) use the services for transmitting information that is patently false and untrue with intent to mislead or harass; or</li>
+                        <li>(xviii) use the services in a manner that relates to or encourages any activity prohibited by law.</li>
+                    </ul>
+                </section>
+
+                <!-- 8. Spamming and Illegal Activities -->
+                <section id="spamming" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">8. Spamming and Illegal Activities</h2>
+                    <p>
+                        You agree to be solely responsible for the contents of your transmissions through the Services. You agree not to use the Services for illegal purposes or for the transmission of material that is unlawful, defamatory, harassing, libelous, invasive of another's privacy, abusive, threatening, harmful, vulgar, pornographic, obscene, or is otherwise objectionable, offends religious sentiments, promotes racism, contains viruses or malicious code, or infringes intellectual property rights.
+                    </p>
+                    <p>
+                        We reserve the right to terminate your access to the Services immediately if there are reasonable grounds to believe that you have used the Services for any illegal or unauthorized activity.
+                    </p>
+                </section>
+
+                <!-- 9. Third Party Applications -->
+                <section id="third-party-apps" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">9. Third Party Applications</h2>
+                    <p>
+                        Dedal.in Services integrate with many third party applications (<strong>"Third Party Application(s)"</strong>). Access and use of the Third Party Applications may require acceptance of terms of service and privacy policies applicable to such Third Party Applications (<strong>"Third Party Terms"</strong>). You are responsible for reading and understanding the Third Party Terms before accessing or using any Third Party Application. You acknowledge and agree that Dedal.in is not liable for any Third Party Applications. Dedal.in may, at any time and in our sole discretion, and without notice to you, suspend, restrict or disable access to or remove any Third Party Application, without liability to you.
+                    </p>
+                </section>
+
+                <!-- 10. Fees and Payments -->
+                <section id="fees-payments" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">10. Fees and Payments</h2>
+                    <p>
+                        The Services are available under subscription plans of various durations. Your subscription will be automatically renewed at the end of each subscription period unless you downgrade your paid subscription plan to a free plan or inform us that you do not wish to renew. If you do not wish to renew the subscription, you must inform us at least seven (7) days prior to the renewal date. If you have not downgraded to a free plan and have not informed us, you authorize Dedal.in to charge the subscription fee to the payment mode last used by you.
+                    </p>
+                    <p>
+                        From time to time, we may change the price of any Service. Any increase in charges will not apply until the expiry of your then-current billing cycle.
+                    </p>
+                    <p>
+                        In the event any tax such as GST, VAT, sales tax or the like is chargeable by Dedal.in in accordance with applicable laws (<strong>"Taxes"</strong>), Dedal.in will invoice you for such Taxes. You agree to pay Dedal.in such Taxes in addition to the subscription fees.
+                    </p>
+                </section>
+
+                <!-- 11. Customer Satisfaction Policy & Refunds -->
+                <section id="satisfaction-policy" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">11. Customer Satisfaction &amp; Refund Policy</h2>
+                    <p>
+                        At Dedal.in we strive to create quality software that you enjoy using for your business or professional life. We have created this policy that details what we will do should we fail to meet your expectations.
+                    </p>
+                    
+                    <h3 class="content-heading text-[12px] text-on-surface font-bold mt-3 mb-1">Monthly Subscriptions</h3>
+                    <p>
+                        If at anytime during your first month using our service you are dissatisfied, please contact us. If you are not satisfied, we will gladly offer you a <strong>FULL REFUND</strong> for your purchase, and downgrade your account to the free plan.
+                    </p>
+
+                    <h3 class="content-heading text-[12px] text-on-surface font-bold mt-3 mb-1">Annual Subscriptions</h3>
+                    <p>
+                        Dedal.in doesn't force you into an annual subscription as a condition to use our services. If at anytime during your first 45 days using our service you are dissatisfied, please contact us. If you are not satisfied, we will gladly offer you a <strong>FULL REFUND</strong> for your purchase, and downgrade your account to the free plan.
+                    </p>
+
+                    <h3 class="content-heading text-[12px] text-on-surface font-bold mt-3 mb-1">Pro-Rated Refund for Functionality Breakage</h3>
+                    <p>
+                        If at anytime during your contract we remove, break or discontinue functionality that was available at the time you signed up, we ask you to notify us immediately. If we fail to address the breakage of a functionality within promised timelines, or if we are unable to provide a satisfactory workaround, we will offer you a <strong>PRO-RATED REFUND</strong> for the remainder of your contract.
+                    </p>
+
+                    <h3 class="content-heading text-[12px] text-on-surface font-bold mt-3 mb-1">Partial Downgrade of Annual Subscription</h3>
+                    <p>
+                        In case of partial downgrade of annual subscription, you will be provided credits in the form of extension of subscription for the active licenses. The discounts that were applied will be excluded for calculating the quantum of credits: Value for un-used license = total amount paid - (monthly list price x number of months used).
+                    </p>
+
+                    <h3 class="content-heading text-[12px] text-on-surface font-bold mt-3 mb-1">Auto-Renewal Notice &amp; Cancellation Grace Window</h3>
+                    <p>
+                        Your monthly and yearly subscriptions will auto-renew until you cancel the service. We send an advance email specifying the amount that will be charged prior to auto-renewal.
+                    </p>
+                    <p>
+                        You can cancel your subscription even up to five (5) business days after your renewal date (for monthly subscriptions) or fifteen (15) days after your renewal date (for annual subscriptions), and be eligible for a <strong>FULL REFUND</strong>. However, we will not be able to entertain requests for refund (including pro-rated refunds) after the said periods.
+                    </p>
+                    <p>
+                        For questions, please e-mail <a href="mailto:dedallegal@gmail.com" class="font-bold text-primary hover:underline">dedallegal@gmail.com</a>.
+                    </p>
+                    <p class="font-medium text-on-surface">
+                        <strong>Exception to our Refund Policy:</strong> There will be strictly no refund (full or pro-rated) in cases where your account is terminated, suspended, or blocked by Dedal.in for activities that are in violation of our Terms of Service including phishing, impersonation, fraud, and violation of applicable laws.
+                    </p>
+                </section>
+
+                <!-- 12. Event Ticketing & Facilitation Policy -->
+                <section id="event-ticketing" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">12. Cancellation and Refund Policy (Ticketing &amp; Events)</h2>
+                    <p>
+                        Refunds are subject to be determined by Event Organisers and DEDAL.IN is strictly a facilitator.
+                    </p>
+                    <p>
+                        The refund on cancellation of tickets is subject to be determined by Event Organisers and varies from Event to Event. We strongly recommend users to read the Terms &amp; Conditions of every Event before booking.
+                    </p>
+                    <p>
+                        If, at any time an event is cancelled, postponed, suspended or delayed for any reason, DEDAL.IN will not make any refunds nor will they be liable for any loss caused by such cancellation, postponement, suspension or delay.
+                    </p>
+                    <p>
+                        It is your responsibility to ascertain whether an event has been cancelled and the date and time of any rearranged event. We do not guarantee that ticket holders will be informed of cancellation prior to the date of the event.
+                    </p>
+                    <p>
+                        Tickets are issued subject to the Rules and Regulations of the venue or Event Organiser. Breach of any rules or unacceptable behaviour shall entitle the venue or Event Organiser to eject you from the venue. We will not be responsible for any tickets that are lost or stolen.
+                    </p>
+                    <p>
+                        Tickets may be restricted to a maximum number per person, per payment card, or per household. We reserve the right to cancel tickets without prior notice if booking limits are exceeded.
+                    </p>
+                </section>
+
+                <!-- 13. Organization Accounts and Administrators -->
+                <section id="organization-accounts" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">13. Organization Accounts and Administrators</h2>
+                    <p>
+                        When you sign up for an account for your organization you may specify one or more administrators. The administrators will have the right to configure the Services and manage end users in your organization account.
+                    </p>
+                    <p>
+                        You are responsible for: (i) ensuring confidentiality of your organization account password, (ii) appointing competent individuals as administrators, and (iii) ensuring that all activities comply with this Agreement. Dedal.in is not responsible for internal management and administration of the Services for you.
+                    </p>
+                    <p>
+                        You are responsible for taking necessary steps for ensuring that your organization does not lose control of administrator accounts. In the absence of a specified administrator recovery process, Dedal.in may provide control to an individual providing proof satisfactory to Dedal.in demonstrating authorization to act on behalf of the organization.
+                    </p>
+                </section>
+
+                <!-- 14. Personal Information and Privacy -->
+                <section id="personal-info-privacy" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">14. Personal Information and Privacy</h2>
+                    <p>
+                        Personal information you provide to Dedal.in through the Service is governed by the Dedal.in Privacy Policy. You are responsible for maintaining confidentiality of your username, password and sensitive credentials. You are responsible for all activities that occur in your user account and you agree to inform us immediately of any unauthorized use by email to <a href="mailto:dedallegal@gmail.com" class="font-bold text-primary hover:underline">dedallegal@gmail.com</a>. We are not responsible for any loss or damage incurred as a result of unauthorized access to your account.
+                    </p>
+                    <div class="mt-2.5">
+                        <a href="privacy.html" class="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary hover:underline">
+                            <span>Read Dedal.in's Full Dedicated Privacy Policy</span>
+                            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                        </a>
+                    </div>
+                </section>
+
+                <!-- 15. Communications from Dedal.in -->
+                <section id="communications" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">15. Communications from Dedal.in</h2>
+                    <p>
+                        The Service may include communications from Dedal.in, such as service announcements, administrative messages and newsletters. We provide you the option of opting out from receiving newsletters. However, you will not be able to opt-out from receiving critical service announcements and administrative messages.
+                    </p>
+                </section>
+
+                <!-- 16. Complaints -->
+                <section id="complaints" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">16. Complaints</h2>
+                    <p>
+                        If we receive a complaint regarding your activities, we will forward the complaint to the primary email address of your account. You must respond to the complainant directly within 15 days and copy Dedal.in. If you do not respond within 15 days, Dedal.in may disclose your name and contact information to the complainant to enable legal action.
+                    </p>
+                </section>
+
+                <!-- 17. Inactive User Accounts Policy -->
+                <section id="inactive-accounts" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">17. Inactive User Accounts Policy</h2>
+                    <p>
+                        We reserve the right to terminate unpaid user accounts that are inactive for a continuous period of 120 days. In the event of such termination, all data associated with such user account will be deleted. We will provide you prior notice of such termination and an option to back-up your data.
+                    </p>
+                </section>
+
+                <!-- 18. Hosting Location -->
+                <section id="hosting-location" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">18. Hosting Location</h2>
+                    <p>
+                        The location of the cloud facility from which you are served depends on the mapping of your region/country. You must not mask your internet protocol (IP) address at sign-up since your region is determined based on your IP address. If your actual region is found to be different, Dedal.in may migrate your account or close your account and deny Service.
+                    </p>
+                </section>
+
+                <!-- 19. Data Ownership -->
+                <section id="data-ownership" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">19. Data Ownership</h2>
+                    <p class="text-on-surface">
+                        We respect your right to ownership of content created or stored by you. You own the content created or stored by you.
+                    </p>
+                    <p>
+                        Your use of the Services does not grant Dedal.in any license to use, reproduce, adapt, modify, publish or distribute your content for commercial or marketing purposes. You grant Dedal.in permission solely to access, copy, store, and transmit your content as required for the purpose of providing the Services to you.
+                    </p>
+                </section>
+
+                <!-- 20. User Generated Content -->
+                <section id="user-generated-content" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">20. User Generated Content</h2>
+                    <p>
+                        You shall be solely responsible for content transmitted or published by you and the consequences of its transmission. Any content made public may be crawled and indexed by search engines. Content received from other users is provided to you AS IS for your information only and you agree not to exploit such content without the express written consent of the rights owner.
+                    </p>
+                    <p>
+                        Dedal.in reserves the right to block access to or remove content if Dedal.in receives complaints concerning any illegality or infringement of third party rights.
+                    </p>
+                </section>
+
+                <!-- 21. Sample Files and Trademarks -->
+                <section id="sample-files-trademark" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">21. Sample Files, Applications &amp; Trademarks</h2>
+                    <p>
+                        Sample files and applications are provided for demonstration purposes using random data without warranty.
+                    </p>
+                    <h3 class="content-heading text-[12px] text-on-surface font-bold mt-3 mb-1">Trademark</h3>
+                    <p>
+                        Dedal.in, the Dedal.in logo, and service names are trademarks of Dedal.in Corporation Private Limited. You agree not to display or use Dedal.in trademarks without prior written permission.
+                    </p>
+                </section>
+
+                <!-- 22. Disclaimer of Warranties -->
+                <section id="disclaimer-warranties" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">22. Disclaimer of Warranties</h2>
+                    <p class="text-on-surface leading-relaxed">
+                        YOU EXPRESSLY UNDERSTAND AND AGREE THAT THE USE OF THE SERVICES IS AT YOUR SOLE RISK. THE SERVICES ARE PROVIDED ON AN “AS-IS” AND “AS-AVAILABLE” BASIS. DEDAL.IN <strong>EXPRESSLY DISCLAIMS ALL WARRANTIES OF ANY KIND</strong>, WHETHER EXPRESS OR IMPLIED, INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. DEDAL.IN MAKES NO WARRANTY THAT THE SERVICES WILL BE UNINTERRUPTED, TIMELY, SECURE, OR ERROR-FREE.
+                    </p>
+                </section>
+
+                <!-- 23. Limitation of Liability -->
+                <section id="limitation-liability" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">23. Limitation of Liability</h2>
+                    <p class="text-on-surface leading-relaxed">
+                        YOU AGREE THAT DEDAL.IN SHALL, IN NO EVENT, BE LIABLE FOR ANY <strong>CONSEQUENTIAL, INCIDENTAL, INDIRECT, SPECIAL, PUNITIVE, OR CONSEQUENTIAL DAMAGES</strong>, LOSS OF PROFITS, BUSINESS INTERRUPTION, OR LOSS OF DATA. IN NO EVENT SHALL DEDAL.IN’S ENTIRE LIABILITY TO YOU EXCEED <strong>FIFTY THOUSAND RUPEES (₹ 50,000)</strong> OR THE FEES PAID BY YOU DURING THE TWELVE (12) MONTHS PRIOR TO THE EVENT GIVING RISE TO LIABILITY, WHICHEVER IS HIGHER.
+                    </p>
+                </section>
+
+                <!-- 24. Indemnification -->
+                <section id="indemnification" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">24. Indemnification</h2>
+                    <p>
+                        You agree to <strong>INDEMNIFY AND HOLD HARMLESS</strong> Dedal.in, its officers, directors, employees, and affiliates from and against any losses, damages, fines and expenses (including attorney's fees) arising out of your violation of third party rights, violation of laws, or breach of this Agreement.
+                    </p>
+                </section>
+
+                <!-- 25. Governing law and Jurisdiction -->
+                <section id="governing-law" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">25. Governing Law and Jurisdiction</h2>
+                    <p>
+                        Any controversy or claim arising out of or relating to the Terms shall be settled and adjudicated exclusively by the courts of Chennai in accordance with the laws of India without regard to conflict of law principles.
+                    </p>
+                </section>
+
+                <!-- 26. Suspension and Termination -->
+                <section id="suspension-termination" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">26. Suspension and Termination</h2>
+                    <p>
+                        We may suspend your user account in the event of suspected illegal activity, extended inactivity, or government requests. Objections should be emailed to <a href="mailto:dedallegal@gmail.com" class="font-bold text-primary hover:underline">dedallegal@gmail.com</a> within thirty (30) days.
+                    </p>
+                    <p>
+                        You have the right to <strong>TERMINATE</strong> your user account if Dedal.in breaches its obligations under this Agreement, and in such event, you will be entitled to a prorated refund of any prepaid fees.
+                    </p>
+                </section>
+
+                <!-- 27. Modification of Terms of Service -->
+                <section id="modifications" class="scroll-mt-24 pb-1">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">27. Modification of Terms of Service</h2>
+                    <p class="mb-0">
+                        If we make significant changes to the Agreement that affect your rights, you will be provided with at least 30 days advance notice by email. You may terminate your use of the Services within 30 days of notification and receive a prorated refund of the unused portion of any prepaid fees. Your continued use after the effective date will be deemed acceptance of the modified Agreement.
+                    </p>
+                </section>
+
+            </div>
+
+            <!-- Contact Helpdesk Card -->
+            <div class="mt-6 p-6 sm:p-8 rounded-3xl bg-primary text-white text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-5 shadow-stat">
+                <div>
+                    <h3 class="font-display-lg text-lg sm:text-xl text-white font-bold tracking-tight mb-1.5">Questions Regarding Our Terms?</h3>
+                    <p class="text-xs sm:text-sm text-white/90 leading-relaxed max-w-md mb-0" style="color: #ffffff !important;">
+                        Our legal and governance team is available to assist with any clarification regarding terms, licensing, or compliance.
+                    </p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2.5 flex-shrink-0">
+                    <a href="mailto:dedallegal@gmail.com" class="btn-interactive inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white text-primary text-xs font-bold hover:bg-surface-bright shadow-md">
+                        <span class="material-symbols-outlined text-[16px]">mail</span>
+                        <span>Email Legal Team</span>
+                    </a>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="w-full border-t border-outline-variant/30 bg-white pt-8 pb-12">
+    <div class="fluid-container flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
+        <!-- Brand Logo with Red Dot -->
+        <div class="font-display-lg text-2xl text-[#111111] font-bold">dedal<span class="brand-dot">.</span></div>
+        
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 items-center text-xs sm:text-sm text-on-surface-variant font-medium">
+            <a class="hover:text-primary transition-colors py-1" href="index.html">Home</a>
+            <a class="hover:text-primary transition-colors py-1" href="index.html#about">About</a>
+            <a class="hover:text-primary transition-colors py-1" href="index.html#analytics">Live Metrics</a>
+            <a class="text-primary font-bold underline py-1" href="terms.html">Terms of Service</a>
+            <a class="hover:text-primary transition-colors py-1" href="global-terms.html">Global Terms</a>
+            <a class="hover:text-primary transition-colors py-1" href="privacy.html">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

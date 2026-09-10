@@ -1,0 +1,971 @@
+/*
+ * registration-detail.css — one registration, wherever it is rendered.
+ * `drd-` prefix. Dedal tokens only; no literal colour appears in this file.
+ *
+ * THE LAYOUT IS THE SAME IN ALL THREE PLACES and that is the point. The route,
+ * the bottom sheet and the desktop panel share every rule below; only .drd-page
+ * and .drd-screen are page-only chrome, and they simply do not exist in the
+ * other two. Nothing here is written against a viewport width — the sheet is
+ * 560px wide on a desktop and the panel is ~420px, so a media query would be
+ * lying about which surface it is on. Where something has to adapt to its
+ * container it does so with flex-wrap and minmax, not a breakpoint.
+ *
+ * ROWS AND DIVIDERS, not a stack of cards. The previous version was eleven
+ * bordered, shadowed, rounded boxes in a column, which reads as eleven unrelated
+ * things rather than one record. Sections are separated by a hairline and by
+ * space; the only elevated surfaces left are the ones that genuinely are objects
+ * — the QR panel and the invite code.
+ */
+
+/* ── Page chrome (route variant only) ───────────────────────────────────── */
+
+.drd-screen {
+  min-height: 100vh;
+  background: var(--surface);
+  font-family: var(--font);
+  padding-bottom: var(--feed-end);
+}
+
+.drd-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--s4) var(--page-pad) 0;
+}
+
+/*
+ * ── DESKTOP: AN IDENTITY ROW, THEN A FULL-WIDTH RECORD. ─────────────────
+ *
+ * WHAT THIS IS NOT, AND WHY. The obvious move was the 8/4 main-and-sticky-rail
+ * the event and fest pages use, and it was built that way first. Measured at
+ * 1568px it was wrong, and instructively so: the rail held the identity and the
+ * facts, the main column held "My details" and the cancel pill, and the main
+ * column ran out roughly 500px above the rail. A page whose SUBJECT — the event
+ * name, the fest, the status — sits in the secondary column while a four-field
+ * table occupies the primary one is backwards, and one column stopping 500px
+ * short of the other is the same "content stops over there" complaint in a new
+ * costume. The 8/4 split works on the detail pages because they have a hero
+ * carrying the subject and a rail carrying a decision. This screen has neither:
+ * it is a record, and its one action is a way out at the very bottom.
+ *
+ * So: ONE COLUMN, and the width is used inside it rather than beside it.
+ *
+ *  - The identity block splits into two across the top — who and what on the
+ *    left, status and the three facts on the right. This is literally the
+ *    "show half the detail on the left and half on the right" that was asked
+ *    for, and it is the part of the page with the most one-sided whitespace.
+ *  - Everything below runs the full column, where .drd-fields' auto-fit grid
+ *    turns the extra width into more columns of facts rather than longer lines
+ *    (four across at 1200px against two at 720px).
+ *
+ * 1200px rather than 1440px: past about 1200 the field grid starts putting five
+ * short values on a line and the block reads as a table nobody asked for.
+ *
+ * SCOPED TO .drd-page, WHICH IS THE ROUTE'S CHROME AND NOTHING ELSE. The
+ * embedded variant renders no .drd-page, so the mobile sheet and the
+ * my-registrations desktop panel — a 416px rail with no room to split again —
+ * are untouched by every rule here.
+ */
+
+/*
+ * The two wrappers are transparent by default. `display: contents` means they
+ * contribute no box at all, so on a phone, in the sheet and in the panel the
+ * blocks are the same flat stack in the same order they always were.
+ */
+.drd-aside,
+.drd-main {
+  display: contents;
+}
+
+@media (min-width: 1024px) {
+  .drd-page {
+    max-width: 1200px;
+  }
+
+  /*
+   * The identity wrapper stops being transparent and becomes the top row.
+   * 7/5 rather than 6/6: the left holds an event name, which wants the longer
+   * measure, and the right holds three short fact lines and a badge.
+   *
+   * `minmax(0, …)` on both tracks, not plain fr — a 1fr track has an `auto`
+   * minimum, so a long unbroken event name would push its track past its share
+   * and shove the facts toward the edge. That asymmetry is the reported
+   * symptom, not a hypothetical.
+   */
+  .drd-page .drd-aside {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    column-gap: var(--s7);
+    row-gap: var(--s3);
+    align-items: start;
+  }
+
+  /* Status, the cancelled-event notice and the facts stack down the right. */
+  .drd-page .drd-aside > * {
+    grid-column: 2;
+    min-width: 0;
+  }
+
+  /*
+   * The identity takes the left, and the sponsor credit stays with it — it
+   * belongs directly under the fest name, and left to auto-placement it landed
+   * in the right-hand stack above the status badge, which reads as a caption
+   * for the wrong thing. Both are placed on explicit rows so the right-hand
+   * stack can flow past them without either side being pushed out of step.
+   * Written after the rule above so they win on source order rather than on
+   * specificity.
+   */
+  .drd-page .drd-aside > .drd-head {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .drd-page .drd-aside > .drd-sponsor {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  /* The facts lose their top rule: beside the identity rather than under it,
+     the line was cutting the row in half horizontally for no reason. */
+  .drd-page .drd-aside > .drd-facts {
+    padding-block-start: 0;
+    border-block-start: 0;
+  }
+}
+
+.drd-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  margin-left: calc(var(--s3) * -1);
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.drd-back:hover {
+  background: var(--ink-dim-2);
+}
+
+.drd-title {
+  margin: var(--s2) 0 var(--s5);
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* ── The shared body ────────────────────────────────────────────────────── */
+
+.drd-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  font-family: var(--font);
+  color: var(--ink);
+}
+
+/* Screen-reader-only. Used for the copy announcement and for <dt>s that exist
+   to pair a value with a name the icon already communicates visually. */
+.drd-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Identity ───────────────────────────────────────────────────────────── */
+
+.drd-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.drd-thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+
+.drd-thumb--image {
+  object-fit: cover;
+}
+
+/*
+ * THE POSTERLESS THUMBNAIL. Every posterImageUrl in this data is null, so this
+ * is the default state rather than a fallback. The initials over the
+ * --primary → --accent wash are the same derived mark the fest and event cards
+ * use, so a registration with no artwork still looks like something somebody
+ * designed. A grey box with a picture glyph in it is an apology.
+ */
+.drd-thumb--mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image:
+    radial-gradient(
+      120% 100% at 85% 10%,
+      color-mix(in srgb, var(--accent) 90%, transparent) 0%,
+      transparent 62%
+    ),
+    linear-gradient(145deg, var(--primary), var(--accent));
+  color: var(--surface-card);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  user-select: none;
+}
+
+.drd-head__text {
+  min-width: 0;
+}
+
+/* The category. Sentence case at 11px — the caps eyebrow this replaced was the
+   loudest thing on a screen whose subject is the event name. */
+.drd-head__kicker {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.drd-head__name {
+  margin: 2px 0 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.drd-head__fest {
+  margin: 2px 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drd-statusline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+}
+
+.drd-statusline__when {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── The status badge ───────────────────────────────────────────────────────
+   Shared with the hub's rows, which is why it is defined here rather than in
+   my-registrations.css: one table of statuses, one set of styles, no chance of
+   a row and its detail disagreeing about what a status looks like.
+
+   See the long note on REGISTRATION_STATUS_META in the JSX for why only
+   `urgent` gets a fill. */
+
+.drd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 2px var(--s2);
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.drd-badge--lg {
+  padding: var(--s1) var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+/* The norm. Outline, because most registrations are confirmed and a column of
+   solid red pills would spend the signature colour on the least urgent fact on
+   the screen. */
+.drd-badge--confirmed {
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+  color: var(--primary);
+}
+
+/* The only fill. A held seat with a payment clock on it is the definition of
+   urgent, and it is the one row on this surface that wants a hand. */
+.drd-badge--urgent {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--surface-card);
+}
+
+.drd-badge--waiting {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
+/* Winners and anyone still in the draw. --accent, not --primary: this is the
+   celebratory register, and --primary has to stay meaning "act now". */
+.drd-badge--prize {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+/* Attended. Quiet by design — it is a receipt — but the LABEL is --ink, not
+   --muted: badge type is 11px and --muted is only ~3.5:1 on --surface, so a
+   word that carries meaning may not be the one that fails. The tick beside it
+   is the muted part. */
+.drd-badge--done,
+.drd-badge--quiet {
+  border-color: transparent;
+  background: var(--ink-dim-4);
+  color: var(--ink);
+}
+
+.drd-badge--done svg,
+.drd-badge--quiet svg {
+  color: var(--muted);
+}
+
+/* ── The three facts ────────────────────────────────────────────────────── */
+
+.drd-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding: var(--s4) 0;
+  border-top: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider);
+}
+
+.drd-fact__value {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drd-fact__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+
+.drd-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-top: var(--s2);
+}
+
+.drd-section__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* Name/value pairs as a real <dl>. Two columns where there is room, one where
+   there is not — auto-fit rather than a breakpoint, because this block lives in
+   a 420px panel and a 720px page and neither knows the viewport width. */
+.drd-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s3) var(--s4);
+  margin: 0;
+}
+
+.drd-field__label {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drd-field__value {
+  margin: 2px 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ── Team ───────────────────────────────────────────────────────────────── */
+
+.drd-teamname {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.drd-roster {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.drd-roster__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 48px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.drd-roster__row:last-child {
+  border-bottom: 0;
+}
+
+.drd-roster__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* 14px, not 11px: it is --muted and it carries meaning. */
+.drd-roster__role {
+  flex: 0 0 auto;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The invite code. One of the two things on this screen that is an OBJECT
+   rather than a fact, so it is one of the two that gets a surface. */
+.drd-code {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.drd-code__label {
+  flex: 1 0 100%;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drd-code__value {
+  flex: 1 1 auto;
+  font-family: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  /* Somebody who cannot use the button can still select it cleanly. */
+  user-select: all;
+}
+
+.drd-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.drd-copy:hover {
+  background: var(--ink-dim-2);
+}
+
+.drd-copy--done {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+/*
+ * THE MORPH. The glyph box holds its width whether or not there is a tick in
+ * it, so the button does not jump sideways as the icon appears — a control that
+ * resizes under a finger is a control people miss on the second press.
+ */
+.drd-copy__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drd-copy__glyph > svg {
+    animation: drd-pop var(--d-move) var(--ease-enter);
+  }
+}
+
+@keyframes drd-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── The pass ───────────────────────────────────────────────────────────── */
+
+.drd-pass {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s5) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+/* The QR must sit on white regardless of the surrounding surface, or a scanner
+   loses the quiet zone. */
+.drd-pass__code {
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: #fff;
+}
+
+.drd-pass__hint {
+  margin: 0;
+  max-width: 32ch;
+  text-align: center;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Payment breakdown ──────────────────────────────────────────────────── */
+
+.drd-breakdown {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--divider);
+}
+
+.drd-breakdown__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drd-breakdown__amount {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Notices, confirms, buttons ─────────────────────────────────────────── */
+
+.drd-notice {
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.drd-notice__title {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.drd-notice__text {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drd-notice__when {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The inline cancel confirm. --primary on the border, because destroying your
+ * own seat is the error/urgent register and this block IS the alert — it
+ * replaces the modal that used to be layered over the page, so it has to carry
+ * that weight itself.
+ */
+.drd-confirm {
+  padding: var(--s4);
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.drd-confirm__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.drd-confirm__text {
+  margin: var(--s1) 0 var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drd-confirm__label {
+  display: block;
+  margin-bottom: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.drd-textarea {
+  display: block;
+  width: 100%;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  /* 16px. Anything smaller and iOS zooms the page when the field is focused. */
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  resize: vertical;
+}
+
+.drd-confirm__hint {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drd-confirm__error {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.drd-confirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s4);
+}
+
+.drd-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.drd-button:hover {
+  background: var(--ink-dim-2);
+}
+
+.drd-button--primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--surface-card);
+}
+
+.drd-button--primary:hover {
+  /* Darkened with --ink rather than with a new colour. */
+  background: color-mix(in srgb, var(--primary) 88%, var(--ink));
+}
+
+.drd-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/*
+ * THE TWO SECONDARY ACTIONS ON THIS PAGE, AND WHY THEY ARE PILLS.
+ *
+ * Both were underlined text with no border and no background: "Manage my teams"
+ * and "Cancel registration". Underlined text inside a column of prose reads as
+ * emphasis at least as readily as it reads as something you can press, and it
+ * gives a thumb nothing to aim at. The underline is gone; a boundary and a
+ * press state carry the affordance instead, matching .ddp-more and
+ * .ded-info__link so every secondary action in the app is the same object.
+ *
+ * Cancel keeps --primary for its TEXT and border but stays unfilled. A solid
+ * red button is a commitment, and this control does not cancel anything — it
+ * opens the confirmation that does. The filled button belongs on that step,
+ * once somebody has said they mean it.
+ */
+.drd-danger,
+.drd-linkish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: none;
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter),
+    transform var(--d-quick) var(--ease-enter);
+}
+
+.drd-danger {
+  color: var(--primary);
+  border-color: rgb(255 59 48 / 35%);
+}
+
+.drd-danger:active,
+.drd-linkish:active {
+  transform: scale(0.98);
+}
+
+.drd-linkish:active {
+  background: var(--ink-dim-4);
+}
+
+.drd-danger:active {
+  background: rgb(255 59 48 / 8%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .drd-linkish:hover {
+    background: var(--ink-dim-4);
+    border-color: var(--muted);
+  }
+
+  .drd-danger:hover {
+    background: rgb(255 59 48 / 8%);
+    border-color: var(--primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drd-danger,
+  .drd-linkish {
+    transition: none;
+  }
+
+  .drd-danger:active,
+  .drd-linkish:active {
+    transform: none;
+  }
+}
+
+.drd-linkish {
+  color: var(--ink);
+}
+
+/* ── Loading and error ──────────────────────────────────────────────────── */
+
+.drd-skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.drd-skel {
+  height: 88px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  opacity: 0.5;
+}
+
+.drd-skel--head {
+  height: 56px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drd-skel {
+    animation: drd-skel-pulse 1s linear infinite alternate;
+  }
+}
+
+@keyframes drd-skel-pulse {
+  from {
+    opacity: 0.5;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.drd-state {
+  padding: var(--s8) var(--s4);
+  text-align: center;
+}
+
+.drd-state__icon {
+  color: var(--muted);
+}
+
+.drd-state__title {
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.drd-state__text {
+  margin: 0 auto var(--s5);
+  max-width: 320px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/*
+ * The feedback card's container. A hairline above it and nothing else — the
+ * card inside is not ours (see the note in the JSX) and wrapping a foreign
+ * component in dedal chrome would only make the mismatch look intentional.
+ */
+.drd-feedback {
+  padding-top: var(--s4);
+  border-top: 1px solid var(--divider);
+}
+
+
+.drd-linkish:active {
+  transform: scale(0.98);
+  background: var(--ink-dim-4);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .drd-linkish:hover {
+    background: var(--ink-dim-4);
+    border-color: var(--muted);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drd-linkish {
+    transition: none;
+  }
+
+  .drd-linkish:active {
+    transform: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The sponsor credit
+
+   A quiet row under the fest name, not a banner. --micro for the label and a
+   capped logo height, so a sponsor with a tall wordmark cannot out-size the
+   event name two lines above it. The whole row is muted: it is a credit, and a
+   credit that competes with the thing it is crediting has the balance wrong.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drd-sponsor {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+
+.drd-sponsor__label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.drd-sponsor__logo {
+  height: 18px;
+  max-width: 96px;
+  object-fit: contain;
+  display: block;
+}
+
+.drd-sponsor__name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}

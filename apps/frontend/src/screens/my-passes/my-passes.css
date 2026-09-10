@@ -1,0 +1,281 @@
+/*
+ * my-passes.css — the list of passes. `dmp-` prefix.
+ *
+ * A NORMAL LIGHT SCREEN, and deliberately so. The pass screen next door is dark
+ * and hardcoded for one reason — a QR has to be the brightest thing in a
+ * camera's frame — and none of that applies here, because THERE IS NO QR ON
+ * THIS SCREEN. Everything below is dedal tokens: the six colours, --divider,
+ * --ink-dim-2/4, the spacing scale, the radii. No literal colour appears in
+ * this file; if you find yourself wanting one, the answer is a token.
+ *
+ * WHY NO QR. This used to render a full scannable code on every card. It looks
+ * generous and it is a hazard: a volunteer scanning a list scans whichever code
+ * is under the lens, which is not necessarily the pass its holder meant to
+ * present. A list is for CHOOSING a pass. Choosing is done by name and date;
+ * the credential appears once you have chosen, on a screen built to show it.
+ */
+
+.dmp-screen {
+  min-height: 100vh;
+  background: var(--surface);
+  font-family: var(--font);
+  padding-bottom: var(--feed-end);
+}
+
+/*
+ * THE PAGE. Fluid to 1440, fixed above it.
+ *
+ * This was a 720px column, which measured at 1440px meant a 592px list with
+ * 424px of empty canvas down each side — the whole screen a ribbon in the
+ * middle of the window. A list of passes is the same shape as the certificates
+ * and saved-events lists, both of which already run to 1440 and fill it with an
+ * intrinsic grid, so this now matches them rather than being the one owned-
+ * things list that stayed narrow.
+ */
+.dmp-page {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--s5) var(--page-pad) 0;
+}
+
+.dmp-title {
+  margin: 0 0 var(--s4);
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* ── The split ───────────────────────────────────────────────────────────
+   Two states, not a filter bar: a pass is either still good for something or
+   it is a receipt. The archived tab is absent entirely when nothing has ended,
+   because a tab that is always empty teaches people to ignore tabs. */
+
+.dmp-tabs {
+  display: flex;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+}
+
+.dmp-tab {
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dmp-tab:hover {
+  background: var(--ink-dim-2);
+}
+
+.dmp-tab[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface-card);
+}
+
+/* ── The rows ────────────────────────────────────────────────────────────
+   A row, not a card: eight passes as eight tall cards is eight screens of
+   scrolling for a decision that takes one glance. Name, when, state. */
+
+.dmp-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * ── THE LIST BECOMES A GRID ONCE THERE IS ROOM. ─────────────────────────
+ *
+ * `auto-fill` with a 340px floor rather than a column count, so the number of
+ * tracks follows the window and no breakpoint has to be kept in sync with it:
+ * three across at 1280 and 1440, four at 1920 where the page has hit its cap.
+ * The same technique certificates-list.css and saved-events.css use, with a
+ * larger floor because a pass row is a horizontal object — mark, fest name,
+ * dates, chevron — and below about 320px the dates start wrapping under the
+ * name.
+ *
+ * `1fr` as the ceiling, so the last row's tracks stay the width of every other
+ * row's rather than collapsing to their content. `minmax(0, …)` is not needed
+ * here because the floor is already a real length, but the tracks still cannot
+ * be pushed by a long fest name: .dmp-row__body carries min-width: 0.
+ *
+ * Below 768px this rule does not exist and the list is the single column it
+ * has always been, in the same order.
+ */
+@media (min-width: 768px) {
+  .dmp-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: var(--grid-gap);
+  }
+}
+
+.dmp-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dmp-row:hover {
+  background: var(--ink-dim-2);
+}
+
+.dmp-row:active {
+  background: var(--ink-dim-4);
+}
+
+.dmp-row__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dmp-row__fest {
+  display: block;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dmp-row__when {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dmp-row__chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+/* Live now. --primary, and this is the only thing on the screen wearing it —
+   the token is reserved for "happening right now" and for one CTA per screen,
+   and a row that is live IS the CTA. */
+.dmp-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  margin-top: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.dmp-live__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+/* A pass that will not scan says so in the list, not at the gate. */
+.dmp-flag {
+  display: inline-block;
+  margin-top: var(--s1);
+  padding: 1px var(--s2);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Empty, error, loading ───────────────────────────────────────────── */
+
+.dmp-state {
+  padding: var(--s8) var(--s4);
+  text-align: center;
+}
+
+.dmp-state__icon {
+  color: var(--muted);
+}
+
+.dmp-state__title {
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dmp-state__text {
+  margin: 0 auto var(--s5);
+  max-width: 320px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dmp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Light skeletons — the standard 50% → 100% pulse, because this surface IS
+   light. The pass screen's dark ones are a separate set for a reason. */
+.dmp-skel {
+  height: 72px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dmp-skel {
+    animation: dmp-skel-pulse 1s linear infinite alternate;
+  }
+}
+
+@keyframes dmp-skel-pulse {
+  from {
+    opacity: 0.5;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

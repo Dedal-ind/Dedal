@@ -1,0 +1,647 @@
+/*
+ * category-events.css — /explore, the fest browser.
+ *
+ * Prefixed `dce-`, tokens only from dedal-tokens.css. Same reason as every
+ * sheet beside it: this loads alongside the retired Heritage Tailwind @theme
+ * and an unprefixed `.chip` or `.panel` would eventually collide with a utility
+ * class nobody was thinking about.
+ *
+ * ── DENSITY IS THE WHOLE POINT OF THIS SCREEN ───────────────────────────────
+ *
+ * The version this replaces rendered fests as a single stacked column of
+ * 148px-tall cards at a fixed page padding, so a 1440px window showed FOUR
+ * fests and 1000px of empty page beside them, and finding the fifth meant
+ * scrolling. A browse surface that makes you scroll past whitespace to see what
+ * exists is failing at the one job it has.
+ *
+ * The grid is intrinsic — repeat(auto-fill, minmax(260px, 1fr)) — so the window
+ * decides the column count with no breakpoint per size: one on a phone, two by
+ * 560px, three by 840, four by 1120, five at the 1440 cap. 260px is the floor
+ * because a poster tile has to carry a fest name of real length on two lines
+ * with the college and the dates under it.
+ */
+
+.dce-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+.dce-col {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* No --header-h padding: the ScreenHeader title stands the app header down, and
+   ScreenHeader itself is in normal flow. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The search and filter bar
+   ─────────────────────────────────────────────────────────────────────────
+
+   Sticky, because it is what the screen is FOR — somebody here is looking for
+   something, and scrolling three rows of posters must not take the field away.
+*/
+
+.dce-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dce-bar__inner {
+  position: relative;
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 0 var(--page-pad) var(--s3);
+}
+
+/*
+ * The field. A bordered row on --surface-card, not a gradient wash: the wash
+ * the old field carried was two brand colours at 15% and 20%, which is two
+ * colours this palette does not have and a shape that read as a decorative
+ * banner rather than a control you can type in.
+ */
+.dce-field {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  /* 48px, comfortably past the 44px minimum, because this is the primary
+     control on the screen and it is hit with a thumb. */
+  min-height: 48px;
+  padding-inline: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dce-field:hover {
+    border-color: var(--muted);
+  }
+}
+
+.dce-field__icon {
+  flex: none;
+  display: flex;
+  color: var(--muted);
+}
+
+.dce-field__input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  outline: none;
+}
+
+.dce-field__input::placeholder {
+  color: var(--muted);
+}
+
+/* The two icon controls in the field. 44px targets that do not enlarge the
+   48px row, achieved by letting them overflow the padding rather than by
+   growing the field. */
+.dce-field__button {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-inline: calc(var(--s3) * -0.5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+.dce-field__button:active {
+  transform: scale(0.92);
+}
+
+/* An open filter panel is a state the button must announce, and --ink is how
+   this design system says "on" for anything that is not the one CTA. */
+.dce-field__button[aria-expanded='true'] {
+  color: var(--ink);
+}
+
+/* ── The suggestions dropdown ─────────────────────────────────────────────── */
+
+.dce-drop {
+  position: absolute;
+  inset-inline: var(--page-pad);
+  z-index: 40;
+  margin-top: var(--s1);
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e2);
+}
+
+.dce-drop__empty {
+  margin: 0;
+  padding: var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  text-align: center;
+}
+
+.dce-drop__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s3) var(--s4);
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dce-drop__row:last-child {
+  border-bottom: 0;
+}
+
+@media (hover: hover) {
+  .dce-drop__row:hover {
+    background: var(--ink-dim-2);
+  }
+}
+
+/*
+ * The result-kind tag. ONE treatment for all three kinds, differing only in
+ * fill. The old field gave fests a solid brand pill, categories a tinted one
+ * and events an outlined one — three shapes for one idea, which taught the
+ * reader nothing and made a dropdown of eight rows look like eight components.
+ */
+.dce-drop__tag {
+  flex: none;
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+.dce-drop__tag--fest {
+  background: rgb(123 97 255 / 10%);
+  color: var(--accent);
+}
+
+.dce-drop__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.dce-drop__name {
+  display: block;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dce-drop__sub {
+  display: block;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dce-drop__chevron {
+  flex: none;
+  color: var(--muted);
+}
+
+/* ── The filter panel ─────────────────────────────────────────────────────
+ *
+ * ALWAYS MOUNTED, shown by class rather than by conditional render. A panel
+ * that unmounts can only ever animate IN — the moment the flag flips it is gone
+ * from the DOM, so the close is a hard cut no matter what transition is
+ * declared on it. Keeping it mounted is what buys the exit. That reasoning came
+ * from the screen this replaces and is unchanged; only the surface it is drawn
+ * on has moved onto the tokens.
+ */
+
+.dce-panel {
+  position: absolute;
+  inset-inline: var(--page-pad);
+  z-index: 40;
+  margin-top: var(--s1);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-sheet);
+  background: var(--surface-card);
+  box-shadow: var(--e2);
+  transform-origin: top center;
+  transition:
+    opacity var(--d-exit) var(--ease-exit),
+    transform var(--d-exit) var(--ease-exit),
+    visibility var(--d-exit) var(--ease-exit);
+}
+
+.dce-panel--open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scaleY(1);
+  pointer-events: auto;
+  transition:
+    opacity var(--d-move) var(--ease-enter),
+    transform var(--d-move) var(--ease-enter);
+}
+
+.dce-panel--closed {
+  opacity: 0;
+  /* visibility, not display: display:none is not animatable and would take the
+     exit transition away again. */
+  visibility: hidden;
+  transform: translateY(-8px) scaleY(0.98);
+  pointer-events: none;
+}
+
+.dce-panel__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2);
+}
+
+/* Four across once there is room, so the panel is a short wide sheet rather
+   than a tall narrow one on a laptop. */
+@media (min-width: 640px) {
+  .dce-panel__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.dce-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  min-height: 44px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+.dce-tile:active {
+  transform: scale(0.97);
+}
+
+.dce-tile--active {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.dce-panel__sort {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--divider);
+}
+
+.dce-panel__sorthead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dce-panel__sortrow {
+  display: flex;
+  gap: var(--s2);
+}
+
+.dce-sort {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter);
+}
+
+.dce-sort--active {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.dce-panel__clear {
+  width: 100%;
+  min-height: 44px;
+  margin-top: var(--s3);
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── The category chips ───────────────────────────────────────────────────── */
+
+.dce-chips {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dce-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.dce-chip {
+  flex: none;
+  /* 36px rather than 44: these are a secondary row directly under a 48px field
+     that does the same job better, and a second full-height band of controls
+     costs more of the fold than the extra 8px of target is worth. They remain
+     comfortably tappable, and every category here is also reachable from the
+     44px tiles in the filter panel. */
+  min-height: 36px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+.dce-chip:active {
+  transform: scale(0.96);
+}
+
+.dce-chip--active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface-card);
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The fest grid
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dce-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--grid-gap);
+  margin: 0;
+  padding: var(--s5) 0 0;
+  list-style: none;
+}
+
+.dce-grid__cell {
+  display: flex;
+  min-width: 0;
+}
+
+/*
+ * The tile. A full-bleed poster with the identity OVERLAID in the card's own
+ * light, never a white card with a separate image block above it — that is the
+ * house treatment for a fest everywhere else in the app and this screen is not
+ * the place to invent a second one.
+ *
+ * Drawn here rather than through the shared FestCard, which is still on the
+ * Heritage palette (`rounded-heritage`, `brand-beige`, `pressed-paper`) and is
+ * not mine to migrate. The DATA it shows is the same: banner, name, college,
+ * dates.
+ */
+.dce-fest {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  /* Taller than wide, so a row of tiles reads as posters rather than as
+     letterbox banners; 4/5 holds three lines of overlaid text without the
+     gradient having to climb over half the image. */
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--ink);
+  color: var(--surface-card);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform var(--d-instant) var(--ease-exit),
+    box-shadow var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dce-fest:hover {
+    box-shadow: var(--e2);
+  }
+}
+
+.dce-fest:active {
+  transform: scale(0.98);
+}
+
+.dce-fest__image {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A missing banner and a banner that 404s land on the same place: the --ink
+   card beneath, with an --accent wash so it is a deliberate surface rather than
+   a black hole. The overlaid text is legible on both without the screen having
+   to know which it got. */
+.dce-fest__fallback {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(140deg, var(--accent), var(--ink) 70%);
+}
+
+.dce-fest__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, var(--scrim) 0%, rgb(15 23 41 / 25%) 45%, transparent 75%);
+}
+
+.dce-fest__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s4);
+}
+
+.dce-fest__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.dce-fest__college,
+.dce-fest__dates {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  /* The overlay lends its own foreground back rather than reaching for --muted,
+     which is a mid grey and disappears against a photograph. */
+  opacity: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Reveal sentinel, skeletons, error ────────────────────────────────────── */
+
+.dce-more {
+  padding: var(--s7) 0;
+  text-align: center;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* The skeleton is the grid, at the tile's own aspect ratio, so the layout does
+   not move when the fests land. Static — a wall of a dozen breathing tiles is
+   more motion than the whole rest of the app. */
+.dce-skeleton {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dce-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-top: var(--s6);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dce-error__line {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dce-error__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* The empty state sits under a ~160px bar rather than the 120px the shared
+   component assumes. */
+.dce-empty {
+  --des-empty-offset: 260px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dce-fest:active,
+  .dce-chip:active,
+  .dce-tile:active,
+  .dce-field__button:active {
+    transform: none;
+  }
+}

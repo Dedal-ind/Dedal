@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy &amp; Policy • dedal</title>
+    <meta name="description" content="Dedal.in Corporation Private Limited - Comprehensive Privacy Policy, Data Governance, and Ticketing Cancellation & Refund Framework."/>
+    
+    <!-- Google Fonts: Libre Caslon Text + Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Material Symbols Outlined -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-container": "#585949",
+                        "tertiary": "#404233",
+                        "tertiary-fixed": "#e4e4cf",
+                        "primary-fixed-dim": "#bbce94",
+                        "on-error": "#ffffff",
+                        "on-surface": "#1a1c15",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fbfbf2",
+                        "inverse-primary": "#bbce94",
+                        "secondary": "#596242",
+                        "outline-variant": "#c6c8b9",
+                        "on-primary-fixed": "#141f00",
+                        "on-primary-fixed-variant": "#3d4c1f",
+                        "secondary-fixed-dim": "#c1cba4",
+                        "on-secondary-fixed-variant": "#414a2c",
+                        "surface-container-low": "#f4f5ea",
+                        "inverse-surface": "#2f3129",
+                        "on-secondary": "#ffffff",
+                        "primary-container": "#4d5d2e",
+                        "background": "#fbfbf2",
+                        "secondary-fixed": "#dde7be",
+                        "on-tertiary-container": "#cfcfbb",
+                        "on-tertiary-fixed-variant": "#464839",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#c2d59a",
+                        "surface-container-highest": "#e3e4d8",
+                        "tertiary-fixed-dim": "#c7c8b4",
+                        "error-container": "#ffdad6",
+                        "outline": "#76786c",
+                        "on-error-container": "#93000a",
+                        "surface-container": "#eeefe3",
+                        "on-background": "#1a1c15",
+                        "surface-dim": "#dadbcf",
+                        "primary": "#324116",
+                        "primary-hover": "#253110",
+                        "brand-dot": "#E53935",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#546434",
+                        "on-tertiary-fixed": "#1b1d10",
+                        "on-secondary-fixed": "#161e05",
+                        "on-surface-variant": "#45483d",
+                        "surface-container-high": "#e8e9dc"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "1rem",
+                        "lg": "1.75rem",
+                        "xl": "2.25rem",
+                        "2xl": "2.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Libre Caslon Text", "serif"],
+                        "display-lg": ["Libre Caslon Text", "serif"],
+                        "body-md": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+                        "body-lg": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+                        "label-md": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+                        "label-sm": ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", "Helvetica", "Arial", "sans-serif"]
+                    },
+                    boxShadow: {
+                        "soft": "0 8px 24px -4px rgba(50, 65, 22, 0.08), 0 2px 8px -2px rgba(0,0,0,0.03)",
+                        "glass": "0 8px 32px 0 rgba(31, 38, 135, 0.07)",
+                        "stat": "0 12px 30px -8px rgba(50, 65, 22, 0.09), 0 2px 6px rgba(0,0,0,0.03)"
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        html, body { 
+            color: #1a1c15; 
+            background-color: #fbfbf2;
+            overflow-x: hidden;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .fluid-container {
+            width: 100%;
+            max-width: 1360px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: clamp(1rem, 4vw, 3rem);
+            padding-right: clamp(1rem, 4vw, 3rem);
+        }
+
+        /* Brand Red Dot for Dedal Logo */
+        .brand-dot {
+            display: inline-block;
+            color: #E53935;
+            font-size: 0.58em;
+            margin-left: 0.06em;
+            vertical-align: baseline;
+            line-height: 1;
+            transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .brand-logo-group:hover .brand-dot,
+        a:hover .brand-dot {
+            transform: scale(1.15) translate3d(0, -1px, 0);
+        }
+
+        /* Content section headings: font size 12 */
+        .legal-content h2,
+        .legal-content h3,
+        .legal-content h4,
+        .legal-content .content-heading {
+            font-size: 12px !important;
+            line-height: 1.45 !important;
+            font-weight: 700;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        /* Content body text: font size 11 with San Francisco (iOS) & Roboto (Android) */
+        .legal-content p, 
+        .legal-content ul, 
+        .legal-content ol, 
+        .legal-content li, 
+        .legal-content span:not(.material-symbols-outlined), 
+        .legal-content a,
+        .legal-body {
+            font-size: 11px !important;
+            line-height: 1.6 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "San Francisco", "Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        .legal-content p {
+            margin-bottom: 0.5rem;
+            color: #45483d;
+        }
+
+        .legal-content .bg-primary p,
+        .legal-content .bg-primary,
+        .bg-primary p {
+            color: #ffffff !important;
+        }
+
+        .legal-content ul, .legal-content ol {
+            margin-bottom: 0.5rem;
+            padding-left: 1.25rem;
+            color: #45483d;
+        }
+
+        .legal-content li {
+            margin-bottom: 0.25rem;
+        }
+
+        .btn-interactive {
+            min-height: 40px;
+            transition: transform 160ms cubic-bezier(0.2, 0, 0, 1), box-shadow 160ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        .btn-interactive:hover {
+            transform: translate3d(0, -1px, 0);
+        }
+
+        @media print {
+            header, footer, #quick-actions, .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                color: black !important;
+                font-size: 11pt !important;
+            }
+            .legal-content p, .legal-content li {
+                color: #222 !important;
+            }
+            .fluid-container {
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary-fixed selection:text-on-primary-fixed font-body-md">
+
+<!-- Top Navigation Bar (Clean: Brand Logo on Left, Back to Home Button on Right) -->
+<header class="fixed top-0 w-full z-50 bg-[#fbfbf2]/92 backdrop-blur-md border-b border-outline-variant/30 transition-all duration-300">
+    <div class="fluid-container py-3.5 flex justify-between items-center">
+        <!-- Logo (Dark Black with Red Dot for dedal.) -->
+        <a class="group inline-block font-display-lg text-2xl sm:text-3xl text-[#111111] tracking-tight font-bold" href="index.html" aria-label="dedal home">dedal<span class="brand-dot">.</span></a>
+        
+        <!-- Header Actions: Clean Back Button -->
+        <div class="flex items-center gap-2">
+            <a href="index.html" class="btn-interactive inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full bg-primary text-on-primary text-xs sm:text-sm font-semibold shadow-sm hover:bg-primary-hover">
+                <span class="material-symbols-outlined text-[17px]">arrow_back</span>
+                <span class="hidden xs:inline">Back to Home</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+<!-- Main Header Banner (Clean without quick action pills) -->
+<div class="pt-24 pb-8 sm:pt-32 sm:pb-12 bg-gradient-to-b from-surface-container-low to-[#fbfbf2] border-b border-outline-variant/30">
+    <div class="fluid-container">
+        <div class="max-w-4xl mx-auto">
+            <!-- Badge -->
+            <div class="flex items-center gap-3 mb-3.5">
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-secondary-container/80 text-on-secondary-container font-label-sm text-xs font-bold uppercase tracking-wider">
+                    <span class="material-symbols-outlined text-[16px] text-primary">lock</span>
+                    Privacy &amp; Policy
+                </span>
+            </div>
+
+            <!-- Title (Large heading design preserved, NO red dot) -->
+            <h1 class="font-display-lg text-3xl sm:text-4xl md:text-5xl text-primary font-bold tracking-tight mb-3">
+                Privacy &amp; Policy
+            </h1>
+
+            <p class="font-body-lg text-on-surface-variant text-sm sm:text-base leading-relaxed">
+                Detailing our data governance, personal confidentiality, cloud infrastructure, and the comprehensive cancellation, refund, and payment policies across DEDAL.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Body Layout: Legal Content -->
+<div class="fluid-container py-8 sm:py-12">
+    <div class="max-w-4xl mx-auto">
+        <!-- Main Document Content Column (Single Unified Box Layout) -->
+        <main class="w-full legal-content">
+            
+            <!-- Unified Single Container Box -->
+            <div class="bg-white rounded-3xl p-6 sm:p-9 md:p-10 border border-outline-variant/40 shadow-soft">
+                
+                <!-- Plain-Language Executive Summary -->
+                <div class="pb-4 mb-4 border-b border-outline-variant/20">
+                    <div class="flex items-center gap-2 mb-1.5 text-primary font-bold text-[12px]">
+                        <span class="material-symbols-outlined text-[18px] text-primary">verified_user</span>
+                        <span>Summary of Privacy &amp; Policies (In Plain Language)</span>
+                    </div>
+                    <p class="text-[11px] text-on-surface leading-relaxed mb-0">
+                        At Dedal.in / Dedal, we respect your right to total data ownership and transparent operational policies. This document details our data handling practices, account security protocols, hosting standards, as well as the complete cancellation, payment processing, and ticketing guidelines governing transactions on our platform.
+                    </p>
+                </div>
+
+                <!-- 1. Overview & Scope -->
+                <section id="overview" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <div class="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-surface-container text-[11px] font-bold text-primary mb-2">
+                        <span>Dedal.in Privacy Governance</span>
+                    </div>
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">1. Privacy Overview &amp; Commitment</h2>
+                    <p>
+                        Dedal.in Corporation Private Limited (“Dedal.in”, “we”, “us”, or “our”) is committed to protecting your personal information and respecting your privacy. This Privacy Policy details our governance standards regarding personal information, data processing, hosting infrastructure, user ownership rights, and security protocols across the Dedal.in suite of online business productivity, fest management, and collaboration software.
+                    </p>
+                    <p>
+                        Your election to use the Service indicates your acceptance of the terms of this Dedal.in Privacy Policy. If you do not agree with the practices described herein, please refrain from using our Services.
+                    </p>
+                </section>
+
+                <!-- 2. Personal Information Collection -->
+                <section id="personal-info" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">2. Personal Information Collection &amp; Sign-Up Obligations</h2>
+                    <p>
+                        Personal information you provide to Dedal.in through the Service is governed by the Dedal.in Privacy Policy. If you represent an organization, we recommend that you use your corporate email address.
+                    </p>
+                    <p>
+                        You agree to: (i) provide true, accurate, current and complete information about yourself as prompted by the sign-up process; and (ii) maintain and promptly update the information provided during sign-up to keep it true, accurate, current, and complete. If you provide any information that is untrue, inaccurate, outdated, or incomplete, Dedal.in may terminate your user account and refuse current or future use of any or all of the Services.
+                    </p>
+                </section>
+
+                <!-- 3. Account Security & Credentials -->
+                <section id="account-security" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">3. Account Credentials, Passwords &amp; Security</h2>
+                    <p>
+                        You are responsible for maintaining confidentiality of your username, password and sensitive credentials. You are responsible for all activities that occur in your user account and you agree to inform us immediately of any unauthorized use by email to <a href="mailto:dedallegal@gmail.com" class="font-bold text-primary hover:underline">dedallegal@gmail.com</a>.
+                    </p>
+                    <p>
+                        We are not responsible for any loss or damage to you or to any third party incurred as a result of any unauthorized access and/or use of your user account.
+                    </p>
+                </section>
+
+                <!-- 4. Data Ownership -->
+                <section id="data-ownership" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">4. Data Ownership &amp; Usage Rights</h2>
+                    <p class="text-on-surface">
+                        We respect your right to ownership of content created or stored by you. You own the content created or stored by you.
+                    </p>
+                    <p>
+                        Unless specifically permitted by you, your use of the Services does not grant Dedal.in the license to use, reproduce, adapt, modify, publish or distribute your content for Dedal.in’s commercial, marketing or any similar purpose. You grant Dedal.in permission solely to access, copy, distribute, store, transmit, and display the content of your user account solely as required for the purpose of providing the Services to you.
+                    </p>
+                </section>
+
+                <!-- 5. Hosting Location & IP Mapping -->
+                <section id="hosting-location" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">5. Cloud Hosting Location &amp; IP Address Mapping</h2>
+                    <p>
+                        The location of the cloud facility from which you are served depends on the mapping of your region/country to available cloud facilities.
+                    </p>
+                    <p>
+                        You must not mask your internet protocol (IP) address at sign-up since your region/country is determined based on your IP address. If your actual region/country is found to be different from our records, Dedal.in may migrate your account or close your account and deny the Service to you.
+                    </p>
+                    <p>
+                        If you are served from a cloud facility outside your region/country, we may store a local copy of the data in your region/country if a local office exists.
+                    </p>
+                </section>
+
+                <!-- 6. Communications & Opt-Out -->
+                <section id="communications" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">6. Communications from Dedal.in &amp; Privacy Opt-Out</h2>
+                    <p>
+                        The Service may include communications from Dedal.in, such as service announcements, administrative messages and newsletters.
+                    </p>
+                    <p>
+                        We provide you the option of opting out from receiving newsletters. However, you will not be able to opt-out from receiving critical service announcements and administrative messages necessary for the ongoing maintenance and security of your account.
+                    </p>
+                </section>
+
+                <!-- 7. Organization Accounts & Administrator Control -->
+                <section id="organization-data" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">7. Organization Accounts &amp; Administrator Access</h2>
+                    <p>
+                        When you sign up for an account for your organization you may specify one or more administrators with rights to configure Services and manage end users.
+                    </p>
+                    <p>
+                        You are responsible for: (i) ensuring confidentiality of your organization account password, (ii) appointing competent individuals as administrators, and (iii) ensuring that all activities comply with this Agreement. Dedal.in is not responsible for internal management and administration of the Services for you.
+                    </p>
+                    <p>
+                        You are responsible for taking necessary steps to ensure your organization does not lose control of administrator accounts. Account recovery procedures can be coordinated via <a href="mailto:dedallegal@gmail.com" class="font-bold text-primary hover:underline">dedallegal@gmail.com</a>.
+                    </p>
+                </section>
+
+                <!-- 8. Inactive Accounts & Automated Data Deletion -->
+                <section id="inactive-deletion" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">8. Inactive User Accounts Policy &amp; Data Deletion</h2>
+                    <p>
+                        We reserve the right to terminate unpaid user accounts that are inactive for a continuous period of 120 days. In the event of such termination, all data associated with such user account will be permanently deleted. We will provide prior notice of termination and an option to back up your data.
+                    </p>
+                </section>
+
+                <!-- 9. Third Party Applications -->
+                <section id="third-party-integrations" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">9. Third Party Applications &amp; External Privacy Policies</h2>
+                    <p>
+                        Dedal.in Services integrate with third-party applications (<strong>"Third Party Application(s)"</strong>). Access and use of these applications may require acceptance of third-party privacy policies (<strong>"Third Party Terms"</strong>).
+                    </p>
+                    <p>
+                        You acknowledge and agree that Dedal.in is not liable for any Third Party Applications and may suspend or disable access to any Third Party Application at any time without liability.
+                    </p>
+                </section>
+
+                <!-- 10. Public Content & Indexing -->
+                <section id="public-content" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">10. Public Content, Indexing &amp; Search Engine Exposure</h2>
+                    <p>
+                        You are solely responsible for any content created or published by you and the consequences of its transmission. Any content made public may be crawled and indexed by search engines. You are responsible for ensuring that you do not accidentally make private content publicly available.
+                    </p>
+                </section>
+
+                <!-- 11. Complaints & Disclosure -->
+                <section id="complaints-disclosure" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">11. Legal Complaints &amp; Information Disclosure Policy</h2>
+                    <p>
+                        If we receive a complaint regarding your activities, we will forward the complaint to the primary email address of your account. You must respond to the complainant directly within 15 days and copy Dedal.in.
+                    </p>
+                    <p>
+                        If you do not respond within 15 days, Dedal.in may disclose your name and contact information to the complainant to enable legal action.
+                    </p>
+                </section>
+
+                <!-- 12. Account Termination & Data Purging -->
+                <section id="termination-purging" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">12. Account Termination &amp; Complete Data Purging</h2>
+                    <p>
+                        We may suspend your user account in the event of suspected illegal activity or extended inactivity. Objections should be submitted to <a href="mailto:dedallegal@gmail.com" class="font-bold text-primary hover:underline">dedallegal@gmail.com</a> within thirty (30) days.
+                    </p>
+                    <p>
+                        <strong>TERMINATION</strong> of user account includes denial of access to all Services and complete deletion of all account data and credentials.
+                    </p>
+                </section>
+
+                <!-- 13. Policy Modifications -->
+                <section id="policy-updates" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">13. Policy Modifications &amp; Advance Notice</h2>
+                    <p>
+                        If we make significant changes to this Privacy Policy that affect your rights, you will be provided with at least 30 days advance notice by email. You may terminate your use of Services within 30 days and receive a prorated refund of the unused portion of any prepaid fees.
+                    </p>
+                </section>
+
+                <!-- 14. Grievance Redressal & Inquiries -->
+                <section id="contact-grievance" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h2 class="content-heading text-[12px] text-primary font-bold mb-1.5">14. Grievance Redressal &amp; Privacy Officer Contact</h2>
+                    <p>
+                        If you have questions, concerns, or requests regarding this Privacy Policy, compliance with data protection regulations such as <strong>GDPR</strong> or <strong>CCPA</strong>, or our personal data handling practices, you may contact our dedicated desk:
+                    </p>
+                    <ul class="list-disc space-y-1">
+                        <li><strong>Account &amp; Privacy Inquiries:</strong> <a href="mailto:dedallegal@gmail.com" class="text-primary font-bold hover:underline">dedallegal@gmail.com</a></li>
+                        <li><strong>Legal &amp; Grievance Redressal:</strong> <a href="mailto:dedallegal@gmail.com" class="text-primary font-bold hover:underline">dedallegal@gmail.com</a></li>
+                    </ul>
+                    <p class="text-[10px] text-outline mt-2 mb-0">
+                        Jurisdiction: Settled and adjudicated exclusively by the courts of Chennai in accordance with the laws of India.
+                    </p>
+                </section>
+
+                <!-- =========================================================================
+                     PART 2: COMPREHENSIVE CANCELLATION, REFUND & TICKETING POLICY (DEDAL.IN)
+                     ========================================================================= -->
+                <div class="pt-4 pb-4 mb-4 border-b border-outline-variant/30">
+                    <div class="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-secondary-container text-[11px] font-bold text-primary mb-2">
+                        <span>DEDAL.IN Ticketing &amp; Refund Framework</span>
+                    </div>
+                    <!-- Part 2 Title (NO red dot) -->
+                    <h2 class="font-display-lg text-2xl sm:text-3xl text-primary font-bold tracking-tight">
+                        Cancellation, Refund &amp; Payment Policies
+                    </h2>
+                    <p class="text-[11px] text-on-surface-variant leading-relaxed mt-1 mb-0">
+                        Governing online payments, convenience fees, ticket cancellation requests, payment failure auto-reversals, venue admissions, and refund processing mechanics across DEDAL.IN.
+                    </p>
+                </div>
+
+                <!-- Platform Role -->
+                <section id="platform-role" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">Operational Scope &amp; Platform Role</h3>
+                    <p>
+                        DEDAL.IN operates strictly as an online technology intermediary, marketplace, and facilitation platform connecting registered users ("Users" or "Ticket Holders") with third-party event organizers, promoters, venues, and managers ("Event Organisers").
+                    </p>
+                    <p>
+                        DEDAL.IN does not own, organize, host, conduct, manage, control, or determine the pricing or execution of any Event. The Event Organiser retains sole legal and operational responsibility for the Event.
+                    </p>
+                </section>
+
+                <!-- 15. Convenience Fees -->
+                <section id="convenience-fees" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">15. Convenience Fees, Platform Charges &amp; Non-Refundability</h3>
+                    <p>
+                        15.1. Service Consideration: DEDAL.IN levies a non-refundable Convenience Fee, Platform Service Fee, and/or Payment Processing Fee on each booking transaction.
+                    </p>
+                    <p>
+                        15.2. Strict Non-Refundability: Under all circumstances—including Event cancellation, postponement, rescheduling, venue change, artist non-appearance, force majeure, or user error—all Convenience Fees, Platform Service Fees, booking surcharges, and taxes charged directly by DEDAL.IN are <strong>STRICTLY NON-REFUNDABLE</strong>.
+                    </p>
+                </section>
+
+                <!-- 16. Ticket Cancellation Mechanics -->
+                <section id="ticket-cancellations" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">16. Ticket Cancellation, Organiser Refund Policy &amp; Processing Mechanics</h3>
+                    <p>
+                        16.1. Organiser-Governed Cancellations: All ticket cancellation requests, eligibility, refund percentages, and timelines are governed strictly by the specific Cancellation &amp; Refund Policy established by the respective Event Organiser.
+                    </p>
+                    <p>
+                        16.2. Pre-Purchase Advisory: Users are explicitly required to review Event-specific terms and refund policies prior to booking. Once a booking is completed, cancellations or refunds shall strictly be permitted only where explicitly mandated by the Event Organiser's written policy.
+                    </p>
+                    <p>
+                        16.3. Refund Facilitation &amp; Payout Sequence: Where an Event Organiser approves a refund, DEDAL.IN will process refunds back to the original payment instrument ONLY AFTER the Event Organiser has fully remitted and released the total required refund capital to DEDAL.IN. DEDAL.IN bears no financial liability to advance refunds out of its own operational funds.
+                    </p>
+                    <p>
+                        16.4. Processing Timelines: Approved refunds will generally be credited to the original payment method within 7 to 14 business days, subject to banking cycles and gateway turnarounds.
+                    </p>
+                </section>
+
+                <!-- 17. Payment Failures -->
+                <section id="payment-failures" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">17. Payment Failures, Pending Deductions &amp; Auto-Reversals</h3>
+                    <p>
+                        17.1. Failed Booking Scenarios: If a User's account is debited but the transaction fails or fails to issue an official ticket due to network latency or gateway drops, a ticket has NOT been purchased.
+                    </p>
+                    <p>
+                        17.2. Automated Banking Reversals: In all failed transactions, the debited amount is held by the banking gateway and will be automatically reversed back to the source account without platform deduction within 3 to 7 working days (T+2 to T+7 rules).
+                    </p>
+                </section>
+
+                <!-- 18. Event Cancellation & Relocation -->
+                <section id="event-disruptions" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">18. Event Cancellation, Postponement, Rescheduling &amp; Venue Relocation</h3>
+                    <p>
+                        18.1. Organiser Authority: If an Event is cancelled, postponed, suspended, rescheduled, or relocated, the decision to issue a refund and the monetary quantum rests exclusively with the Event Organiser.
+                    </p>
+                    <p>
+                        18.2. Absence of Platform Obligation: DEDAL.IN holds no authority, obligation, or legal duty to decide whether a refund is payable or to dictate the quantum of refund.
+                    </p>
+                    <p>
+                        18.3. Communication Efforts: Upon receiving written confirmation from the Event Organiser, DEDAL.IN will make reasonable efforts to inform affected Users via SMS, email, or push notifications.
+                    </p>
+                </section>
+
+                <!-- 19. Exclusion of Personal Expenses -->
+                <section id="incidentals-exclusion" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">19. Exclusion of Personal Expenses, Travel &amp; Incidental Costs</h3>
+                    <p>
+                        19.1. Personal Outlays: Attendance at an Event may require independent financial outlays including transportation, travel, lodging, hotel accommodations, dining, parking, or attire.
+                    </p>
+                    <p>
+                        19.2. Non-Liability for Incidentals: <strong>LIMITATION OF LIABILITY:</strong> Under no circumstances shall DEDAL.IN be liable or legally required to reimburse or compensate any User for personal travel, lodging, or incidental expenses incurred as a result of Event cancellation, postponement, or venue relocation.
+                    </p>
+                </section>
+
+                <!-- 20. Prohibition of Chargebacks -->
+                <section id="chargeback-protocol" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">20. Prohibition of Chargebacks &amp; Dispute Protocol</h3>
+                    <p>
+                        20.1. No Unilateral Bank Chargebacks: Users explicitly agree not to initiate payment chargebacks, payment disputes, or fraudulent debit claims with card issuers or banks for issues arising from Event cancellations or Organiser refund disputes.
+                    </p>
+                    <p>
+                        20.2. Dispute Resolution Path: All refund claims must be pursued through DEDAL.IN's support framework or directly against the Event Organiser. DEDAL.IN reserves the right to recover chargeback fees, administrative charges, legal costs, and permanently suspend accounts in the event of improper chargebacks.
+                    </p>
+                </section>
+
+                <!-- 21. Venue Rules & Entry -->
+                <section id="venue-rules" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">21. Venue Rules, Health Protocols, Security &amp; Right of Admission</h3>
+                    <p>
+                        21.1. Adherence to Venue Terms: All tickets are issued subject to the specific venue regulations, security requirements, age limits, dress codes, and entry policies enforced by the Event Organiser and venue owner.
+                    </p>
+                    <p>
+                        21.2. Enforcement Authority: The Event Organiser and venue management retain absolute authority to refuse entry or evict any individual who fails security screenings or violates rules.
+                    </p>
+                    <p>
+                        21.3. Platform Disclaimer: DEDAL.IN assumes zero liability for admission refusals, security confiscations, or evictions.
+                    </p>
+                </section>
+
+                <!-- 22. Ticket Security & Anti-Scalping -->
+                <section id="anti-scalping" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">22. Ticket Security, Resale, Scalping &amp; Anti-Fraud Restrictions</h3>
+                    <p>
+                        22.1. Credentials Security: Users must keep ticket confirmation emails, SMS tokens, PDFs, dynamic QR codes, and physical passes secure. DEDAL.IN is not liable for duplicate scans, lost, stolen, or shared QR codes.
+                    </p>
+                    <p>
+                        22.2. Prohibition of Resale / Scalping: Tickets purchased on DEDAL.IN are personal, non-transferable licenses. The unauthorized re-selling, scalping, commercial auctioning, or duplication of tickets for profit is strictly prohibited.
+                    </p>
+                    <p>
+                        22.3. Invalidation of Scalped Tickets: Any ticket identified as being resold via unauthorized secondary platforms or scalping black markets will be invalidated immediately without refund, and entry will be barred.
+                    </p>
+                </section>
+
+                <!-- 23. Purchase Limits -->
+                <section id="purchase-limits" class="scroll-mt-24 pb-4 mb-4 border-b border-outline-variant/20">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">23. Purchase Limits &amp; Order Invalidation</h3>
+                    <p>
+                        23.1. Purchase Caps: To prevent scalping and automated bot purchasing, Events may carry ticket volume limits per user account, household, card, or phone number.
+                    </p>
+                    <p>
+                        23.2. Cancellation Right: DEDAL.IN and the Event Organiser reserve the right to unilaterally cancel any order that exceeds stated limits, utilizes fraudulent payment details, or uses automated scripts/bots.
+                    </p>
+                </section>
+
+                <!-- 24. Force Majeure -->
+                <section id="force-majeure" class="scroll-mt-24 pb-1">
+                    <h3 class="content-heading text-[12px] text-primary font-bold mb-1.5">24. Force Majeure &amp; Limitation of Platform Role</h3>
+                    <p>
+                        24.1. Unforeseen Events: DEDAL.IN shall not be held liable for any failure, delay, or performance interruption resulting from events beyond its reasonable control, including natural disasters, epidemics, civil unrest, or payment gateway outages.
+                    </p>
+                    <p class="mb-0">
+                        24.2. Warranty Disclaimer: <strong>DISCLAIMER OF WARRANTIES:</strong> DEDAL.IN acts solely as a technological ticketing platform. DEDAL.IN makes no warranties regarding the quality, safety, artist lineup, or execution of any Event. Any legal disputes regarding Event execution must be directed against the respective Event Organiser.
+                    </p>
+                </section>
+
+            </div>
+
+            <!-- Callout Card -->
+            <div class="mt-6 p-6 sm:p-8 rounded-3xl bg-primary text-white text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-5 shadow-stat">
+                <div>
+                    <h3 class="font-display-lg text-lg sm:text-xl text-white font-bold tracking-tight mb-1.5">Need Policy Clarification or Support?</h3>
+                    <p class="text-xs sm:text-sm text-white/90 leading-relaxed max-w-md mb-0" style="color: #ffffff !important;">
+                        Reach out to our Data Privacy &amp; Customer Support team anytime for inquiries regarding data handling, regional hosting, or booking resolutions.
+                    </p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2.5 flex-shrink-0">
+                    <a href="mailto:dedallegal@gmail.com" class="btn-interactive inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-white text-primary text-xs font-bold hover:bg-surface-bright shadow-md">
+                        <span class="material-symbols-outlined text-[16px]">mail</span>
+                        <span>Contact Privacy Desk</span>
+                    </a>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="w-full border-t border-outline-variant/30 bg-white pt-8 pb-12">
+    <div class="fluid-container flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
+        <!-- Brand Logo with Red Dot -->
+        <div class="font-display-lg text-2xl text-[#111111] font-bold">dedal<span class="brand-dot">.</span></div>
+        
+        <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 items-center text-xs sm:text-sm text-on-surface-variant font-medium">
+            <a class="hover:text-primary transition-colors py-1" href="index.html">Home</a>
+            <a class="hover:text-primary transition-colors py-1" href="index.html#about">About</a>
+            <a class="hover:text-primary transition-colors py-1" href="index.html#analytics">Live Metrics</a>
+            <a class="hover:text-primary transition-colors py-1" href="terms.html">Terms of Service</a>
+            <a class="hover:text-primary transition-colors py-1" href="global-terms.html">Global Terms</a>
+            <a class="text-primary font-bold underline py-1" href="privacy.html">Privacy Policy</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

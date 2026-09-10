@@ -1,0 +1,583 @@
+/*
+ * event-schedule.css — /schedule/:festId, the day-by-day running order.
+ *
+ * Prefixed `dsk-` for the reason every sheet here is prefixed: this loads
+ * alongside the Tailwind @theme belonging to the retired Heritage palette, and
+ * an unprefixed `.day` or `.hour` would sooner or later be won or lost by a
+ * utility class nobody was thinking about.
+ *
+ * Tokens only, from dedal-tokens.css. Six colours. --primary is spent on
+ * exactly one thing on this screen — LIVE — because that is the single piece of
+ * information somebody opening a schedule mid-fest is actually looking for, and
+ * a red that also meant "selected tab" would not carry it.
+ *
+ * ── THE SHAPE, AND WHY IT IS NOT A TIMELINE RIBBON ──────────────────────────
+ *
+ * The screen this replaced was a vertical rail: a 56px time gutter down the
+ * left, a dot per event, and one card per row. On a phone that is correct. On a
+ * 1440px laptop it was a narrow ribbon stranded in the middle of the window
+ * with most of the page empty beside it, and a fest with thirty events became
+ * four screens of scrolling past a column of whitespace.
+ *
+ * So the unit of layout is the HOUR, not the event. Events are grouped into the
+ * hour they start in — which the screen already computed, for sorting — and
+ * each hour becomes a block with its own heading. The blocks then sit in an
+ * intrinsic grid, so the window decides the column count: one on a phone, two
+ * around 720px, three by 1100, four at the 1440 cap. The chronology reads
+ * left-to-right then down, which is how a printed timetable reads.
+ *
+ * The rail's dot-and-line went with it. It was decoration carrying no
+ * information the time label did not already carry, and it cost a fixed 56px
+ * gutter on the narrowest screen in the product.
+ */
+
+.dsk-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * FLUID TO 1440, THEN FIXED — the house stop, matching the certificates grid.
+ * Below it every extra pixel buys part of another column, which is content;
+ * above it a grid stops looking generous and starts looking stretched.
+ */
+.dsk-col {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/*
+ * NO padding-top FOR THE HEADER, DELIBERATELY. ScreenHeader sits in normal flow
+ * and, because this screen passes it a title, the app header above it has stood
+ * down entirely. Reserving --header-h here would leave a band of empty page
+ * above the day tabs.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The day bar
+   ─────────────────────────────────────────────────────────────────────────
+
+   Sticky, because the day is the one piece of context that must survive a long
+   scroll: an event card three screens down says 2:30 PM and nothing else, and
+   without the bar there is no way to know which 2:30 PM.
+
+   top: 0 rather than --header-h, for the same reason the screen has no top
+   padding — on this route the viewport top genuinely is the top.
+*/
+
+.dsk-daybar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dsk-daybar__inner {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 0 var(--page-pad) var(--s3);
+}
+
+/* The fest's own name. NOT an <h1> — the ScreenHeader bar carries the heading,
+   and this answers "whose schedule", which is a caption. */
+.dsk-fest {
+  margin: 0 0 var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsk-tabs {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dsk-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * A tab is a two-line pill: "Day 2" over the date. The date is what people
+ * actually match against ("I arrive on the Saturday"); the ordinal is what the
+ * fest calls it. Dropping either one makes somebody count.
+ */
+.dsk-tab {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  /* 44px minimum touch target, met by padding rather than a fixed height so a
+     long date cannot clip. */
+  min-height: 44px;
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .dsk-tab:hover {
+    border-color: var(--muted);
+  }
+}
+
+.dsk-tab:active {
+  transform: scale(0.97);
+}
+
+/* The selected day is --ink, not --primary. --primary on this screen means
+   LIVE, and a red tab beside a red live badge would make both mean less. */
+.dsk-tab[aria-selected='true'] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface-card);
+}
+
+.dsk-tab__ordinal {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+}
+
+.dsk-tab__date {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* --muted on --ink fails contrast, so the selected pill lends back its own
+   foreground at reduced opacity rather than introducing a seventh colour. */
+.dsk-tab[aria-selected='true'] .dsk-tab__date {
+  color: var(--surface-card);
+  opacity: 0.72;
+}
+
+/*
+ * The day's tally. One sentence, not the fixed three-column stats bar this
+ * replaced — that bar was pinned to the bottom edge of the viewport at a
+ * hardcoded 480px width, forced 96px of bottom padding onto every screen size,
+ * and spent a permanent band of the fold on three numbers nobody acts on.
+ */
+.dsk-tally {
+  margin: var(--s3) 0 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dsk-tally__live {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The hour grid
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsk-panel {
+  padding-top: var(--s5);
+}
+
+.dsk-hours {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--grid-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* Blocks are as tall as their contents. Stretching a two-event hour to match
+     a six-event one beside it would invent empty space inside a card. */
+  align-items: start;
+}
+
+/*
+ * INTRINSIC COLUMNS, NOT A COUNT PER BREAKPOINT. 320px is the floor because an
+ * event card has to hold a name of real length on two lines with a venue under
+ * it; below that the name clamps on almost every event.
+ */
+@media (min-width: 720px) {
+  .dsk-hours {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+.dsk-hour {
+  min-width: 0;
+}
+
+.dsk-hour__label {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dsk-hour__label svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.dsk-hour__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--card-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The event card
+   ─────────────────────────────────────────────────────────────────────────
+
+   One <button>, not a card containing a link: there is exactly one destination
+   per event, so anything smaller than the whole card is a smaller target for no
+   gain. The venue anchor inside it is the single exception, and it stops its
+   own click.
+*/
+
+.dsk-event {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--divider);
+  /* The status stripe. On the inline-start edge, so it is on the left here and
+     would flip on its own in an RTL locale. */
+  border-inline-start: 3px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform var(--d-instant) var(--ease-exit),
+    box-shadow var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dsk-event:hover {
+    box-shadow: var(--e1);
+  }
+}
+
+.dsk-event:active {
+  transform: scale(0.98);
+}
+
+.dsk-event--live {
+  border-inline-start-color: var(--primary);
+}
+
+.dsk-event--upcoming {
+  border-inline-start-color: var(--accent);
+}
+
+/*
+ * ENDED events are dimmed, not hidden. Somebody checking whether they missed
+ * something needs to see that it happened; a schedule that silently drops the
+ * morning is a schedule that looks like it failed to load.
+ */
+.dsk-event--ended {
+  opacity: 0.55;
+}
+
+/*
+ * The poster, where the event has one. A 16:9 strip at the top of the card
+ * rather than the full-bleed 180px hero the old screen gave poster events —
+ * that hero produced two visually unrelated card designs in one list, and the
+ * difference carried no meaning beyond "an organiser uploaded an image".
+ */
+.dsk-event__poster {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--ink-dim-4);
+}
+
+.dsk-event__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--card-pad);
+}
+
+.dsk-event__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.dsk-event__name {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  /* Two lines then ellipsis. Event names run long, and a card that grows to
+     four breaks the block's rhythm without adding information. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.dsk-event__time {
+  flex: none;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dsk-event__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dsk-event__meta svg {
+  flex: none;
+}
+
+.dsk-event__venue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The venue link. Underlined, because it is a second destination inside a card
+   that is itself a button — without the underline it is a trap. */
+.dsk-event__maps {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .dsk-event__maps:hover {
+    color: var(--ink);
+  }
+}
+
+.dsk-event__category {
+  align-self: flex-start;
+  margin-top: var(--s1);
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+}
+
+/* ── LIVE ─────────────────────────────────────────────────────────────────
+ *
+ * The one --primary thing on the screen. A dot and a word: the dot pulses so it
+ * reads as "now" at a glance, and the word is there because a colour on its own
+ * is not an accessible signal.
+ */
+.dsk-live {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: rgb(255 59 48 / 10%);
+  color: var(--primary);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+.dsk-live__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: currentcolor;
+  animation: dsk-pulse 1.6s var(--ease-enter) infinite;
+}
+
+@keyframes dsk-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* ── Capacity ─────────────────────────────────────────────────────────────
+ *
+ * Rendered only where a cap exists. --accent for the fill, not --primary:
+ * "78% booked" is information, and the red belongs to what is on right now.
+ * "Filling fast" IS urgent, so that line takes the red — the bar under it does
+ * not, or one small card would carry two competing red marks.
+ */
+.dsk-capacity {
+  margin-top: var(--s2);
+}
+
+.dsk-capacity__track {
+  height: 3px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dsk-capacity__fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  transition: width var(--d-move) var(--ease-enter);
+}
+
+.dsk-capacity__label {
+  margin: var(--s1) 0 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dsk-capacity__label--urgent {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Skeletons, error, empty
+   ─────────────────────────────────────────────────────────────────────────
+
+   The skeleton is the real shape: hour blocks in the same grid, each with a
+   label bar and two card-height bars. Generic full-width bars would have to be
+   replaced by a grid of a different height, and that swap IS the layout jump a
+   skeleton exists to prevent.
+
+   STATIC, no pulse. A schedule loads in one request, and a dozen blocks all
+   breathing at once is more movement than the rest of the app puts together.
+*/
+
+.dsk-skeleton__label {
+  height: 14px;
+  width: 96px;
+  margin-bottom: var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dsk-skeleton__card {
+  height: 84px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dsk-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-top: var(--s6);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dsk-error__line {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dsk-error__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dsk-error__retry:active {
+  transform: scale(0.97);
+}
+
+/*
+ * An empty DAY sits inside a populated screen, so the shared EmptyState's
+ * default 120px offset would claim almost the whole viewport under a day bar
+ * that is already ~150px tall. 420px is that bar plus the header plus the room
+ * the sentence needs; it undershoots, which is the direction that cannot
+ * introduce a scrollbar.
+ */
+.dsk-empty-day {
+  --des-empty-offset: 420px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsk-live__dot {
+    animation: none;
+  }
+
+  .dsk-event:active {
+    transform: none;
+  }
+}

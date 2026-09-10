@@ -1,0 +1,17 @@
+{
+  "name": "@dedal/shared",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": {
+      "require": "./index.cjs",
+      "import": "./index.js"
+    }
+  },
+  "main": "./index.cjs",
+  "module": "./index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

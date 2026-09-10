@@ -1,0 +1,1089 @@
+/*
+ * fest-detail.css — the parts of the fest page that are not shared furniture.
+ *
+ * The hero, the facts block, sections, the collapsible description and the
+ * sticky bar all come from design/detail-page.css. What lives here is the one
+ * thing this screen has and the event page does not: a way to show forty
+ * events without listing forty events.
+ *
+ * `dfd-` prefix. Tokens only.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Core info
+   ─────────────────────────────────────────────────────────────────────────
+
+   The shared .ddp-facts gives three near-identical grey lines, which is right
+   on the event page — venue, date, capacity are peers there. On a fest they are
+   not peers, and the block read as a wall of metadata under an empty hero.
+
+   These are dfd- classes on the shared .ddp-facts container rather than
+   overrides of .ddp-facts__line, so nothing here can reach the event page.
+   Hierarchy from weight, size and colour only; no second family, no rules, no
+   boxes. --muted is used at 14px and never below, since it is only ~3.5:1 on
+   --surface.
+*/
+
+/* Slightly more air than the shared grid's --s1: three lines that now differ in
+   size need the space to read as three facts rather than a paragraph. */
+.dfd-facts {
+  gap: var(--s2);
+}
+
+/* The identity. The heaviest thing on the page below the hero title. */
+.dfd-facts__host {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* The city is context for the college, not a fact of its own — same line, one
+   step back, so the eye takes the institution first. */
+.dfd-facts__city {
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* When it runs: the fact that decides whether any of this is relevant, so it
+   stays in ink rather than dropping to the grey of a caption. */
+.dfd-facts__dates {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* How big it is. A quantity, so the numeral carries the weight and the words
+   around it stay a caption. */
+.dfd-facts__scale {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.dfd-facts__count {
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * OVERRIDE of the shared .ddp-facts__deadline (detail-page.css), scoped to this
+ * screen so the event page is untouched.
+ *
+ * There it is a --micro line, which is fine beside a single event's other
+ * chrome. Here it is the one urgent thing in a block that now has real
+ * hierarchy, and at 11px it lost to the 16px college name above it — a
+ * deadline that is quieter than an address is not a deadline. It keeps
+ * --primary, which is what --primary is for, and moves up to --body-s.
+ */
+.dfd-facts .ddp-facts__deadline {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Category tabs
+   ─────────────────────────────────────────────────────────────────────────
+
+   THE CENTRAL DECISION ON THIS SCREEN. A fest carries up to fifty events
+   across five or six categories; the old page rendered them as one flat
+   scroll, so finding the quiz meant reading past twelve sports fixtures.
+   Tabs turn that into one tap.
+
+   The tabs are DERIVED PER FEST, never hardcoded. `category` is free text on
+   the event model with no enum, no canonical order and no display label — one
+   fest returns cultural/technical/sports, the next returns Robotics and
+   Culinary Arts. A fixed tab bar would be wrong on the second fest.
+*/
+
+/*
+ * The rail is two elements: a sticky FRAME that does not move, and a scroller
+ * inside it that does. The frame carries the sticky offset, the canvas colour
+ * and the trailing fade; splitting them is the only way the fade can stay at
+ * the column edge while the tabs slide under it, since anything drawn on the
+ * scroller is part of the scrolled content and travels with it.
+ */
+.dfd-tabrail {
+  /* sticky is a positioned box, so the fade below can absolutely position
+     against it without a second wrapper. */
+  position: sticky;
+  /* Under the app header, so the tabs stay reachable while scanning a long
+     category. This is the one sticky element on the page besides the CTA. */
+  top: var(--header-h);
+  z-index: 10;
+  background: var(--surface);
+  /* The rail scrolls edge to edge while the first tab still lines up with the
+     page gutter — the bleed is on the frame, the gutter on the scroller. */
+  margin-inline: calc(var(--page-pad) * -1);
+}
+
+/*
+ * THE SCROLL AFFORDANCE. Nine tabs do not fit in 360px, and the ninth used to
+ * be sliced mid-word at the edge with nothing to say the row continued — a
+ * clean vertical cut through a word looks like a layout bug, not an invitation.
+ * A softened edge is the honest signal: the content is fading out because there
+ * is more of it.
+ *
+ * Only drawn when something is actually past the edge (the class is toggled
+ * from a measured scroll position), and it disappears when the rail is scrolled
+ * to its end. A gradient that is always there is decoration describing nothing.
+ */
+.dfd-tabrail::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: var(--s8);
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--surface));
+  opacity: 0;
+  transition: opacity var(--d-quick) var(--ease-enter);
+}
+
+.dfd-tabrail--more::after {
+  opacity: 1;
+}
+
+.dfd-tabs {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  scrollbar-width: none;
+  padding-block: var(--s3);
+  padding-inline: var(--page-pad);
+}
+
+.dfd-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * A COLUMN, since a category that sold a title or presenting sponsor puts a
+ * "Powered by" line under its name. Two consequences worth stating, because
+ * both were checked rather than assumed:
+ *
+ *  - The rail stays one even band. .dfd-tabs is a flex row at the default
+ *    align-items: stretch, so the tallest tab sets the height and every other
+ *    tab grows to match; justify-content: center here keeps a one-line label
+ *    optically centred in that taller pill instead of pinned to its top.
+ *  - The sticky offset does not move. .dfd-tabrail parks at var(--header-h),
+ *    which is a property of the app header, not of the rail's own height, so a
+ *    taller rail simply occupies more of the column below the same line. The
+ *    trailing fade is inset-block: 0 against the frame and grows with it, and
+ *    the ResizeObserver already watching the scroller re-measures on the height
+ *    change, so the "there is more" state stays honest.
+ *
+ * flex-start, not center, on the cross axis: a "Powered by" line is always
+ * longer than the category name above it, and centring produced a ragged pill
+ * with the label floating over the middle of the credit.
+ */
+/*
+ * A single row again, not a column. The column existed only to stack a
+ * "Powered by" line under the label; with the sponsor gone from the tab there
+ * is one child and nothing to stack, and a row is what keeps every tab the
+ * same height as its neighbours.
+ */
+.dfd-tab {
+  flex: 0 0 auto;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /*
+   * PRESSING A TAB SHOULD LOOK LIKE PRESSING SOMETHING. The selected state used
+   * to swap instantly, which on a filter rail reads as the page reloading
+   * rather than as a control responding. These three properties are the whole
+   * of the state change, so transitioning them is enough.
+   */
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter),
+    transform var(--d-quick) var(--ease-enter);
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter);
+}
+
+/* aria-pressed, not aria-selected: these are toggle buttons in a group, not an
+   ARIA tablist — see the note at the markup. */
+.dfd-tab[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+/* The count beside a tab label. Muted when unselected, inherited when not —
+   so it never competes with the label it belongs to. */
+.dfd-tab__count {
+  margin-left: var(--s1);
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The label and its count, held on one line. Without this wrapper they would be
+   two items of the column above and the count would drop under every label in
+   the rail. */
+.dfd-tab__row {
+  display: block;
+}
+
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Event grid
+   ─────────────────────────────────────────────────────────────────────────
+
+   The same shape as a Discover card, deliberately: somebody arriving here from
+   the feed should recognise what they are looking at, and one card design that
+   works in two places beats two that nearly match.
+*/
+
+/*
+ * The heading over a category block in the "All" view. Not rendered when a
+ * single category is selected — the tab already says which one.
+ *
+ * It was the same 16px bold as every section title on the page, which meant
+ * nine of them stacked with forty cards between them read as one continuous
+ * wall. What separates a group now is a HAIRLINE and the space around it, not
+ * more weight: the heading is a landmark you scroll past, and the cards under
+ * it are the thing being looked at, so making the label louder would have been
+ * backwards. The count sits beside the label as its own quieter fact so
+ * somebody can judge the size of a category before entering it.
+ */
+.dfd-group__title {
+  display: flex;
+  align-items: baseline;
+  /* Wraps now that a sponsor credit can join the row: at 360px "Nyaya Samvada
+     4  Powered by <brand>" does not fit on one line, and without this the
+     label would be squeezed instead of the credit dropping below it. */
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: var(--s6) 0 var(--s3);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--divider);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/*
+ * The first group sits directly under the tab rail, which is already a
+ * boundary; a second line 12px below it would be a double rule.
+ *
+ * Matched off the RAIL, not with :first-of-type. The groups are divs and the
+ * rail is a div immediately before them, so `.dfd-group:first-of-type` resolves
+ * to "the first div among these siblings" — which is the rail, which does not
+ * carry .dfd-group — and the rule silently matched nothing at all.
+ */
+.dfd-tabrail + .dfd-group .dfd-group__title {
+  margin-top: var(--s2);
+  padding-top: 0;
+  border-top: 0;
+}
+
+.dfd-group__count {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The category's sponsor, BESIDE the heading rather than under it: the heading
+ * is a landmark you scroll past, and a credit given its own line would double
+ * the height of nine of them. margin-inline-start: auto pushes it to the far
+ * end of the row, which is where a credit is read and where it cannot be
+ * confused with the label.
+ *
+ * It is allowed to wrap onto its own line rather than truncate — the heading
+ * row has room at 360px only because a category name is short, and a long
+ * sponsor name shortened to "Powered by Hindustan Uni…" credits nobody.
+ * --body-s, not --micro: this one IS in --muted, and --muted is only ~3.5:1 on
+ * --surface, so it never goes below 14px.
+ */
+.dfd-group__powered {
+  margin-inline-start: auto;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+  text-align: end;
+}
+
+.dfd-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--card-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dfd-card {
+  background: var(--surface-card);
+  border-radius: var(--r-card);
+  box-shadow: var(--e1);
+  overflow: hidden;
+}
+
+.dfd-card__hit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dfd-card__hit:active {
+  transform: scale(0.97);
+}
+
+/* 3:4 portrait, matching the feed on mobile. The ratio is on the box so the
+   space is reserved before the poster arrives. */
+.dfd-card__media {
+  /*
+   * `display: block` is LOAD-BEARING, not tidiness. The card is built from
+   * spans (a <button> may not contain a <div>, and the whole card is one hit
+   * target), and on an inline box `width: 100%` and `aspect-ratio` are both
+   * ignored — the poster measured 0x0 on every card in the grid until this
+   * line existed. Every span in this file that is sized or given a ratio
+   * carries its own display for the same reason.
+   */
+  display: block;
+  position: relative;
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  background: var(--ink-dim-4);
+  overflow: hidden;
+  /* An (anonymous) container so the placeholder letter can be sized in `cqi` —
+     a share of THE CARD's width. The page-level `ddp` container is the whole
+     screen, so `cqw` there would have scaled the letter with the viewport
+     rather than with the box it sits in, and the letter would have been the
+     same size on a 157px card and a 260px one. */
+  container-type: inline-size;
+}
+
+.dfd-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/*
+ * THE POSTER PLACEHOLDER.
+ *
+ * Every seeded event has posterImageUrl: null, so this — not the <img> path —
+ * is what the grid looks like today. It used to be one flat --accent→--ink
+ * gradient repeated on all forty cards: an absence with no information in it.
+ * It now carries the event's initial over a field derived from its category.
+ *
+ * WHY THERE IS NO PER-CATEGORY COLOUR. `category` is free text with no enum and
+ * no map anywhere in this codebase, so a colour per category would have to be
+ * GENERATED — new hex values invented at runtime, which is exactly what the
+ * six-token system was enforced across these screens to stop. It also fails on
+ * its own terms: hashed hues land wherever they land, so two categories can
+ * come out imperceptibly close while a third arrives at a colour the brand does
+ * not own.
+ *
+ * Instead: six treatments, all built from the same --accent and --ink pair.
+ * What varies is the color-mix ratio between them and the angle and stop
+ * positions of the gradient. The category string is hashed (FNV-1a, in the JSX)
+ * to one of the six, so the same category always draws the same field — on
+ * every card, in every group, on every reload. Six is the count because it is
+ * enough for adjacent categories in a grid to read as different fields and few
+ * enough that each is visibly its own rather than a shade of its neighbour.
+ *
+ * `display: grid`, not `block`, and it is still load-bearing for the same
+ * reason the note on .dfd-card__media gives — this is a <span>, and an inline
+ * box ignores width and height. Grid is what centres the letter.
+ */
+.dfd-card__fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.dfd-card__fallback--t0 {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--accent) 82%, var(--ink)) 0%,
+    var(--ink) 100%
+  );
+}
+
+.dfd-card__fallback--t1 {
+  background: linear-gradient(
+    195deg,
+    color-mix(in oklab, var(--accent) 55%, var(--ink)) 0%,
+    var(--ink) 72%
+  );
+}
+
+.dfd-card__fallback--t2 {
+  background: linear-gradient(
+    100deg,
+    var(--ink) 0%,
+    color-mix(in oklab, var(--accent) 70%, var(--ink)) 100%
+  );
+}
+
+.dfd-card__fallback--t3 {
+  background: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--accent) 40%, var(--ink)) 0%,
+    color-mix(in oklab, var(--accent) 90%, var(--ink)) 100%
+  );
+}
+
+.dfd-card__fallback--t4 {
+  background: linear-gradient(
+    215deg,
+    color-mix(in oklab, var(--accent) 92%, var(--ink)) 0%,
+    color-mix(in oklab, var(--accent) 30%, var(--ink)) 55%,
+    var(--ink) 100%
+  );
+}
+
+.dfd-card__fallback--t5 {
+  background: linear-gradient(
+    120deg,
+    var(--ink) 0%,
+    color-mix(in oklab, var(--accent) 60%, var(--ink)) 45%,
+    var(--ink) 100%
+  );
+}
+
+/*
+ * The initial. Large, and deliberately LOW contrast against its own field —
+ * around 20% white, which is legible as a shape and unreadable as a label. That
+ * is the point: this is a designed absence, and a crisp white letter would
+ * present itself as content the event actually has. It is inside an
+ * aria-hidden field, so it is never announced.
+ *
+ * Sized in cqw-free terms — a fixed 34% of the card's own width would need a
+ * container query per breakpoint; the ratio box already scales, so the font
+ * size is clamped instead and the letter stays proportional from a 157px card
+ * at 360px to a 260px one on desktop.
+ */
+.dfd-card__mark {
+  display: block;
+  font-family: var(--font);
+  font-size: clamp(40px, 34cqi, 84px);
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: color-mix(in srgb, #ffffff 20%, transparent);
+  user-select: none;
+}
+
+/*
+ * The category (or event) sponsor's badge, top-right of the poster box.
+ *
+ * A semi-transparent white pill rather than a bare logo: this sits over an
+ * ARBITRARY third-party poster, and a logo with a transparent background
+ * dropped straight onto someone's dark artwork disappears. The pill is the
+ * white field the logo was designed to be printed on.
+ *
+ * Non-interactive, and there is no link in the markup to make it otherwise —
+ * the card is a single <button> and a nested <a> would be invalid HTML that
+ * steals the tap. pointer-events: none makes that structural rather than a
+ * convention someone can undo later.
+ */
+.dfd-card__sponsor {
+  display: block;
+  position: absolute;
+  top: var(--s2);
+  inset-inline-end: var(--s2);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, #ffffff 88%, transparent);
+  box-shadow: var(--e1);
+  pointer-events: none;
+}
+
+.dfd-card__sponsor img {
+  display: block;
+  height: 16px;
+  /* A minimum width for the same reason as the strip below: `width: auto` on an
+     unloaded image is a zero-area box, and a zero-area box never enters the
+     viewport, so a lazy image inside one never loads at all. */
+  min-width: 24px;
+  max-width: 56px;
+  object-fit: contain;
+}
+
+.dfd-card__body {
+  padding: var(--card-pad);
+  display: grid;
+  gap: var(--s1);
+}
+
+/*
+ * Two lines, not one. A 181px card at 360px holds roughly fourteen characters
+ * on a line, and single-line truncation was turning "Alliance Premier League"
+ * into "Alliance Prem…" — the name is the only thing on the card that
+ * identifies the event, so it gets the room to finish. Fixed to two lines'
+ * height whether it uses them or not, so the meta rows across a grid row line
+ * up instead of stepping.
+ */
+.dfd-card__name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  min-height: calc(var(--body-m-line) * 2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * The meta row: a format on the left, a price on the right.
+ *
+ * These were two identical pills sitting shoulder to shoulder, which said they
+ * were the same kind of fact and left them fighting for 157px. They are not the
+ * same kind of fact — "Solo" is how the event is run, the fee is what it costs
+ * — so they are now typographically different things at opposite ends of the
+ * row, which is also where the eye already looks for a price.
+ */
+.dfd-card__meta {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: var(--s2);
+  overflow: hidden;
+}
+
+/* The format. A caption; --muted at --body-s, never smaller — this is meaning,
+   and --muted is only ~3.5:1 on --surface. */
+.dfd-card__type {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* The money. Ink and bold, because it is the fact somebody is deciding on. */
+.dfd-card__fee {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* "Free" is an absence of a price rather than a small one, so it does not get
+   the bold numeral treatment — but it stays in ink, because on a grid of forty
+   events it is the reason to pick one. */
+.dfd-card__fee--free {
+  font-weight: 600;
+}
+
+/*
+ * "3 rounds" — the indicator that an event has children, WITHOUT listing them.
+ * The rounds themselves belong on the event page; showing them inline here is
+ * how a category of nine events becomes a wall of thirty.
+ */
+.dfd-card__rounds {
+  display: block;
+  /* It had no size of its own and inherited the card body's 16px, which made
+     "6 rounds" heavier than the fee above it. It is the least important line on
+     the card and now reads as one. */
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Contingent packages
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfd-packages {
+  display: flex;
+  gap: var(--s3);
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: calc(var(--page-pad) * -1);
+  padding-inline: var(--page-pad);
+  padding-bottom: var(--s2);
+}
+
+.dfd-packages::-webkit-scrollbar {
+  display: none;
+}
+
+.dfd-package {
+  flex: 0 0 auto;
+  width: 232px;
+  display: grid;
+  gap: var(--s1);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  text-align: start;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dfd-package:active {
+  transform: scale(0.97);
+}
+
+.dfd-package__name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dfd-package__price {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --body-s, not --micro: how many bundles are left is meaning, and --muted is
+   only ~3.5:1 on --surface — below 14px that stops being readable text. */
+.dfd-package__slots {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Schedule
+   ─────────────────────────────────────────────────────────────────────────
+
+   Day tabs over a vertical list of times. Minimal on purpose: the fest already
+   has a full schedule screen, and this is the glance version.
+*/
+
+.dfd-days {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: var(--s3);
+}
+
+.dfd-days::-webkit-scrollbar {
+  display: none;
+}
+
+.dfd-slot {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--s3);
+  padding-block: var(--s2);
+  border-top: 1px solid var(--divider);
+  align-items: baseline;
+}
+
+/* Same trap as the group headings: the day rail is a div sitting immediately
+   before the slots, so `.dfd-slot:first-of-type` matched the RAIL's type and
+   therefore nothing — the first slot kept a rule directly under the day tabs. */
+.dfd-days + .dfd-slot {
+  border-top: 0;
+}
+
+/* The time is the point of the row, so it is ink rather than grey, and at
+   --body-s rather than --micro. Grey 11px was the least legible text on the
+   page carrying the most specific fact in the section. */
+.dfd-slot__time {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dfd-slot__name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Organiser
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfd-organiser {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.dfd-organiser__mark {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--ink);
+  font-size: var(--body-m-size);
+  font-weight: 700;
+}
+
+.dfd-organiser__text {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.dfd-organiser__name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dfd-organiser__contact {
+  /* An email address is read character by character and often mid-word-wrapped
+     — 11px grey was the wrong treatment for the one contactable thing on the
+     page. Ink at --body-s, and it wraps rather than truncating, because half an
+     address is worse than a second line. */
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sponsors
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * THE FEST TITLE SPONSOR, ON THE HERO.
+ *
+ * Bottom-left, which is also where .ddp-hero__title sits — so this is a SIBLING
+ * INSIDE the shared .ddp-hero__scrim, ordered above the title, not a separately
+ * positioned layer dropped into the same corner. The scrim is a flex column at
+ * justify-content: flex-end, so the pair stacks off a fixed bottom edge and the
+ * two can never overlap however many lines the fest name takes.
+ *
+ * At 360px: the hero is 16/9, so 202px. The scrim's --s4 padding takes 32,
+ * leaving 170. A two-line title at --display-l is 68; this block is a 14px
+ * micro line plus a 24px logo box plus --s1 = 42. 110 of 170, growing upward,
+ * so it never reaches the 60px the back/share controls occupy at the top — and
+ * those are an absolutely positioned layer of their own pinned to the top edge,
+ * so they cannot be displaced by anything here in any case.
+ *
+ * The scrim's gradient is fully transparent above 62% of the hero and the top
+ * of this block lands near 54%, still inside the wash; the label carries the
+ * title's text-shadow anyway, for the fest whose banner is white right there.
+ *
+ * No link. .ddp-hero__scrim is pointer-events: none so that the controls
+ * underneath stay tappable, and re-enabling pointer events for a logo would
+ * punch a hole in that. The strip in the sidebar is where a sponsor is
+ * clickable.
+ */
+.dfd-hero-sponsor {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: var(--s1);
+  /* The block is only as wide as its contents, so the scrim's gradient is not
+     tinted by a full-width box and a short logo does not sit in a wide gap. */
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.dfd-hero-sponsor__label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  /* Over media, so white — the same treatment the title takes. Not tracked-out
+     caps: sentence case, because "PRESENTED BY" in a hero is the loudest tell
+     of a generated page on this whole screen. */
+  color: color-mix(in srgb, #ffffff 82%, transparent);
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+/*
+ * An explicit box on an arbitrary third-party image. `height` alone with
+ * `width: auto` gives an unloaded image ZERO area, and a zero-area box never
+ * intersects the viewport — so a logo inside one is never painted and, if it
+ * were lazy, never even requested. Same trap documented on .dfd-sponsors.
+ *
+ * A white drop-shadow rather than a pill: the hero is already a dark scrim, and
+ * a white chip in the corner of somebody's banner is the thing .ddp-hero__control
+ * deliberately avoids being. Most sponsor logos arrive as transparent PNGs in
+ * their dark-background treatment, and the shadow is what holds the few that do
+ * not off a dark photograph.
+ */
+.dfd-hero-sponsor__logo {
+  display: block;
+  height: 24px;
+  max-height: 24px;
+  width: auto;
+  min-width: 32px;
+  max-width: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 45%));
+}
+
+.dfd-sponsors {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+
+.dfd-sponsors img {
+  height: 32px;
+  max-height: 32px;
+  width: auto;
+  /* A minimum, because `width: auto` on an unloaded image is a zero-area box —
+     and a zero-area box never becomes visible, so a lazy image inside one
+     never loads. Same trap as the feed's sponsor strip. */
+  min-width: 40px;
+  max-width: 120px;
+  object-fit: contain;
+  display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Adaptive
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * THE GRID, AT THREE STATED WIDTHS. Two columns below 640, three to 1024, four
+ * above — counted, not left to auto-fill. auto-fill with a 220px minimum was
+ * producing three columns at 700px and five at 1400px depending on where the
+ * gutters landed, which meant the card size (and so the poster, and so the
+ * two-line name clamp) changed at widths nobody had chosen.
+ *
+ * The ratio is 3:4 at EVERY width. An earlier note here argued for 16/9 above
+ * 640px on the grounds that a 3:4 poster on a 220px card is a 290px slab; that
+ * is true and it is no longer the trade being made. This grid is meant to be
+ * recognisably the Discover feed's grid, and a card that changes shape at a
+ * breakpoint stops being the same card — somebody arriving from the feed sees a
+ * different component. Explicit columns are what pay for it: at four columns
+ * inside the main text column the cards are narrow enough that a 3:4 poster is
+ * ~250px, not the 290px slab the old comment was defending against.
+ */
+@container ddp (min-width: 640px) {
+  .dfd-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s3);
+  }
+}
+
+/*
+ * Four COLUMNS, not four across the viewport. Above 1024px .ddp-split becomes
+ * a two-column layout with a sticky sidebar, and this grid lives in the main
+ * column — so this is four cards within that column, which is the width the
+ * cards were sized against.
+ */
+@container ddp (min-width: 1024px) {
+  .dfd-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/*
+ * Phone order: the facts belong under the hero, the packages belong under the
+ * grid — and both live in the same <aside> so the desktop sidebar can be one
+ * sticky block rather than three that stick at three different offsets.
+ *
+ * `display: contents` is what makes that possible without writing the packages
+ * markup twice: below the split the aside stops generating a box and its
+ * children become direct children of the flex column, so `order` can interleave
+ * them with the grid. Duplicating the section instead would mean two copies of
+ * the purchase handler and two chances for them to drift.
+ *
+ * The CTA is `position: fixed` at this width, so where it falls in the order
+ * does not matter — it is out of flow either way.
+ */
+@container ddp (max-width: 1023.98px) {
+  .ddp-split {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ddp-aside {
+    display: contents;
+  }
+
+  .ddp-split > main {
+    order: 3;
+  }
+
+  .dfd-aside-packages {
+    order: 4;
+  }
+}
+
+/*
+ * Source order vs. column order.
+ *
+ * The sidebar is written FIRST in the JSX so that on a phone — where
+ * .ddp-split is a plain block — the facts, the sponsors and the packages fall
+ * directly under the hero, which is where they are read, instead of below a
+ * grid of forty events. Once the split becomes two columns the sidebar belongs
+ * on the right.
+ *
+ * The `order: 1 / order: 2` pair that used to do that job here is gone.
+ * .ddp-split is an explicit twelve-column grid now (detail-page.css) and
+ * places both blocks by line — `main` on 1/span 8, the aside on 9/span 4 —
+ * which puts the columns where the ratio says they are instead of relying on
+ * two `order` values in a second stylesheet lining up with a two-track
+ * template in the first. Nothing moves in the markup either way.
+ */
+@container ddp (min-width: 1024px) {
+  /*
+   * The tab rail stops bleeding past its column.
+   *
+   * Its negative inline margins exist so that on a phone the row scrolls edge
+   * to edge while the first tab still lines up with the page gutter. In a
+   * two-column layout that same rule walks the rail out of the main column and
+   * underneath the sidebar — measured at 1536px, the rail ran to x=1045 while
+   * the sidebar started at x=1013, so its sticky background sat on top of the
+   * host college line and clipped it mid-word. There is no edge to bleed to
+   * here, so the bleed is removed.
+   */
+  .dfd-tabrail {
+    margin-inline: 0;
+  }
+
+  .dfd-tabs {
+    padding-inline: 0;
+  }
+
+  /* Same bleed, same reason — the packages rail is inside the sidebar now. */
+  .dfd-packages {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+
+/* The organiser's email is a link with a glyph in front of it, so it needs to
+   be a row; .dfd-organiser__contact is otherwise a plain text line. */
+a.dfd-organiser__contact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--divider);
+}
+
+/* The glyph is decoration beside the address; it stays grey so the address
+   itself is what carries. */
+a.dfd-organiser__contact .ddp-icon {
+  color: var(--muted);
+}
+
+
+/* The press itself: a small give under the thumb, released on selection. */
+.dfd-tab:active {
+  transform: scale(0.96);
+}
+
+/*
+ * THE FILTER SWAP, BOTH HALVES.
+ *
+ * This was `animation: dfd-tabswap` on a key-remounted grid — an entrance with
+ * no exit, because a keyframe fires when a node joins the DOM and there is no
+ * equivalent moment when React deletes it. The grid you were reading was cut,
+ * and its replacement faded in over the hole.
+ *
+ * Now the outgoing grid lifts 4px and fades (180ms, accelerating), the filter
+ * changes at the bottom of that, and the new grid comes back down the same 4px
+ * (240ms, decelerating). Same distance, same shape, exit faster than enter —
+ * and it is a transition on a class rather than a keyframe on a remount, so it
+ * is interruptible: tapping a third tab mid-swap retargets from wherever the
+ * opacity had reached instead of restarting from zero.
+ */
+.dfd-groups {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--d-move) var(--ease-enter),
+    transform var(--d-move) var(--ease-enter);
+}
+
+.dfd-groups--out {
+  opacity: 0;
+  transform: translate3d(0, -4px, 0);
+  transition:
+    opacity var(--d-exit) var(--ease-exit),
+    transform var(--d-exit) var(--ease-exit);
+}
+
+/*
+ * Reduced motion skips the swap entirely — FestDetailScreen returns early and
+ * never sets the --out class, so the grid changes in place. Pinning the values
+ * here as well means a preference flipped mid-swap cannot strand the grid at
+ * opacity 0 with no tween left to finish it.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dfd-groups,
+  .dfd-groups--out {
+    opacity: 1;
+    transform: none;
+  }
+}

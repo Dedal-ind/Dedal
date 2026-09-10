@@ -1,0 +1,1361 @@
+/*
+ * certificate-page.css — the certificate surface: the shared card, the owner's
+ * detail screen, and the public verification page.
+ *
+ * Prefixed `dcd-` for the same reason every other stylesheet here is: this
+ * loads alongside a Tailwind @theme belonging to the retired design system, and
+ * an unprefixed `.card` or `.badge` would sooner or later be won or lost by a
+ * utility class nobody was thinking about.
+ *
+ * Tokens only, from dedal-tokens.css.
+ *
+ * THE TONE VARIABLE. A certificate has three visual families — won, took part,
+ * ran it — and the difference has to survive being printed, screenshotted and
+ * looked at from across a room. Rather than three copies of every rule, the
+ * card sets one custom property (--dcd-tone, plus its wash) from a data
+ * attribute, and every tone-carrying rule reads that. Adding a fourth family
+ * later is one block here, not a sweep.
+ *
+ * --gold and --verified are the only two colours on this surface outside the
+ * six, and they are used exactly where dedal-tokens.css says they may be: gold
+ * for a winner's certificate, --verified for the badge on the public page.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Screen
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dcd-screen {
+  container-type: inline-size;
+  container-name: dcd;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--s8) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * The column. 600px on the detail screen, 480px on the public page — set by
+ * the screen through --dcd-col rather than by a second class, because the two
+ * differ in exactly one number and nothing else.
+ *
+ * There is no sidebar at any width. A certificate is one object; putting
+ * anything beside it invites the eye to compare, and there is nothing to
+ * compare it to.
+ */
+.dcd-col {
+  width: 100%;
+  max-width: var(--dcd-col, 600px);
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+.dcd-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-block: var(--s3);
+  padding-top: calc(var(--s3) + env(safe-area-inset-top, 0px));
+}
+
+/*
+ * ── DESKTOP: TWO COLUMNS, BECAUSE ONE MEANT SCROLLING PAST EMPTY SPACE ──────
+ *
+ * Stacked, this page measures 1126px against a 720px viewport — 406px of
+ * scrolling — while 936px of window sits empty either side of a 600px column.
+ * The certificate, its three actions and its details are one object; making
+ * somebody scroll to see the details of the thing already on screen is the
+ * scroll costing something rather than earning anything.
+ *
+ * So above 1024px the card takes the left column and the actions and the
+ * details table stack in the right one. The card keeps the visual lead — it is
+ * the wider column and it is first in reading order — and the whole page lands
+ * inside a laptop viewport with nothing to scroll.
+ *
+ * `align-items: start` matters: without it the card stretches to the height of
+ * the right column and the certificate gains a band of empty paper under the QR.
+ *
+ * Below 1024px nothing here applies and the original stack stands, which is the
+ * correct layout on a phone and was never the problem.
+ */
+@media (min-width: 1024px) {
+  .dcd-col {
+    --dcd-col: 1040px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    align-items: start;
+    column-gap: var(--s6);
+  }
+
+  /* The back control spans both columns: it belongs to the page, not the card. */
+  .dcd-head {
+    grid-column: 1 / -1;
+  }
+
+  .dcd-card {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+  }
+
+  .dcd-actions {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 0;
+  }
+
+  .dcd-facts {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+.dcd-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: calc(var(--s2) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dcd-back:hover {
+    background: var(--ink-dim-4);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The certificate card
+   ─────────────────────────────────────────────────────────────────────────
+
+   Deliberately NOT a facsimile of the PDF. The PDF is the document; this is
+   the app's own rendering of the same facts, so it may use the app's type and
+   the app's spacing and does not have to pretend to be paper. What it borrows
+   from paper is the centred axis — a certificate is symmetrical, and breaking
+   that is the single fastest way to make one look fake.
+*/
+
+.dcd-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-sheet);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+  /* The default is participation; the tone blocks below override. */
+  --dcd-tone: var(--primary);
+  --dcd-tone-wash: rgb(255 59 48 / 6%);
+}
+
+.dcd-card[data-tone="winner"] {
+  --dcd-tone: var(--gold);
+  --dcd-tone-wash: var(--gold-wash);
+}
+
+.dcd-card[data-tone="staff"] {
+  --dcd-tone: var(--accent);
+  --dcd-tone-wash: rgb(123 97 255 / 8%);
+}
+
+/* The band. 4px, full bleed, the one place the tone is at full strength — it
+   is what you see before you have read a word. */
+.dcd-card__band {
+  height: 4px;
+  background: var(--dcd-tone);
+}
+
+.dcd-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s5) var(--s5) var(--s6);
+  text-align: center;
+}
+
+/* The wordmark sits top-LEFT while everything under it is centred, on purpose:
+   it is the issuer's mark, not part of the certificate's own composition. */
+.dcd-card__mark {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--muted);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  letter-spacing: 0.04em;
+}
+
+.dcd-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--dcd-tone-wash);
+  color: var(--dcd-tone);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+}
+
+.dcd-card__title {
+  margin: 0;
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dcd-card__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  width: 100%;
+}
+
+.dcd-card__name {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dcd-card__event {
+  margin: 0;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dcd-card__line {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcd-card__rule {
+  width: 100%;
+  height: 1px;
+  border: 0;
+  margin: 0;
+  background: var(--divider);
+}
+
+/*
+ * SPONSORS. Rendered only when a certificate actually carries one, which in
+ * practice it never does — the metadata snapshot does not capture sponsors and
+ * the fest populate excludes them. Kept as an integrated credit line rather
+ * than a banner: a sponsor on somebody's certificate is a courtesy, and an ad
+ * on an achievement is an insult.
+ */
+.dcd-card__sponsor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  width: 100%;
+}
+
+.dcd-card__sponsor-label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dcd-card__sponsor-name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── The footer: code on the left, QR on the right ─────────────────────── */
+
+.dcd-card__foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s4);
+  width: 100%;
+  text-align: left;
+}
+
+.dcd-card__codeblock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+.dcd-card__codelabel {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dcd-code {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.dcd-code__value {
+  /* tabular-nums so the code does not jitter between glyph widths — a
+     verification code is read character by character, out loud, over a phone. */
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dcd-code__copy {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .dcd-code__copy:hover {
+    background: var(--ink-dim-4);
+    color: var(--ink);
+  }
+}
+
+.dcd-code__copy:active {
+  transform: scale(0.97);
+}
+
+.dcd-code__copy[data-copied="true"] {
+  color: var(--verified);
+}
+
+.dcd-card__qr {
+  flex: 0 0 auto;
+  display: block;
+  padding: var(--s1);
+  border-radius: var(--r-card);
+  background: #fff; /* a QR needs true white quiet zone to scan reliably */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Actions
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dcd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+.dcd-action {
+  flex: 1 1 140px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding-inline: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--d-instant) var(--ease-exit),
+    background-color var(--d-quick) var(--ease-enter),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+.dcd-action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) {
+  .dcd-action:hover:not(:disabled) {
+    background: var(--ink-dim-4);
+  }
+}
+
+.dcd-action[data-variant="primary"] {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--surface-card);
+}
+
+@media (hover: hover) {
+  .dcd-action[data-variant="primary"]:hover:not(:disabled) {
+    background: var(--primary);
+    opacity: 0.92;
+  }
+}
+
+.dcd-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/*
+ * "Add to LinkedIn" is the most valuable thing on this screen for a student —
+ * it is the only action that puts the certificate somewhere a recruiter will
+ * ever look. It is a ghost button so it does not compete with the one primary
+ * action, but it takes the full width of its own row and carries the accent,
+ * so it is never mistaken for the quietest option.
+ */
+.dcd-action[data-variant="linkedin"] {
+  flex-basis: 100%;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .dcd-action[data-variant="linkedin"]:hover {
+    background: rgb(123 97 255 / 8%);
+  }
+}
+
+/*
+ * The download's in-progress state. A ring that sweeps rather than a spinner
+ * with a head and tail, because the exact same 24px box is used for the idle
+ * icon and swapping shapes mid-press reads as the button changing identity.
+ */
+.dcd-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-pill);
+  border: 2px solid rgb(250 250 250 / 40%);
+  border-top-color: currentColor;
+  animation: dcd-spin 700ms linear infinite;
+}
+
+@keyframes dcd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcd-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* The share fallback's confirmation. Fades out on its own; it is a receipt,
+   not a dialog, so it never needs dismissing. */
+.dcd-toast {
+  margin-top: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  text-align: center;
+  animation: dcd-fade-out 1.5s var(--ease-exit) forwards;
+}
+
+@keyframes dcd-fade-out {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The reason an action is unavailable. Stated, never implied by a grey
+   button — a disabled control with no explanation is a dead end. */
+.dcd-note {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The details list
+   ─────────────────────────────────────────────────────────────────────────
+
+   A <dl>, not a table and not a card. These are the same facts as the card
+   above, spelled out for copying and for a screen reader; wrapping them in a
+   second bordered box would make the page read as two certificates.
+*/
+
+.dcd-facts {
+  margin: var(--s7) 0 0;
+}
+
+.dcd-facts__head {
+  margin: 0 0 var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.dcd-facts__list {
+  margin: 0;
+}
+
+.dcd-facts__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-block: var(--s3);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dcd-facts__row:last-child {
+  border-bottom: 0;
+}
+
+.dcd-facts__row dt {
+  flex: 0 0 auto;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcd-facts__row dd {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The public verification page
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dcd-verify__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  padding-top: var(--s6);
+  text-align: center;
+}
+
+.dcd-verify__title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dcd-verify__sub {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcd-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dcd-search {
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+.dcd-search__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 48px;
+  padding-inline: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dcd-search__field::placeholder {
+  color: var(--muted);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.dcd-search__submit {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding-inline: var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dcd-search__submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.dcd-search__submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/*
+ * THE VERIFIED BADGE. The single reason the public page exists: a stranger
+ * needs one unambiguous answer. --verified at full strength on a wash of
+ * itself, and it is the only element on the surface allowed that colour.
+ */
+.dcd-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-inline: auto;
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-pill);
+  background: var(--verified-wash);
+  color: var(--verified);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  animation: dcd-badge-in 200ms var(--ease-enter) both;
+}
+
+@keyframes dcd-badge-in {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcd-verified {
+    animation: none;
+  }
+}
+
+.dcd-verified__wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--s4);
+}
+
+/*
+ * NOT FOUND. No red panel and no alarm mark, because this is overwhelmingly a
+ * typo in a hand-copied code, and because a 404 here is deliberately
+ * indistinguishable from an unreleased certificate — the endpoint will not
+ * confirm that one exists. Shouting "invalid" would be both harsh and, half
+ * the time, untrue.
+ */
+.dcd-notfound {
+  margin-top: var(--s5);
+  padding: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  text-align: center;
+}
+
+.dcd-notfound__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dcd-notfound__body {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcd-foot {
+  margin-top: var(--s6);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Skeletons — the shape of the real thing, not a grey rectangle
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dcd-skel {
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  animation: dcd-pulse 1.4s var(--ease-enter) infinite;
+}
+
+.dcd-skel--card {
+  height: 380px;
+  border-radius: var(--r-sheet);
+}
+
+.dcd-skel--row {
+  height: 40px;
+  margin-top: var(--s3);
+}
+
+.dcd-skel--actions {
+  height: 48px;
+  margin-top: var(--s5);
+  border-radius: var(--r-pill);
+}
+
+@keyframes dcd-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcd-skel {
+    animation: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Error / retry
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dcd-error {
+  margin-top: var(--s6);
+  padding: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  text-align: center;
+}
+
+.dcd-error__body {
+  margin: 0 0 var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Push certificates (coordinator) — token migration of the existing screen
+   ─────────────────────────────────────────────────────────────────────────
+
+   This screen is NOT a participant surface: it is the coordinator's tool for
+   issuing certificates to an event's roster. Its layout and behaviour are
+   unchanged; what lives here is the palette and the icon sizing it used to get
+   from the retired Tailwind theme.
+*/
+
+.dcd-push {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.dcd-push__pad {
+  padding: var(--s5);
+}
+
+.dcd-push__title {
+  margin: 0;
+  padding: var(--s5) var(--s5) var(--s2);
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dcd-push__tabs {
+  display: flex;
+  padding-inline: var(--s5);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dcd-push__tab {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding-block: var(--s3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color var(--d-quick) var(--ease-enter);
+}
+
+.dcd-push__tab[aria-selected="true"] {
+  border-bottom-color: var(--primary);
+  color: var(--ink);
+}
+
+.dcd-push__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding-inline: var(--s1);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--micro-size);
+  font-weight: 700;
+}
+
+.dcd-push__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding-bottom: var(--s8);
+}
+
+.dcd-push__section {
+  padding-inline: var(--s5);
+}
+
+/* Template upload */
+
+.dcd-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  width: 100%;
+  padding-block: var(--s7);
+  border: 1px dashed var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dcd-upload:hover {
+    background: var(--ink-dim-2);
+  }
+}
+
+.dcd-upload__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+}
+
+.dcd-upload__title {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dcd-upload__hint {
+  margin: var(--s1) 0 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dcd-upload__file {
+  display: none;
+}
+
+.dcd-preview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+}
+
+.dcd-preview__image {
+  display: block;
+  width: 100%;
+  height: 128px;
+  object-fit: cover;
+}
+
+.dcd-preview__remove {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--scrim);
+  color: var(--surface-card);
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dcd-preview__remove:active {
+  transform: scale(0.97);
+}
+
+.dcd-preview__caption {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  margin: 0;
+  padding: var(--s1) var(--s3);
+  background: var(--scrim);
+  color: var(--surface-card);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+}
+
+/* Roster rows */
+
+.dcd-push__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dcd-push__grouphead {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-top: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dcd-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-left: 3px solid var(--dcd-rank, var(--divider));
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dcd-row:hover {
+    background: var(--ink-dim-2);
+  }
+}
+
+.dcd-row__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+}
+
+.dcd-row__tag {
+  flex: 0 0 auto;
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+}
+
+.dcd-check {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--divider);
+  border-radius: 4px;
+  background: var(--surface-card);
+  color: var(--surface-card);
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter);
+}
+
+.dcd-check[data-checked="true"] {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.dcd-selectall {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dcd-push__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  padding-block: var(--s6);
+  color: var(--muted);
+  text-align: center;
+}
+
+.dcd-push__empty p {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+/* Modal — one sheet component for both the confirm and the exit prompt. */
+
+.dcd-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--scrim);
+  animation: dcd-fade-in var(--d-move) var(--ease-enter);
+}
+
+.dcd-scrim--centred {
+  align-items: center;
+  padding-inline: var(--s6);
+}
+
+@keyframes dcd-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.dcd-sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding-bottom: calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  background: var(--surface-card);
+  box-shadow: var(--e2);
+  animation: dcd-sheet-in var(--d-move) var(--ease-enter);
+}
+
+.dcd-sheet--dialog {
+  max-width: 340px;
+  padding: var(--s6);
+  border-radius: var(--r-sheet);
+  text-align: center;
+}
+
+@keyframes dcd-sheet-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+.dcd-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s4) var(--s5) var(--s2);
+}
+
+.dcd-sheet__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dcd-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dcd-sheet__body {
+  margin: 0 var(--s5) var(--s4);
+}
+
+.dcd-sheet__text {
+  margin: 0 0 var(--s6);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcd-sheet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-inline: var(--s5);
+}
+
+.dcd-sheet--dialog .dcd-sheet__actions {
+  padding-inline: 0;
+}
+
+.dcd-summary {
+  margin: 0 var(--s5) var(--s4);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+}
+
+.dcd-summary__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dcd-summary__row + .dcd-summary__row {
+  margin-top: var(--s1);
+}
+
+.dcd-summary__row dt {
+  color: var(--muted);
+}
+
+.dcd-summary__row dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dcd-stamp {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  margin: 0 var(--s5) var(--s4);
+}
+
+.dcd-stamp__image {
+  display: block;
+  width: 100%;
+  height: 192px;
+  object-fit: cover;
+}
+
+.dcd-stamp__name {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dcd-stamp__name span {
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-card);
+  background: var(--scrim);
+  color: #fff;
+  font-size: var(--body-m-size);
+  font-weight: 700;
+}
+
+.dcd-stamp__blank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  height: 144px;
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--body-s-size);
+}
+
+.dcd-stamp__foot {
+  padding: var(--s3);
+  border-top: 1px solid var(--divider);
+  text-align: center;
+}
+
+.dcd-stamp__foot p {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dcd-stamp__foot p:first-child {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/*
+ * THE PUSH CONFIRMATION. The same drawn mark the registration flow ends on:
+ * circle then tick, once, no loop. This is the only moment on the coordinator
+ * screen worth animating, because it is the only irreversible one — a batch of
+ * certificates has just landed in other people's accounts, and a window.alert
+ * was a poor way to say so.
+ */
+.dcd-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s7) var(--s5) var(--s6);
+  text-align: center;
+}
+
+.dcd-done__circle,
+.dcd-done__tick {
+  fill: none;
+  stroke: var(--verified);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dcd-done__title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dcd-done__body {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* Wide: the push screen's roster benefits from a column cap, the same way
+   every other backstage list does. */
+@container dcd (min-width: 720px) {
+  .dcd-push__panel {
+    max-width: 720px;
+    margin-inline: auto;
+    width: 100%;
+  }
+}

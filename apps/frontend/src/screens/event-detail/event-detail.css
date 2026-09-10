@@ -1,0 +1,1821 @@
+/*
+ * event-detail.css — the parts of the event page that are not shared furniture.
+ *
+ * `ded-` prefix, for the same reason every other stylesheet here is prefixed:
+ * this loads alongside a Tailwind @theme from the older design system, and an
+ * unprefixed `.hero` or `.row` would eventually be won or lost by a utility
+ * class nobody was thinking about.
+ *
+ * TOKENS ONLY, from dedal-tokens.css. Two things worth stating once, because
+ * the brief this was built from names colours that do not exist:
+ *
+ *   1. THERE IS NO --haze. The system is six colours plus stated alphas, and
+ *      the "haze" role — a barely-there fill for a progress track, a quiet pill,
+ *      a static border — is exactly --ink-dim-4 (--ink at 4%). Everywhere a haze
+ *      was asked for below, --ink-dim-4 is what is used.
+ *   2. THE ONLY LITERAL COLOURS IN THIS FILE ARE INSIDE THE HERO SCRIM AND THE
+ *      CONTROLS THAT SIT ON IT. A scrim over an arbitrary photograph has to be
+ *      neutral black — a navy-tinted wash shifts the colours of the poster
+ *      underneath it — and the glyphs over that photograph have to be white
+ *      whatever the canvas is doing. This is the same exception, for the same
+ *      reason, that detail-page.css states at .ddp-hero__scrim. Nowhere else.
+ *
+ * EVERY LOOPING OR DECORATIVE ANIMATION HERE IS WRAPPED IN
+ * `prefers-reduced-motion: no-preference`. Plain transitions are not: their
+ * durations are motion tokens, and dedal-tokens.css already collapses those to
+ * 0.001ms under `prefers-reduced-motion: reduce`, so they are covered at source
+ * and every transitionend listener still fires.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Focus
+   ─────────────────────────────────────────────────────────────────────────
+
+   Declared once, at the top, for every interactive thing this file draws.
+   Written as a shared rule rather than per component because a focus ring that
+   is defined next to each control is a focus ring that gets forgotten on the
+   next one added.
+*/
+
+.ded-info__link:focus-visible,
+.ded-mini:focus-visible,
+.ded-faq__q:focus-visible,
+.ded-contact__call:focus-visible,
+.ded-calendar__pill:focus-visible,
+.ded-bundle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+/* The header controls sit over a poster until the page scrolls, so their ring
+   has to survive both backgrounds: white while floating, ink once the bar is
+   solid. */
+.ded-header__control:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  border-radius: var(--r-pill);
+}
+
+.ded-header--stuck .ded-header__control:focus-visible {
+  outline-color: var(--focus-ring);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The header — one element, two states
+   ─────────────────────────────────────────────────────────────────────────
+
+   At the top of the page it is two white glyphs floating on the poster. Past
+   the hero it becomes a contextual bar: the background crossfades in and the
+   event's name fades up, so somebody four screens down still knows what they
+   are reading and still has one tap out. The class is toggled from a passive,
+   rAF-throttled scroll listener writing to a ref — never from state, which
+   would re-render the whole screen on every scrolled pixel.
+*/
+
+.ded-header {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  padding: 0 var(--s3);
+  padding-top: env(safe-area-inset-top, 0px);
+  background: transparent;
+  /*
+   * NO BORDER AT ALL, not even a transparent one. A transparent border still
+   * occupies layout, which puts the element's bottom edge on a fractional
+   * pixel and is exactly how the hairline seam under the nav was produced.
+   * There is nothing to fade here now, so there is nothing to reserve.
+   */
+  border: 0;
+}
+
+/*
+ * SCROLLED PAST THE POSTER: THE CONTROLS GET PILLS, NOT A BAR.
+ *
+ * This used to turn into a full-width --surface-card bar with a --divider rule
+ * once you scrolled off the hero. That is a navigation bar appearing out of
+ * nowhere on a page whose whole design is controls floating over artwork, and
+ * it brought the hairline back with it.
+ *
+ * The reason it existed is real though: the controls are white with a drop
+ * shadow, which works over a photograph and disappears over the white page
+ * below it. So the legibility moves onto the controls themselves — each gets
+ * its own dark translucent circle, the same treatment .ddp-hero__control uses
+ * on the fest page. The bar goes; the controls stay readable.
+ */
+.ded-header--stuck .ded-header__control {
+  background-color: var(--scrim);
+  backdrop-filter: blur(8px);
+}
+
+.ded-header__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  /* White over the poster, with a shadow that keeps the glyph legible over a
+     bright sky — a filled chip in the corner would cover the artwork. */
+  color: #ffffff;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 45%));
+  transition:
+    color var(--d-quick) var(--ease-enter),
+    filter var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+/* The glyph stays WHITE in the stuck state now, because it sits on the dark
+   pill above rather than on a light bar. The drop shadow goes, since the pill
+   is doing the separating. */
+.ded-header--stuck .ded-header__control {
+  filter: none;
+}
+
+/* 80ms scale(0.97) — the press acknowledgement every tappable on this page
+   shares. */
+.ded-header__control:active {
+  transform: scale(0.97);
+}
+
+/* The event name, hidden until the hero is gone. It slides a few pixels as it
+   fades so it reads as arriving rather than as having been there all along. */
+.ded-header__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    transform var(--d-quick) var(--ease-enter);
+}
+
+/*
+ * The title stays hidden. It only ever appeared to fill the bar that is now
+ * gone, and floating a bare event name over the page with no surface behind it
+ * would be illegible the moment it crossed a photograph or a card edge. The
+ * name is the h1 in the hero, and the page you scrolled down from.
+ */
+.ded-header--stuck .ded-header__title {
+  opacity: 0;
+  transform: none;
+}
+
+/*
+ * The bookmark's 150ms bounce. A one-shot, restarted from JavaScript by
+ * removing the class, forcing a reflow and adding it back — and only added at
+ * all when motion is welcome, so this rule never needs to undo itself.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .ded-header__control--pop {
+    animation: ded-pop var(--d-quick) var(--ease-enter);
+  }
+}
+
+@keyframes ded-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Hero
+   ─────────────────────────────────────────────────────────────────────────
+
+   56svh, not 56vh. On mobile Safari and Chrome `vh` is the LARGE viewport — the
+   height the window has once the browser chrome has scrolled away — so a hero
+   sized in vh overshoots on arrival and pushes the first row of the content
+   sheet off the bottom of the screen, which is the one thing the sheet overlap
+   exists to prevent. `svh` is the small viewport, i.e. what is actually visible
+   with the chrome showing.
+*/
+
+.ded-hero {
+  position: relative;
+  width: 100%;
+  /* vh first as the fallback for engines without svh; svh wins where supported. */
+  height: 56vh;
+  height: 56svh;
+  min-height: 280px;
+  max-height: 560px;
+  overflow: hidden;
+  /*
+   * DARK, NOT PALE, AND THIS IS THE FIX FOR THE HAIRLINE.
+   *
+   * A dedicated .*-hero__fallback element draws the no-poster state, so this
+   * background is only ever seen in the gaps: the sub-pixel slivers left beside
+   * or under the image when its rendered size rounds differently from its box
+   * at a device pixel ratio above 1. Pale, those slivers read as thin white
+   * lines down the edge of the poster, which is exactly how they were reported
+   * (the bookmark side, on a phone).
+   *
+   * Against --ink a sliver is invisible: every poster is a photograph, the
+   * scrim over it is already dark, and a one-device-pixel dark edge on a dark
+   * image is nothing. This does not change the no-poster case, which paints its
+   * own surface on top.
+   */
+  background: var(--ink);
+}
+
+.ded-hero__media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * The posterless hero. --primary → --accent, with a second off-centre wash so
+ * the field has a light source rather than one flat diagonal, and the event's
+ * own initials in it at poster scale. Cropped by the frame: a monogram that
+ * fits neatly inside reads as a logo somebody placed, one that runs off the
+ * edge reads as artwork.
+ */
+.ded-hero__fallback {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-image:
+    radial-gradient(
+      130% 100% at 82% 8%,
+      color-mix(in srgb, var(--accent) 85%, transparent) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      120% 90% at 6% 96%,
+      color-mix(in srgb, var(--ink) 55%, transparent) 0%,
+      transparent 60%
+    ),
+    linear-gradient(150deg, var(--primary), var(--accent));
+}
+
+.ded-hero__mark {
+  position: absolute;
+  right: -0.06em;
+  bottom: -0.24em;
+  font-size: clamp(160px, 42vw, 380px);
+  line-height: 0.8;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  color: color-mix(in srgb, var(--surface) 16%, transparent);
+  user-select: none;
+}
+
+/*
+ * The scrim, to --ink at 80% at the foot.
+ *
+ * Written as an rgb() of the ink token rather than a hex literal, because the
+ * brief's rgba(15,23,41,0.8) IS --ink at 80% and there is no reason to restate
+ * a token as a number. The upper two thirds stay untouched — that is usually
+ * the part of a poster worth showing.
+ */
+.ded-hero__scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--s2);
+  /* Clears the sheet's 16px overlap, so the fest name never sits under the
+     rounded top edge that is drawn over it. */
+  padding: var(--s4) var(--page-pad) calc(var(--s5) + 16px);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--ink) 80%, transparent) 0%,
+    color-mix(in srgb, var(--ink) 46%, transparent) 34%,
+    transparent 66%
+  );
+  pointer-events: none;
+}
+
+.ded-hero__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+/*
+ * The category badge, over photography. A white-tint pill rather than
+ * .ddp-badge's --ink-dim-4 on --ink: at 4% over an arbitrary image the badge is
+ * invisible on a dark poster and unreadable on a light one. This is the same
+ * scrim exception stated at the top of the file.
+ */
+.ded-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px var(--s3);
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 18%);
+  border: 1px solid rgb(255 255 255 / 28%);
+  color: #ffffff;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  white-space: nowrap;
+  backdrop-filter: blur(6px);
+}
+
+/* Live now keeps --primary even over the poster: it is state, not decoration,
+   and it is the one thing on this page that the signature colour exists for. */
+.ded-hero__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 3px var(--s3);
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: #ffffff;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+}
+
+.ded-hero__live .ddp-live__dot {
+  background: #ffffff;
+}
+
+.ded-hero__title {
+  margin: 0;
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  /* Two lines then ellipsis: a four-line event name would push the fest name it
+     belongs to off the bottom of the hero it is sitting in. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+/* The fest, under the event. Held back to body-s at 85% white so it reads as
+   the context the event sits in rather than as a second title. */
+.ded-hero__fest {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: rgb(255 255 255 / 85%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 35%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The sheet
+   ─────────────────────────────────────────────────────────────────────────
+
+   The content overlaps the hero by 16px with a rounded top edge, so the page
+   reads as a sheet lying ON the poster rather than as two stacked blocks
+   meeting at a hard horizontal seam. The negative margin is what guarantees
+   there is no gap: a gap would have to be introduced deliberately.
+*/
+
+/* The loading and error states have a back bar instead of a hero, and nothing
+   to overlap — the 16px pull would tuck them under it. */
+/* The loading and error states have a back bar instead of a hero. Nothing to
+   overlap and nothing to reset now that the sheet no longer pulls up. */
+
+/*
+ * FLUSH, NOT TUCKED UNDER THE HERO.
+ *
+ * This used to pull up 16px with rounded top corners, so the sheet sat over the
+ * poster like a card lifting off it. The cost was that it CROPPED the bottom
+ * 16px of every poster and every video — and the corners ate the two bottom
+ * corners of the image entirely. On a 16:9 still that is the ground under the
+ * subject; on a video it is a visible bite out of the frame.
+ *
+ * The overlap was decoration. The media is the thing people opened the page to
+ * see, and nothing about the layout needed it cropped to work.
+ */
+.ded-sheet {
+  position: relative;
+  z-index: 1;
+  /*
+   * ONE PIXEL, AND IT IS NOT THE OLD 16px OVERLAP COMING BACK.
+   *
+   * The hero is sized by max-block-size: 56vh, so its height is whatever 56% of
+   * the viewport happens to be — 512.5px on a 915px-tall phone. At a device
+   * pixel ratio of 3.5 that boundary lands between physical pixels, and the
+   * rounding leaves a hairline of the hero's own pale fallback background
+   * visible between the bottom of the image and the top of this sheet: a white
+   * line straight across the screen, under a dark poster, on exactly the
+   * high-DPR phones where it was reported.
+   *
+   * A 1px pull closes the seam. It is imperceptible on the image — unlike the
+   * 16px overlap this replaced, which cropped the poster and ate its corners.
+   */
+  margin-top: -1px;
+  padding-inline: var(--page-pad);
+  background: var(--surface);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Loading
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* The skeleton hero is the same height as the real one, so nothing jumps when
+   the poster lands. */
+.ded-skel--hero {
+  width: 100%;
+  height: 56vh;
+  height: 56svh;
+  min-height: 280px;
+  max-height: 560px;
+  border-radius: var(--r-flush);
+}
+
+.ded-skel-stack {
+  display: grid;
+  gap: var(--s3);
+  padding-block: var(--s5);
+}
+
+/* Two widths, so the placeholder reads as lines of text rather than a stack of
+   identical bars. */
+.ded-skel-line--wide {
+  width: 70%;
+}
+
+.ded-skel-line--short {
+  width: 45%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Offline bar
+   ───────────────────────────────────────────────────────────────────────── */
+
+.ded-offline {
+  padding-inline: var(--page-pad);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* The header is fixed at y=0, so when the offline bar is present it would draw
+   straight over it. Pushed down by exactly the bar's own height rather than
+   given a z-index fight, so both stay legible and the back arrow stays
+   tappable. */
+.ded-screen:has(.ded-offline) .ded-header {
+  top: calc(var(--offline-h) + env(safe-area-inset-top, 0px));
+}
+
+.ded-offline__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The info block — four rows, and NOT four cards
+   ─────────────────────────────────────────────────────────────────────────
+
+   When, where, what shape and at what price, and how much room is left. Four
+   facts, four 44px rows, a 20px glyph on the left of each and a hairline
+   between them. This is the density the rest of the page is measured against:
+   boxing each of these in its own rounded card turns four lines into a
+   screenful and gives "Solo" the same weight as the event's own capacity.
+*/
+
+.ded-info {
+  padding-block: var(--s4) var(--s2);
+}
+
+.ded-info__row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 var(--s3);
+  min-height: 44px;
+  /* 16px of horizontal padding INSIDE the row, so the hairline runs the full
+     width of the column while the text is inset from it. */
+  padding-inline: var(--s4);
+  margin-inline: calc(var(--s4) * -1);
+  border-top: 1px solid var(--divider);
+}
+
+.ded-info__row:first-child {
+  border-top: 0;
+}
+
+.ded-info__icon {
+  grid-column: 1;
+  width: 20px;
+  height: 20px;
+  color: var(--muted);
+}
+
+
+.ded-info__value {
+  grid-column: 2;
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/*
+ * THE VENUE IS THE ONLY ACTIONABLE FACT IN THIS BLOCK, SO IT LOOKS LIKE ONE.
+ *
+ * It used to be an underline and nothing else, which is the weakest affordance
+ * available: underlined text in a list of plain facts reads as emphasis at
+ * least as often as it reads as a link, and it offers nothing to a thumb —
+ * there is no target, no press, no feedback.
+ *
+ * It is now a pill: a real bounded control with a hover, a press and a 44px
+ * touch height, sitting inline in the row. The underline goes, because with a
+ * boundary and a state the affordance no longer has to rest on it.
+ */
+/* North-east arrow, inlined as a mask so the venue pill needs no icon import
+   and inherits its colour from the control's own state. */
+.ded-info__link {
+  --ded-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E");
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-height: 44px;
+  margin-block: -10px;
+  padding-inline: var(--s2);
+  margin-inline: calc(var(--s2) * -1);
+  border-radius: var(--r-pill);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter),
+    transform var(--d-quick) var(--ease-enter);
+}
+
+/* The mark that says "this opens a map". It leans out on hover, in the
+   direction the tap will take you. */
+.ded-info__link::after {
+  content: '';
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  background: currentColor;
+  mask: var(--ded-arrow) center / contain no-repeat;
+  -webkit-mask: var(--ded-arrow) center / contain no-repeat;
+  opacity: 0.55;
+  transition:
+    transform var(--d-quick) var(--ease-enter),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+.ded-info__link:hover {
+  background: var(--ink-dim-4);
+  color: var(--accent);
+}
+
+.ded-info__link:hover::after {
+  opacity: 1;
+  transform: translate(1px, -1px);
+}
+
+.ded-info__link:active {
+  transform: scale(0.97);
+  background: var(--ink-dim-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ded-info__link,
+  .ded-info__link::after {
+    transition: none;
+  }
+
+  .ded-info__link:active {
+    transform: none;
+  }
+
+  .ded-info__link:hover::after {
+    transform: none;
+  }
+}
+
+/* No maps URL, no anchor: a link into an empty Maps search is worse than plain
+   text. --muted at 14px, which is the floor this system allows for meaning. */
+.ded-info__value--quiet {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Scarcity is what the signature colour is for. */
+.ded-info__value--urgent {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* The right-hand value on a row: the fee. Tabular figures so ₹1,000 and ₹1,500
+   occupy the same width. */
+.ded-info__end {
+  grid-column: 3;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Free is good news and gets to look like it — --accent, not a filled black
+   pill, which at this size read as a redaction. */
+.ded-info__end--free {
+  color: var(--accent);
+}
+
+
+/*
+ * TWO DEAD RULES REMOVED, AND THE SECOND ONE WAS LOAD-BEARING BY ACCIDENT.
+ *
+ * Both were left behind when the capacity meter bar and .ded-info__icon--dot
+ * were taken out. The first was inert. The second was a bare
+ * `.ded-info__row--meter` selector with no declaration block after it, and CSS
+ * does not discard a dangling selector — it keeps reading until it finds a
+ * block, so it swallowed the next rule's selector and produced
+ * `.ded-info__row--meter .ded-layout { display: grid }`.
+ *
+ * .ded-layout is never inside a meter row, so that matched nothing and the
+ * event page's `display: grid` never applied. Everything downstream of it
+ * still did: the desktop block set grid-template-columns, grid-column and
+ * grid-row on a plain BLOCK container, where all three are inert. The result,
+ * measured at 1280/1440/1920, was a single 1020/972/972px stack with the
+ * registration card sitting full width above the long read, and the info rows
+ * clamped to 720px inside it leaving 300px of dead space down the right —
+ * which is the "everything feels right sided" this rework was opened for.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Layout
+   ─────────────────────────────────────────────────────────────────────────
+
+   Mobile is one column and the DOM order IS the reading order: the sidebar's
+   contents (can I enter, who paid for this, the code panel) come first, then
+   the long-form main content. On desktop the same two blocks become two
+   columns without a single node moving — the sidebar just stops being second
+   in a stack and starts being second in a row.
+*/
+
+/*
+ * `minmax(0, 1fr)`, NOT a bare implicit column.
+ *
+ * A grid item's default `min-width` is `auto`, which means "never smaller than
+ * my content". A single implicit column therefore sizes to the WIDEST thing
+ * inside it and the track grows past its container instead of the content
+ * wrapping — this page overflowed its viewport by 682px, with .ded-side and the
+ * registration card measuring 871px inside a 220px window.
+ *
+ * Declaring the column as minmax(0, 1fr) gives the track a zero minimum, so the
+ * content wraps and the grid stays inside the page. This is the same reason the
+ * desktop block below uses minmax(0, 1fr) rather than 1fr, written out here
+ * because the mobile case is the one that actually broke.
+ */
+.ded-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.ded-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s4);
+  padding-block: var(--s4) var(--s2);
+}
+
+/* Belt and braces for the same rule one level down: every direct child of the
+   two grids may shrink, whatever it happens to contain. */
+.ded-layout > *,
+.ded-side > * {
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The registration card — the ONE card on this page
+   ─────────────────────────────────────────────────────────────────────────
+
+   Everything else here is rows and hairlines. That is what lets this object
+   mean "decide from this" rather than "we had a card component".
+
+   THE ANIMATED BORDER, and why it is not a border.
+   A border cannot carry a gradient. So the card is a 2px-padded wrapper whose
+   BACKGROUND is the gradient, with an opaque --surface-card inner sitting on
+   top of it — the 2px that shows around the inner is the border. Animating
+   `background-position` across an over-sized background then sweeps the
+   gradient round the edge; the gradient runs primary → accent → primary so the
+   loop is seamless and never snaps.
+
+   Only while registration is actually open, and only when motion is welcome: a
+   slow continuous highlight is precisely what prefers-reduced-motion exists to
+   suppress. Closed or cancelled, the same 2px is a flat --ink-dim-4 — the haze
+   role the brief names (there is no --haze token) — so the card keeps its shape
+   and loses its pulse.
+*/
+
+.ded-reg {
+  padding: 2px;
+  border-radius: calc(var(--r-card) + 2px);
+  background-color: var(--ink-dim-4);
+}
+
+.ded-reg--open {
+  background-image: linear-gradient(
+    110deg,
+    var(--primary) 0%,
+    var(--accent) 50%,
+    var(--primary) 100%
+  );
+  background-size: 220% 100%;
+  background-position: 0% 50%;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ded-reg--open {
+    animation: ded-reg-sweep 3s linear infinite;
+  }
+}
+
+@keyframes ded-reg-sweep {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+.ded-reg__inner {
+  display: grid;
+  gap: var(--s3);
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.ded-reg__status {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Inside seven days, or already shut. The only condition under which the
+   signature colour appears on this line. */
+.ded-reg__status--urgent {
+  color: var(--primary);
+}
+
+.ded-reg__note {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.ded-reg__reason {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* On a phone the action is in the bar pinned to the foot of the screen, so the
+   copy of it inside the card is not rendered at all — display:none takes it out
+   of the accessibility tree too, so there is never a duplicate "Register". */
+.ded-reg__actions {
+  display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Container notice
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* A vertical cannot be registered for, and the absence of a button is not an
+   explanation. One quiet sentence is. */
+.ded-notice {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   About
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Three lines collapsed, then a GSAP height tween of 240ms on expand. The clamp
+   is -webkit-line-clamp rather than a fixed height so the cut always lands on a
+   line boundary whatever the font does; the tween measures the real heights on
+   either side of the commit rather than guessing at one. */
+.ded-prose--clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* The element the tween owns. `overflow: hidden` is what makes an animated
+   height crop rather than spill; without it the paragraph would simply overrun
+   its own shrinking box on collapse. */
+.ded-about {
+  overflow: hidden;
+}
+
+.ded-rules {
+  margin-top: var(--s3);
+}
+
+/*
+ * THE RULES COLLAPSE, both ways, on a grid row.
+ *
+ * The body used to be conditionally rendered, so it was deleted on the frame
+ * the box started closing and painted in full on the frame it started opening —
+ * the container animated and the text did not. A 0fr → 1fr grid row is the one
+ * height animation that does not need the content measured first, so the text
+ * and its box move together with no JS involved.
+ *
+ * This is a deliberate exception to transform-and-opacity-only: the rules have
+ * to actually take space from the content below them, which no transform can
+ * do. It is the narrowest possible one and it is confined to this block.
+ *
+ * WHY THERE IS AN INNER WRAPPER. A 0fr track only collapses to zero if the grid
+ * ITEM can itself reach zero, and an item's margin sits outside its box while
+ * its padding sits inside a box that `min-height: 0` does not shrink. Putting
+ * the paragraph's own 8px margin directly on the grid item left the collapsed
+ * block 16px tall — measured, not guessed — which read as a stray gap under the
+ * "Read the rules" button. The item is therefore a bare wrapper that owns no
+ * spacing at all and does the clipping, and the paragraph inside it keeps the
+ * margin. This is the standard shape of the 1fr/0fr trick and the reason it has
+ * one.
+ */
+.ded-rules__reveal {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--d-exit) var(--ease-exit),
+    opacity var(--d-exit) var(--ease-exit);
+}
+
+.ded-rules__reveal--open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--d-move) var(--ease-enter),
+    opacity var(--d-move) var(--ease-enter);
+}
+
+/* The grid item: no margin, no padding, nothing that can hold the row open. */
+.ded-rules__reveal__inner {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ded-rules__reveal,
+  .ded-rules__reveal--open {
+    transition: none;
+  }
+}
+
+.ded-rules__body {
+  padding-top: var(--s2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ded-rules__reveal,
+  .ded-rules__reveal--open {
+    transition: none;
+  }
+}
+
+.ded-rules__body {
+  margin-top: var(--s2);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Bundles
+   ───────────────────────────────────────────────────────────────────────── */
+
+.ded-bundles {
+  display: grid;
+  gap: var(--s2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ded-bundle {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  font-family: var(--font);
+  text-align: start;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.ded-bundle:active {
+  transform: scale(0.97);
+}
+
+.ded-bundle__name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ded-bundle__meta {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ded-bundle__price {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Rounds — the vertical timeline
+   ─────────────────────────────────────────────────────────────────────────
+
+   Rounds are ONE event in time order — heat, semi, final — and the only
+   genuinely sequential content on this page. That earns the rail: a hairline
+   down the left with a node per round, filled for the ones that have run, so
+   where the competition has got to is legible before a single date is read. A
+   rail and not 01/02/03 markers, which would be decoration restating the order
+   the list already has.
+*/
+
+.ded-rounds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ded-round--step {
+  position: relative;
+  /* Room for the rail: 9px of node plus air. */
+  padding-inline-start: var(--s6);
+}
+
+/* The connector, drawn on the item rather than the list so the first and last
+   segments can be trimmed back to their own node — a line running past the last
+   round implies a round that is not there. */
+.ded-round--step::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 4px;
+  width: 1px;
+  background: var(--divider);
+}
+
+.ded-round--step:first-child::before {
+  top: var(--s5);
+}
+
+.ded-round--step:last-child::before {
+  bottom: calc(100% - var(--s5));
+}
+
+/* The node. Hollow by default — this round has not happened. */
+.ded-round--step::after {
+  content: '';
+  position: absolute;
+  top: var(--s5);
+  inset-inline-start: 0;
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--muted);
+  background: var(--surface);
+}
+
+/* Run and finished: filled, because it is settled. */
+.ded-round--done::after {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+/*
+ * Happening now: the signature colour and a halo, so it is findable in a column
+ * of eight heats. The COLOUR stays under reduced motion — it conveys state — and
+ * only the pulse is suppressed, which is the distinction that rule actually
+ * draws.
+ */
+.ded-round--live::after {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ded-round--live::after {
+    animation: ded-halo 1.8s var(--ease-enter) infinite;
+  }
+}
+
+@keyframes ded-halo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--primary) 6%, transparent);
+  }
+}
+
+.ded-round__hit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0 var(--s3);
+  width: 100%;
+  padding: var(--s3) 0;
+  text-align: start;
+}
+
+.ded-round__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* body-s, not micro: this is a date and a time, and --muted at 11px is below
+   the size floor this system sets for meaningful text. */
+.ded-round__meta {
+  grid-column: 1;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The status sits in its own column against the right edge, so a column of
+   rounds can be scanned down the statuses alone. */
+.ded-round__status {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.ded-round__status--live {
+  color: var(--primary);
+}
+
+/* Completed dims to --muted and further: it is the row you have finished with. */
+.ded-round--done .ded-round__name {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.ded-round__status--done {
+  opacity: 0.7;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Mini cards — a container's child events, and the related-events rail
+   ─────────────────────────────────────────────────────────────────────────
+
+   A container's children are ALTERNATIVES you pick between, not a sequence, so
+   they are a two-column grid rather than a timeline — the same mini-card shape
+   the fest page uses for its event grid, so a person moving between the two
+   screens is choosing from the same object twice.
+
+   Related events use the identical card on a horizontal rail: eight siblings as
+   a vertical list is eight screens of scrolling on a phone for content that is
+   a suggestion, not the point of the page.
+*/
+
+.ded-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ded-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 62%;
+  gap: var(--grid-gap);
+  list-style: none;
+  margin: 0;
+  /* Bleeds to the edge of the screen so the last card is visibly cut off rather
+     than sitting flush against the gutter, which is what tells a thumb the row
+     scrolls. */
+  padding: 0 var(--page-pad) var(--s2);
+  margin-inline: calc(var(--page-pad) * -1);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ded-rail > li {
+  scroll-snap-align: start;
+}
+
+.ded-mini {
+  display: grid;
+  align-content: start;
+  gap: var(--s1);
+  width: 100%;
+  height: 100%;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  font-family: var(--font);
+  text-align: start;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.ded-mini:active {
+  transform: scale(0.97);
+}
+
+.ded-mini__name {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+  /* Two lines: event names in this data run long and a one-line clamp cuts most
+     of them mid-word. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ded-mini__meta {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ded-mini__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  margin-top: var(--s1);
+}
+
+.ded-mini__fee {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ded-mini__chev {
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Quiet optional rows
+   ─────────────────────────────────────────────────────────────────────────
+
+   Prizes, certificate, leaderboard, weight/gender/age divisions, add-ons,
+   question count, medical declaration. Footnotes, laid out as footnotes: each
+   of these as a bordered card with an icon would give "1 question during
+   registration" the same weight as the event's own capacity.
+*/
+
+.ded-rows {
+  display: grid;
+  gap: var(--s3);
+  margin: 0;
+}
+
+.ded-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: baseline;
+}
+
+/* body-s, not micro: these labels are the only thing that says what the value
+   beside them means, and --muted is ~3.5:1 on this canvas. */
+.ded-row__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.ded-row__value {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+/* The division chips. .ddp-badge, unchanged — these are the one place on this
+   page where a set of short values genuinely is a set of chips. */
+.ded-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FAQs
+   ─────────────────────────────────────────────────────────────────────────
+
+   An accordion, one open at a time: most participants arrive with a single
+   question, and a wall of expanded answers buries it.
+*/
+
+.ded-faqs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ded-faq {
+  border-top: 1px solid var(--divider);
+}
+
+.ded-faq:first-child {
+  border-top: 0;
+}
+
+.ded-faq__q {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s3) 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  text-align: start;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.ded-faq__q:active {
+  transform: scale(0.99);
+}
+
+/* The chevron rotates rather than swapping to a second glyph: one icon that
+   turns says "this is the same control in another state", where two icons
+   invite the reader to work out what changed. */
+.ded-faq__chev {
+  color: var(--muted);
+  transition: transform var(--d-move) var(--ease-enter);
+}
+
+.ded-faq__chev--open {
+  transform: rotate(180deg);
+}
+
+.ded-faq__a {
+  margin: 0;
+  padding-bottom: var(--s3);
+  font-size: var(--body-s-size);
+  line-height: 22px;
+  color: var(--muted);
+  max-width: 68ch;
+  white-space: pre-wrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Contact
+   ─────────────────────────────────────────────────────────────────────────
+
+   Name and role, then a control that dials. THE NUMBER IS NEVER DRAWN — not as
+   text, not in a title, not in the accessible name. These are student
+   volunteers, and a phone number printed on a public page is harvestable from a
+   screenshot or a scrape. The digits exist only inside the tel: href, which is
+   why the call control is a real anchor and not a button with a handler.
+*/
+
+.ded-contacts {
+  display: grid;
+  gap: var(--s2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ded-contact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-block: var(--s2);
+  border-top: 1px solid var(--divider);
+}
+
+.ded-contact:first-child {
+  border-top: 0;
+}
+
+.ded-contact__who {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ded-contact__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sentence case, not an ALL-CAPS role pill, and body-s rather than micro:
+   --muted is roughly 3.5:1 on this canvas, which is fine at 14px and not fine
+   at 11px for a word that tells you who you are about to ring. */
+.ded-contact__role {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/*
+ * Filled --ink, not a hairline pill: this is the only control in the section
+ * and as a white pill with a 20% grey border it was the lightest object in a
+ * row whose other two elements were solid text. --ink and not --primary,
+ * because the register button is the one primary action on this page and two
+ * red controls means neither is THE one.
+ */
+.ded-contact__call {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 40px;
+  padding-inline: var(--s4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.ded-contact__call:active {
+  transform: scale(0.97);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Add to calendar
+   ─────────────────────────────────────────────────────────────────────────
+
+   The shared AddToCalendar component carries retired-palette Tailwind and a
+   material-symbols ligature internally, and it is used by another screen — so
+   it is neither edited nor rendered here. Only its two URL builders are reused
+   and the pills are drawn in this system's tokens, exactly as the registration
+   success screen already does.
+*/
+
+.ded-calendar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.ded-calendar__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 40px;
+  padding-inline: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.ded-calendar__pill:active {
+  transform: scale(0.97);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The team pair and the join panel
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Two equal buttons. Equal because neither is the obvious answer: a person
+   arriving with a code from a friend and a person starting a team are the same
+   size of audience. */
+.ded-cta__pair {
+  display: flex;
+  gap: var(--s2);
+  flex: 0 0 auto;
+}
+
+.ded-cta__pair .ddp-button {
+  padding-inline: var(--s4);
+}
+
+/*
+ * The code panel opens directly above the bar that owns it. Fixed on a phone,
+ * not in the page body: the control that opens it lives at the bottom of the
+ * screen, and a panel that appears three screens up is a panel nobody sees
+ * respond. On desktop it becomes ordinary flow content inside the sidebar,
+ * which is where the control that opens it lives there.
+ */
+.ded-joinsheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  z-index: 39;
+  padding: var(--s4) var(--page-pad);
+  background: var(--surface-card);
+  border-top: 1px solid var(--divider);
+  box-shadow: var(--e2);
+}
+
+.ded-joinsheet__inner {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+.ded-joinsheet__title {
+  margin: 0 0 var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sponsor credit
+   ─────────────────────────────────────────────────────────────────────────
+
+   One line under the registration card: [logo] Sponsored by Name. It renders
+   only when the hierarchy found somebody; an empty chain mounts nothing at all,
+   so an unsponsored event is byte-for-byte the page it was before.
+
+   No --primary anywhere: a sponsor credit is a fact, not urgency.
+*/
+
+.ded-sponsor {
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-card);
+  /* The haze role — --ink-dim-4, since there is no --haze token. Just enough to
+     read as a plate the brand sits on rather than another line of body text. */
+  background: var(--ink-dim-4);
+}
+
+/*
+ * A single one-shot fade as the credit arrives. The sponsor's line lands after
+ * first paint (the fest is a secondary fetch), and without this it simply
+ * appears mid-read; one 400ms fade is the difference between "this loaded" and
+ * "this flickered". One-shot, never a loop, and suppressed entirely under
+ * reduced motion.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .ded-sponsor {
+    animation: ded-sponsor-in 400ms var(--ease-enter) both;
+  }
+}
+
+@keyframes ded-sponsor-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ded-sponsor__body {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+}
+
+/*
+ * THE LOGO BOX IS EXPLICITLY SIZED IN BOTH AXES.
+ *
+ * This is an arbitrary third-party image of unknown aspect ratio. A box sized
+ * `width: auto` has zero area until the image decodes, and a zero-area box is
+ * never in the viewport, so a lazily-loaded logo inside one never starts
+ * loading — the line renders as text with a permanent gap. A stated width, a
+ * non-zero min-width and a capped height fix the geometry before the bytes
+ * arrive, and object-fit: contain letterboxes whatever shape shows up.
+ */
+.ded-sponsor__logo {
+  flex: 0 0 auto;
+  width: 28px;
+  min-width: 28px;
+  height: 20px;
+  object-fit: contain;
+  object-position: left center;
+  border-radius: var(--r-flush);
+}
+
+.ded-sponsor__text {
+  min-width: 0;
+}
+
+/* The name carries --ink. It is the only word on the line anyone is meant to
+   come away with; "Sponsored by" is the label and stays --muted. */
+.ded-sponsor__name {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Small shared bits
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* The retry glyph inside a .ddp-button, which is otherwise text-only. */
+.ded-button__icon {
+  margin-inline-end: var(--s1);
+  vertical-align: text-bottom;
+}
+
+@media (hover: hover) {
+  .ded-mini:hover,
+  .ded-faq__q:hover,
+  .ded-bundle:hover,
+  .ded-calendar__pill:hover {
+    background-image: linear-gradient(var(--ink-dim-2), var(--ink-dim-2));
+  }
+
+  a.ded-sponsor__body:hover .ded-sponsor__name {
+    text-decoration: underline;
+  }
+
+  /* The call button is filled --ink, so the 2% ink dim every other surface uses
+     is invisible on it. It lightens instead, by the same amount, in the other
+     direction. */
+  .ded-contact__call:hover {
+    background-image: linear-gradient(
+      color-mix(in srgb, var(--surface) 10%, transparent),
+      color-mix(in srgb, var(--surface) 10%, transparent)
+    );
+  }
+
+  .ded-header__control:hover {
+    background-image: linear-gradient(var(--ink-dim-2), var(--ink-dim-2));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Desktop — two columns, and no bottom bar
+   ─────────────────────────────────────────────────────────────────────────
+
+   @container queries on .ddp-screen, matching the shared sheet: the rule is
+   about how much room THE PAGE has, and it is the only version that can be
+   verified by setting a width and measuring.
+
+   This route is already desktop-allowed in the responsive shell, so 768px is
+   a width real users reach. At it the page splits: the reading column on the
+   left at the 720px measure it already had, and a sticky sidebar on the right
+   holding the registration card, the sponsor and the action.
+
+   THE FIXED BOTTOM BAR IS REMOVED ENTIRELY at this width, not restyled. The
+   sidebar CTA is always on screen, so a second copy welded across the foot of a
+   1440px window would be a duplicate of a control that never went away.
+*/
+
+@container ddp (min-width: 768px) {
+  /* The hero stays full-bleed and gives height back — 56svh across a wide
+     window is a screenful of poster before a single fact appears. */
+  .ded-hero,
+  .ded-skel--hero {
+    height: 42vh;
+    height: 42svh;
+    min-height: 300px;
+    max-height: 460px;
+  }
+
+  /*
+   * THE SAME TWELVE COLUMNS THE FEST PAGE USES.
+   *
+   * The old template was `minmax(0, 720px) minmax(260px, 320px)`: two fixed
+   * measures that did not add up to the container at any width, so the surplus
+   * fell wherever the grid happened to put it. At 1440px it did not even fit —
+   * 720 + 32 + 260 is 1012 against 972 of container — so the reading column was
+   * being squeezed below its stated measure while the rail held its floor.
+   *
+   * repeat(12, minmax(0, 1fr)) with an 8/4 split makes the pair fill the
+   * container exactly at every width, so the gutters are equal by construction
+   * rather than by arithmetic that only works at one window size. See the note
+   * on .ddp-split in detail-page.css for why twelve.
+   */
+  .ded-layout {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--s7);
+    align-items: start;
+  }
+
+  /* Left/right rather than DOM order: on a phone the sidebar's contents come
+     FIRST (the decision, before the long read), and reversing that here costs
+     no markup change. */
+  .ded-main {
+    grid-column: 1 / span 8;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .ded-side {
+    grid-column: 9 / span 4;
+    grid-row: 1;
+    min-width: 0;
+    align-self: start;
+    position: sticky;
+    /* Under this page's own header, which is 56px and fixed. */
+    top: calc(var(--header-h) + var(--s4));
+    padding-block: var(--s4);
+    /* Its own scroll, so a long code panel can never push the CTA off screen. */
+    max-height: calc(100svh - var(--header-h) - var(--s6));
+    overflow-y: auto;
+  }
+
+  /*
+   * The 720px clamp that used to be here is gone.
+   *
+   * It was written to stop a 44px row stretching to 1100px, which was the
+   * right worry — but the thing it was actually clamping against was the
+   * broken single-stack layout, where .ded-main was the full 1020px of the
+   * sheet. With the split working, .ded-main IS the reading column (864px at
+   * the 1440px cap), so the row already has its measure from the grid. Keeping
+   * the clamp on top of that just reinstated the complaint in miniature: 720px
+   * of rows left-aligned in an 864px column, with 144px of dead space down the
+   * right of every one of them. The prose keeps its own 68ch measure, which is
+   * a typographic limit and a different thing from a layout one.
+   */
+
+  /* The action moves into the card. */
+  .ded-reg__actions {
+    display: block;
+  }
+
+  .ded-reg__actions .ddp-button,
+  .ded-reg__actions .ded-cta__pair {
+    width: 100%;
+  }
+
+  .ded-reg__actions .ded-cta__pair .ddp-button {
+    flex: 1 1 0;
+  }
+
+  /* The bar goes, and with it the clearance the screen reserved for it. */
+  .ded-cta {
+    display: none;
+  }
+
+  .ddp-screen.ded-screen {
+    padding-bottom: var(--s8);
+  }
+
+  /* The panel joins the sidebar. */
+  .ded-joinsheet {
+    position: static;
+    padding: var(--s3) 0 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /*
+   * The hero's type lines up with the page under it. .ded-hero__scrim already
+   * reads the --page-pad ladder, which is right up to 1440px and wrong above
+   * it: the hero is full-bleed and the sheet is not, so at 1920px the h1
+   * started at x=63 while the reading column started at x=304 — the largest
+   * piece of type on the page hanging 240px to the left of everything it
+   * introduces. Capping the scrim's children at the sheet's content width and
+   * centring them keeps one left edge at every width. See the matching rule on
+   * .ddp-hero__scrim in detail-page.css.
+   */
+  .ded-hero__scrim {
+    align-items: center;
+  }
+
+  .ded-hero__scrim > * {
+    width: 100%;
+    max-width: calc(var(--ddp-max) - var(--page-pad) * 2);
+  }
+
+  /* The FAQ answer takes the same treatment as .ddp-prose: 68ch is the phone
+     measure, and inside the 864px reading column it left 167px of dead band
+     down the right of every open answer. See the note in detail-page.css. */
+  .ded-faq__a {
+    max-width: 86ch;
+  }
+
+  /* Three across once there is room; two is a phone shape at 1000px. */
+  .ded-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  /* The rail stops being a rail — with 720px of column there is room to show
+     everything at once, and a horizontal scroller on a mouse is a worse
+     interaction than a grid. */
+  .ded-rail {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-inline: 0;
+    padding: 0;
+    overflow-x: visible;
+  }
+}
+
+/*
+ * Wide. The page centres and stops growing.
+ *
+ * This is the same cap the fest page's .ddp-col takes, from the same
+ * --ddp-max, because .ded-sheet is this page's .ddp-col — the container the
+ * split sits in. It used to be a local 1100px applied only from 1280px up,
+ * which meant the two detail pages centred at two different widths and the
+ * event page held a narrower measure than the fest page for no reason a reader
+ * could see. One number, both pages.
+ *
+ * Applied unconditionally rather than inside a container query: below 1440px
+ * a max-width of 1440px is inert, so the page is fluid up to the cap and fixed
+ * above it without a breakpoint needing to say so.
+ */
+.ded-sheet {
+  max-width: var(--ddp-max);
+  margin-inline: auto;
+}

@@ -1,0 +1,1325 @@
+/*
+ * discover.css — the Discover screen, built only from dedal-tokens.css.
+ *
+ * Every class here is prefixed `dsc-`. That is not decoration: this file loads
+ * alongside a Tailwind v4 @theme block belonging to the older design system,
+ * and an unprefixed `.card` or `.chip` would sooner or later be won or lost by
+ * a utility class nobody was thinking about. Nothing in this file uses a
+ * heritage token, and nothing outside this file styles a Discover element.
+ *
+ * ADAPTIVITY IS BY CONTAINER, NOT BY VIEWPORT. `.dsc-shell` declares itself an
+ * inline-size container and every breakpoint below is a @container query
+ * against it. Two reasons, in this order:
+ *   1. It is correct. The feed cares how much room the feed has. On the day
+ *      this screen is embedded in a split view, a sidebar layout, or a desktop
+ *      two-pane shell, a viewport query would be measuring the wrong box and
+ *      the cards would lay out for a width they do not have.
+ *   2. It is testable. A container's width can be set and measured directly,
+ *      so the 768px and 1024px behaviour can be verified for real instead of
+ *      being asserted from reading the CSS.
+ * The shell is width:100% of the page, so on an ordinary phone or desktop the
+ * container width IS the viewport width and the breakpoints land where the
+ * brief says they land.
+ *
+ * There is not a single fixed width in this file. Every horizontal measurement
+ * is a max-width, a percentage, a minmax(), or a token.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Shell
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-shell {
+  container-type: inline-size;
+  container-name: dsc;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  /* Optical sizing and tabular figures are set once, here, so a code or a
+     time is never a different width from one screen to the next. */
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * The reading column. One rule shared by the header's inner row, the chip
+ * strip and the feed, which is what keeps the wordmark, the chips and the
+ * cards on the same left edge at every width — the commonest way a feed
+ * screen goes subtly wrong is three different containers each doing their own
+ * centring.
+ */
+.dsc-col {
+  width: 100%;
+  /*
+   * NO MAX-WIDTH until ultra-wide. The feed is a grid that decides its own
+   * column count from the space available, so capping the container would be
+   * capping the grid — the thing that is supposed to use the room. Only past
+   * 1920px does a limit start to earn its place, and that is set below.
+   *
+   * One rule shared by the header row, the chip strip and the feed, so all
+   * three keep the same left and right edge at every width. The commonest way
+   * a feed screen goes subtly wrong is three containers each centring
+   * themselves independently.
+   */
+  max-width: var(--col-max, none);
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Header
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dsc-header__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--header-h);
+}
+
+.dsc-header__brand {
+  display: flex;
+  align-items: center;
+  /* Takes the slack so the avatar and the search icon stay pinned right at
+     every width without either being given a width of its own. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dsc-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 0 0 auto;
+}
+
+/*
+ * The 44px minimum touch target, applied once. Every icon-sized control on
+ * this screen inherits it, so no individual control has to remember and none
+ * of them can be 32px because it looked better in isolation.
+ */
+.dsc-iconbutton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dsc-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  object-fit: cover;
+  background: var(--ink-dim-4);
+  display: block;
+}
+
+.dsc-avatar--initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--body-s-size);
+  line-height: 1;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Search
+   ─────────────────────────────────────────────────────────────────────────
+
+   The field lives INSIDE the header row and grows across it, pushing the
+   wordmark out of the way, rather than dropping onto a second line. A second
+   line changes the height of a sticky header, which moves every card on the
+   page by 56px the instant someone taps a magnifying glass.
+
+   THE ONE LAYOUT ANIMATION ON THIS SCREEN. Everything else is transform and
+   opacity; this transitions `width`, which the compositor cannot do on its own
+   thread. It is here because a search field that expands is the behaviour that
+   was asked for, and the honest way to do that is to animate the width rather
+   than to fake it with a scaleX that would stretch the placeholder text as it
+   goes. It runs once per tap, over 240ms, on a single element in the header —
+   not per frame of a scroll — so the cost is paid where it does not compete
+   with anything.
+*/
+
+.dsc-search {
+  /* Collapsed by default and given no width, so the header row is exactly the
+     wordmark and the two controls until the field is asked for. */
+  flex: 0 1 auto;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  transition: width var(--d-move) var(--ease-enter);
+}
+
+.dsc-search--open {
+  width: 100%;
+}
+
+/* Closing is faster than opening, like everything else here. */
+.dsc-search:not(.dsc-search--open) {
+  transition-duration: var(--d-exit);
+  transition-timing-function: var(--ease-exit);
+}
+
+.dsc-search__input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding-inline: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+}
+
+.dsc-search__input::placeholder {
+  color: var(--muted);
+}
+
+/*
+ * The wordmark yields the row while the field is open. It is not unmounted:
+ * unmounting it would reflow the row in one step and the field would appear to
+ * jump rather than to grow.
+ */
+.dsc-header__brand {
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    max-width var(--d-move) var(--ease-enter);
+  max-width: 100%;
+}
+
+.dsc-header__brand--yielded {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Offline strip
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-offline {
+  height: var(--offline-h);
+  display: flex;
+  align-items: center;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Category chips
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-chips {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Scroll, never wrap: a wrapping chip row changes the height of the page
+     header depending on how many categories exist, which moves the first card
+     by a different amount on every install. */
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* 8px above and below. The strip sits between the hero and the grid and has
+     no heading of its own; anything more turns a filter into a section. */
+  padding-block: var(--s2);
+  /*
+   * The strip scrolls edge to edge while its first and last chip still line up
+   * with the feed's gutter — negative margin out to the container edge, the
+   * gutter put back as padding inside the scroller.
+   */
+  margin-inline: calc(var(--page-pad) * -1);
+  padding-inline: var(--page-pad);
+  /* Left-aligned and never stretched: where every chip fits without scrolling,
+     they sit together at the start of the row rather than spreading out to
+     fill it, which would make the gap between them a function of how many
+     categories a platform happens to have. */
+  justify-content: flex-start;
+}
+
+.dsc-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.dsc-chip {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter);
+}
+
+.dsc-chip[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Feed
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-feed {
+  display: grid;
+  /*
+   * THE BROWSER DECIDES THE COLUMN COUNT, not a breakpoint list.
+   *
+   * `auto-fill` with a 300px minimum means the grid fits as many 300px-or-wider
+   * columns as the space allows and stretches them to share it: one column on a
+   * 360px phone, two on a tablet, four on a 1440px laptop, six on an ultra-wide
+   * — with no media query for any of it. A declared column count is a promise
+   * about viewport widths that is wrong on the first device nobody tested, and
+   * it is three more rules to keep in sync every time the gutter changes.
+   *
+   * `min(300px, 100%)` rather than a bare 300px is the guard that matters: on a
+   * container narrower than 300px a fixed minimum makes the track wider than
+   * its parent and the whole page scrolls sideways. Clamping the minimum to the
+   * container's own width means the grid degrades to one full-width column
+   * instead of overflowing.
+   */
+  /*
+   * MOBILE IS TWO FIXED COLUMNS. Below 640px `auto-fill` with a 300px minimum
+   * resolves to exactly one column, and one full-width card with a 16:9 poster
+   * means about one and a half fests above the fold — you scroll before you
+   * have seen anything to choose between. District, BookMyShow and Eventbrite
+   * all show two, and four items visible at once is the difference between
+   * browsing and paging.
+   *
+   * The auto-fill rule below takes over from 640px up, where a 300px minimum
+   * genuinely fits.
+   */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  /* Nothing to clear at the bottom any more — see --feed-end. The safe-area
+     inset stays: the home indicator is still there even when a tab bar is not. */
+  padding-block: var(--s2) calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+  list-style: none;
+  margin: 0;
+}
+
+.dsc-card {
+  background: var(--surface-card);
+  border-radius: var(--r-card);
+  box-shadow: var(--e1);
+  overflow: hidden;
+  /* The card is the containing block for the media's absolutely positioned
+     pill, progress rule and sound target. */
+  position: relative;
+}
+
+/*
+ * The tap target IS the card. One element, filling it, so there is no dead
+ * margin inside the card that swallows a tap and no second control inside it
+ * competing for the same thumb.
+ */
+.dsc-card__hit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dsc-card__hit--inert {
+  cursor: default;
+}
+
+.dsc-card__body {
+  padding: var(--card-pad);
+  display: grid;
+  gap: var(--s1);
+}
+
+.dsc-card__title {
+  margin: 0;
+  /* Mobile: display-m at 24px does not fit a half-width card, so the small
+     card steps down to body-m and the media query above restores it. */
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  /*
+   * ONE line, then ellipsis. Every card in a row then has the same number of
+   * lines below its poster, so the meta lines align across the row instead of
+   * stepping down wherever a name happened to wrap. The posters already align
+   * because they are all 16:9; this is what makes the text align too.
+   */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsc-card__host {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 500;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsc-card__meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  /* nowrap: on a narrow card a wrapping meta row silently makes one card taller
+     than its neighbour and the whole row steps down with it. */
+  flex-wrap: nowrap;
+  gap: var(--s2);
+  overflow: hidden;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 400;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The deadline is the one piece of meta that is an instruction rather than a
+ * fact, so it is the one piece that is not --muted.
+ *
+ * HIDDEN ON THE SMALL CARD. At a half-width column the meta row holds the Live
+ * badge and a date range and nothing else fits; "Closes in 3 days" pushed the
+ * dates out of the card entirely. It is not information worth losing the date
+ * for, and it is still on the fest page, which is one tap away. It returns at
+ * 640px where the row has room.
+ */
+.dsc-card__deadline {
+  display: none;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.dsc-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  color: var(--primary);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+}
+
+.dsc-live__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dsc-live__dot {
+    animation: dsc-pulse 1.6s var(--ease-enter) infinite;
+  }
+}
+
+@keyframes dsc-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Media
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-media {
+  position: relative;
+  /*
+   * 3:4 PORTRAIT on mobile, restored to 16:9 from 640px up (see the media query
+   * at the foot of this file). A portrait crop shows far more of a poster at a
+   * ~170px column width, and it is what every event and cinema app uses at this
+   * size for exactly that reason. The hero opts back out — it is the one place
+   * a landscape poster earns the room.
+   *
+   * The ratio is declared on the box, so the space is reserved before a single
+   * byte of the image has arrived. That is the whole of this screen's
+   * layout-shift story.
+   */
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  background: var(--ink-dim-4);
+  border-radius: var(--r-flush);
+  overflow: hidden;
+}
+
+.dsc-media__el {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dsc-media__fallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--ink));
+}
+
+/* The sound target covers the media and nothing else, so a tap on the artwork
+   toggles sound and a tap on the title opens the fest. */
+.dsc-media__sound {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dsc-media__glyph {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-pill);
+  background: var(--scrim);
+  color: var(--surface);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dsc-media__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--scrim);
+}
+
+.dsc-media__progress-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.dsc-pill {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-pill);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.dsc-pill--promoted {
+  background: var(--surface-card);
+  color: var(--muted);
+  box-shadow: var(--e1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Skeleton, empty, error
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-skel {
+  background: var(--ink-dim-4);
+  border-radius: var(--r-card);
+}
+
+/* A pulse on opacity, not a gradient sweep across a wider-than-real
+   background: the sweep is a second animation running the whole time the
+   screen is loading, and it is the thing that makes a slow connection feel
+   like a broken one. */
+@media (prefers-reduced-motion: no-preference) {
+  .dsc-skel {
+    animation: dsc-skel-pulse 1s linear infinite alternate;
+  }
+}
+
+@keyframes dsc-skel-pulse {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The SAME ratio as a real card at both breakpoints — 3:4 on mobile, 16:9 from
+   640px (see the media query at the foot of this file). A skeleton shaped
+   differently from the thing it stands in for is a layout shift dressed up as a
+   loading state. */
+.dsc-skel--media {
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  border-radius: var(--r-flush);
+}
+
+.dsc-skel--title {
+  height: var(--display-m-line);
+  width: 68%;
+}
+
+.dsc-skel--host {
+  height: var(--body-s-line);
+  width: 44%;
+}
+
+.dsc-skel--meta {
+  height: var(--body-s-line);
+  width: 30%;
+}
+
+.dsc-state {
+  /* Left aligned. Centring an empty state puts the one sentence a person needs
+     to read in a different place from every other sentence on the screen. */
+  text-align: start;
+  padding-block: var(--s7);
+  display: grid;
+  gap: var(--s4);
+  justify-items: start;
+}
+
+.dsc-state__text {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  color: var(--ink);
+  max-width: 40ch;
+}
+
+.dsc-state--error {
+  width: 100%;
+  padding: var(--s4);
+  background: var(--surface-card);
+  border-radius: var(--r-card);
+  box-shadow: var(--e1);
+  border-inline-start: 2px solid var(--primary);
+}
+
+.dsc-button {
+  min-height: 44px;
+  padding-inline: var(--s4);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dsc-button--quiet {
+  background: var(--surface-card);
+  color: var(--ink);
+  border: 1px solid var(--divider);
+}
+
+.dsc-note {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Interaction states — declared once, for every interactive element here
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Hover dims the surface 2%. Only where a pointer can actually hover: on a
+   touch screen `:hover` sticks after a tap and the card stays dimmed. */
+@media (hover: hover) {
+  .dsc-card__hit:hover:not(.dsc-card__hit--inert) {
+    background: var(--ink-dim-2);
+  }
+  .dsc-chip:hover,
+  .dsc-iconbutton:hover,
+  .dsc-button:hover {
+    background-image: linear-gradient(var(--ink-dim-2), var(--ink-dim-2));
+  }
+}
+
+.dsc-card__hit:active:not(.dsc-card__hit--inert),
+.dsc-chip:active,
+.dsc-button:active {
+  transform: scale(0.97);
+}
+
+.dsc-chip:disabled,
+.dsc-button:disabled,
+.dsc-iconbutton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Adaptive
+   ─────────────────────────────────────────────────────────────────────────
+
+   ONE breakpoint, at 640px, and it exists to hand the column count over from a
+   fixed two to the browser.
+
+   Below it, two columns and a 3:4 portrait poster — the phone layout. Above it
+   `auto-fill` with a 300px minimum takes over and the browser decides: two at
+   768px, three at 1024px, four at 1440px, five at 1920px, with no further
+   breakpoint for any of it.
+
+   A @container query on .dsc-shell, not @media. The feed's job is to react to
+   the space THE FEED has: the day this screen appears in a split view or a
+   two-pane desktop shell, a viewport query would be measuring a width the cards
+   do not have and would lay out three columns inside a 400px pane. It is also
+   the only version that can be verified — a container's width can be set and
+   measured directly, which a viewport's cannot.
+
+   The page-padding ladder stays on :root as media queries, because the sticky
+   header sits OUTSIDE this container and the two must agree on their edges.
+*/
+
+@container dsc (min-width: 640px) {
+  .dsc-feed {
+    /*
+     * 280px, not 300px. At exactly 640px the content box is 592px and a 300px
+     * minimum fits only ONE column — so crossing the breakpoint upward went
+     * from two columns to one, which is the opposite of what a wider screen
+     * should do. Measured: cols=1, card=592px. 280px yields two columns at
+     * 640px and changes nothing above it (three at 1024, four at 1440, five at
+     * 1920), because those widths were never close to the boundary.
+     */
+    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  }
+
+  /*
+   * Landscape again from here up. A 3:4 portrait poster is right on a ~170px
+   * phone column; on a 300px-plus card it becomes a 400px-tall slab that pushes
+   * the next row entirely off screen — the opposite of the problem the portrait
+   * ratio was solving.
+   */
+  .dsc-feed > .dsc-card .dsc-media {
+    aspect-ratio: 16 / 9;
+  }
+
+  .dsc-card__title {
+    font-size: var(--display-m-size);
+    line-height: var(--display-m-line);
+  }
+
+  .dsc-card__host,
+  .dsc-card__meta {
+    font-size: var(--body-s-size);
+    line-height: var(--body-s-line);
+  }
+
+  .dsc-skel--media {
+    aspect-ratio: 16 / 9;
+  }
+
+  /* The deadline comes back once there is room for it. */
+  .dsc-card__deadline {
+    display: inline;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Hero
+   ─────────────────────────────────────────────────────────────────────────
+
+   One item, never a carousel. A carousel here would be a promise that there is
+   more behind it, paid for with a swipe most people never make — and the
+   hero's whole job is to answer "what should I look at first" with one answer.
+
+   FULL WIDTH AT EVERY BREAKPOINT. It is a sibling of the grid rather than a
+   cell inside it, so it spans the content column whatever the grid resolved
+   to. Putting it in the grid and spanning it with `grid-column: 1 / -1` would
+   also work, but it would tie the screen's loudest element to the grid's
+   internal gap, and the two are not the same measurement.
+*/
+
+.dsc-hero {
+  position: relative;
+  margin-block: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+  overflow: hidden;
+  box-shadow: var(--e1);
+  background: var(--surface-card);
+}
+
+/*
+ * A ceiling on how tall the hero's media may get, and the ONE place this
+ * screen departs from a strict 16:9.
+ *
+ * The feed now runs full width, so 16:9 at 1440px is 810px — measured on the
+ * running app, taller than the fold on any laptop. The hero would have been
+ * the entire first screen: no chips, no live strip, not one card, and no
+ * signal that there was anything below it. On a phone 16:9 is about 200px and
+ * none of this applies, so the cap only ever engages on a wide viewport. The
+ * media is object-fit: cover, so the poster crops rather than squashes.
+ *
+ * THE CAP GOES ON THE MEDIA, NOT ON .dsc-hero. The scrim is positioned
+ * inset:0 against this box. Capping the outer hero instead left the media at
+ * its full 16:9 height and simply hid the overflow — which cropped the scrim
+ * with it, and the fest name and the Live mark were sliced in half at the
+ * bottom edge. Capping the box the scrim is measured against keeps the two the
+ * same size by construction.
+ */
+.dsc-hero .dsc-media {
+  /* The hero is landscape at EVERY width, including mobile where the cards
+     below it are portrait. That contrast is the point: one wide banner over a
+     grid of tall cards reads as "this one first", which a hero shaped like a
+     bigger card would not. */
+  aspect-ratio: 16 / 9;
+  max-block-size: 62vh;
+}
+
+.dsc-hero__hit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/*
+ * The scrim. A gradient rather than a flat wash: a flat overlay dark enough to
+ * carry white text at the bottom also flattens the top of the poster, which is
+ * usually the part worth showing.
+ */
+.dsc-hero__scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--s4);
+  background: linear-gradient(
+    to top,
+    rgb(15 23 41 / 82%) 0%,
+    rgb(15 23 41 / 55%) 34%,
+    rgb(15 23 41 / 0%) 68%
+  );
+  /* The media underneath owns taps for mute; only the CTA takes them back. */
+  pointer-events: none;
+}
+
+.dsc-hero__title {
+  margin: 0 0 var(--s1);
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsc-hero__host {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  /* Not --muted: --muted is tuned for --ink on --surface and turns to mud on a
+     photograph. On the scrim the secondary line is the surface colour held
+     back with opacity, which survives any image. */
+  color: rgb(250 250 250 / 78%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dsc-hero__meta {
+  margin: var(--s1) 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 400;
+  color: rgb(250 250 250 / 78%);
+  font-variant-numeric: tabular-nums;
+}
+
+.dsc-hero__cta {
+  align-self: flex-start;
+  margin-top: var(--s3);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  /* The one thing inside the scrim that takes a pointer. */
+  pointer-events: auto;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dsc-hero__cta:active {
+  transform: scale(0.97);
+}
+
+/* Live, on the scrim: the dot and the word in --primary on a dark pill, so the
+   red keeps its contrast over a bright poster. */
+/*
+ * PINNED TO THE TOP-LEFT OF THE HERO, not stacked above the title.
+ *
+ * As a flow item at the head of the scrim's bottom-aligned column it sat
+ * immediately above the fest name and moved down the poster whenever the title
+ * wrapped to a second line — a status marker whose position depended on how
+ * long the fest was called. Absolute placement fixes it at the corner the eye
+ * enters, and matches .dsc-live--onmedia on the cards below so the two read as
+ * the same signal at two sizes.
+ *
+ * The scrim is a bottom-up gradient and is fully transparent at the top, so the
+ * pill carries its own scrim rather than relying on the one behind it.
+ */
+.dsc-live--onscrim {
+  position: absolute;
+  top: var(--s4);
+  left: var(--s4);
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-pill);
+  background: rgb(15 23 41 / 68%);
+  color: #ffffff;
+}
+
+.dsc-live--onscrim .dsc-live__dot {
+  background: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Live now strip
+   ─────────────────────────────────────────────────────────────────────────
+
+   Absent from the DOM entirely when nothing is live — not hidden. A hidden
+   section is still a section a screen reader can land in and still a row of
+   margin the layout has to account for.
+*/
+
+.dsc-livestrip {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+  padding-block: var(--s2);
+  margin-inline: calc(var(--page-pad) * -1);
+  padding-inline: var(--page-pad);
+  justify-content: flex-start;
+}
+
+.dsc-livestrip::-webkit-scrollbar {
+  display: none;
+}
+
+.dsc-livechip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 36px;
+  max-width: 60%;
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dsc-livechip__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dsc-livechip:active {
+  transform: scale(0.97);
+}
+
+/* Sentence case, micro weight. Not an ALL-CAPS eyebrow: caps at 11px is the
+   single commonest tell of a generated page, and it reads slower. */
+.dsc-sectionlabel {
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Infinite scroll
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Spans the whole grid row so it is never treated as a card-sized cell and
+   never leaves a gap in the last row. */
+.dsc-sentinel {
+  grid-column: 1 / -1;
+  min-height: 1px;
+}
+
+.dsc-loadmore {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding-block: var(--s5);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.dsc-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--divider);
+  border-top-color: var(--primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dsc-spinner {
+    animation: dsc-spin 700ms linear infinite;
+  }
+}
+
+@keyframes dsc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sponsor line on a fest card
+   ─────────────────────────────────────────────────────────────────────────
+
+   The placement college sponsors actually care about: their mark on the card
+   where students browse, not only on the fest page they have to open first.
+
+   IT COSTS NOTHING WHEN ABSENT. The row is rendered only when the fest carries
+   a sponsor, so a card without one is byte-identical to what it was — no empty
+   line, no reserved height, no divider hanging under the dates.
+*/
+
+.dsc-sponsor {
+  display: flex;
+  align-items: center;
+  /* Left, with the label leading. A right-aligned strip reads as a footnote;
+     these marks are the reason a sponsor paid, and they line up with the fest
+     name and the dates above them. */
+  justify-content: flex-start;
+  gap: var(--s2);
+  margin-top: var(--s2);
+  padding-top: var(--s2);
+  /* A hairline above it, because this is a different KIND of information from
+     the dates — whose fest it is, versus who is behind it. */
+  border-top: 1px solid var(--divider);
+  min-width: 0;
+  /* nowrap: a second row of logos would make one card in a grid row taller
+     than its neighbours and step the whole row down. */
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.dsc-sponsor__label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/* "+2" — honest about there being more, at the cost of one short string rather
+   than a second row. The fest page shows the full set. */
+.dsc-sponsor__more {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+/*
+ * A hard ceiling, not a size. Sponsor logos arrive at whatever dimensions the
+ * brand supplies — a wide wordmark and a square badge are both normal — so the
+ * height is capped and the width is left to follow the aspect ratio.
+ * `object-fit: contain` because a logo cropped to fill is a logo the brand did
+ * not approve.
+ */
+.dsc-sponsor__logo {
+  height: 24px;
+  max-height: 24px;
+  width: auto;
+  /*
+   * A MINIMUM WIDTH, and it is load-bearing rather than cosmetic.
+   *
+   * `width: auto` on an image that has not loaded resolves to an intrinsic
+   * width of 0, so the element is a 0x20 box — and a zero-AREA element is never
+   * considered visible, so `loading="lazy"` never fires and the image never
+   * loads. The box waits for the image and the image waits for the box.
+   * Measured: every logo sat at complete=false, naturalWidth=0, rect 0x20,
+   * while the same URL fetched fine and a fresh Image() loaded it instantly.
+   *
+   * 40px gives the box area from the first frame. The lazy attribute is also
+   * gone from the markup — see SponsorLine — because deferring a 20px logo
+   * saves nothing worth this class of bug.
+   */
+  min-width: 32px;
+  max-width: 72px;
+  object-fit: contain;
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Promotion card
+   ─────────────────────────────────────────────────────────────────────────
+
+   A sponsor's paid placement, and it should not read as a fest card wearing a
+   label. What separates it: a gradient foot on the artwork so the promoter's
+   name is legible over any image, the name burned into the artwork the way it
+   would be on a real creative, and a call to action in --primary instead of a
+   date range.
+*/
+
+/*
+ * The gradient. 20% of the image height, transparent to 40% black — enough to
+ * carry white text over a bright photograph, not enough to dim the creative
+ * the promoter paid to show. Black rather than --ink here deliberately: this
+ * sits over an arbitrary photograph, not over the app's canvas, and a tinted
+ * navy scrim shifts the colours of the image underneath it.
+ */
+.dsc-promo__foot {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 20%;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--s2);
+  background: linear-gradient(to top, rgb(0 0 0 / 40%), rgb(0 0 0 / 0%));
+  pointer-events: none;
+}
+
+.dsc-promo__promoter {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* A shadow, because a gradient cannot guarantee contrast over a white sky.
+     Costs nothing and removes the one case where the name disappears. */
+  text-shadow: 0 1px 2px rgb(0 0 0 / 45%);
+}
+
+/* The pill over artwork needs its own treatment: the card's --surface-card pill
+   is invisible on a pale image and heavy on a dark one. */
+.dsc-pill--onmedia {
+  background: rgb(0 0 0 / 55%);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.dsc-promo__cta {
+  margin-top: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--primary);
+  /* The whole card is the tap target; this is the label that says so. The 48px
+     floor is met by the card, not by this line. */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Hero sponsor
+   ─────────────────────────────────────────────────────────────────────────
+
+   Nothing of its own. The hero sponsor reuses the fest hero's scrim, title and
+   host line exactly, and adds only the "Sponsor" pill — which is
+   .dsc-pill--onmedia, already defined above for the sponsor card.
+
+   The white pill CTA that used to live here is GONE with the outbound link it
+   opened: a sponsor card on a college fest platform showcases, it does not send
+   students to the open web. See FeedHero.jsx.
+*/
+
+/*
+ * THE LABEL IS HIDDEN ON MOBILE. On a 145px half-width card the word
+ * "Sponsors" costs about 52px — a third of the row — and with three logos
+ * beside it the strip overflowed and clipped the last mark. Measured:
+ * scrollWidth > clientWidth on two of four strips at 390px.
+ *
+ * A @container query, matching the rest of this file. Written first as @media
+ * and it did nothing: the rule is about how wide THE CARD is, and a viewport
+ * query cannot see that — measured 4 of 4 strips still clipping with the label
+ * still shown.
+ *
+ * The logos are what a sponsor paid for; the label only says what they are,
+ * which a row of brand marks under a fest name already conveys. So on a phone
+ * the marks get the whole row, and the word returns at 640px where both fit.
+ */
+@container dsc (max-width: 639.98px) {
+  .dsc-sponsor__label {
+    display: none;
+  }
+
+  .dsc-sponsor {
+    gap: var(--s1);
+  }
+
+  /*
+   * THEY SHRINK TO FIT RATHER THAN OVERFLOW.
+   *
+   * A logo is sized by its height with `width: auto`, so a 200x80 mark at 20px
+   * tall is 50px WIDE — and three of those need 150px in the ~82px a 106px card
+   * leaves after padding. Measured: two of four strips still clipping, with the
+   * third mark cut in half.
+   *
+   * `flex: 0 1 auto` with `min-width: 0` lets the row divide itself between
+   * however many marks it holds instead of running past its edge. The marks get
+   * smaller on the narrowest cards, which is the correct trade: a brand shown
+   * small is still that brand's colour and shape under a fest name, whereas a
+   * brand sliced down the middle is a defect the sponsor will notice.
+   * `object-fit: contain` means they scale rather than crop.
+   */
+  .dsc-sponsor__logo {
+    height: 20px;
+    max-height: 20px;
+    min-width: 0;
+    max-width: 52px;
+    flex: 0 1 auto;
+  }
+}
+
+/*
+ * The empty platform, in components/empty-state.
+ *
+ * Centred in a band rather than in the whole viewport: this state renders
+ * below the explore header and the category rail, so claiming 100dvh would run
+ * it past the fold and add a scrollbar to a page with nothing on it.
+ */
+.dsc-empty {
+  --des-empty-offset: calc(100dvh - 240px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Live, on the poster
+
+   The stage is only here to give the badge something to position against: the
+   media element already sets position: relative, but it is rendered by
+   FeedMedia and the badge is a sibling of it, not a child.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsc-card__stage {
+  position: relative;
+  display: block;
+}
+
+/*
+ * A solid scrim, deliberately NOT backdrop-filter. A blurred backdrop creates
+ * its own compositing layer, and on this codebase a compositing edge landing on
+ * a fractional device pixel is the exact mechanism behind the hairlines that
+ * have been chased across the hero, the header and the notification rows. A
+ * flat 68% ink does the same legibility job over any poster with none of that
+ * risk.
+ */
+.dsc-live--onmedia {
+  position: absolute;
+  top: var(--s2);
+  left: var(--s2);
+  z-index: 1;
+  padding: 3px var(--s2);
+  border-radius: var(--r-pill);
+  background: rgb(15 23 41 / 68%);
+  color: #ffffff;
+}
+
+/* The dot keeps --primary: on a dark pill it is the only red on the card, and
+   it is the thing that says "now" rather than the word beside it. */
+.dsc-live--onmedia .dsc-live__dot {
+  background: var(--primary);
+}

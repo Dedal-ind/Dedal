@@ -1,0 +1,1204 @@
+/*
+ * qr-pass.css — the pass at the gate. `dqp-` prefix.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * READ THIS BEFORE "FIXING" THE HEX VALUES INTO TOKENS.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Every colour in this file is a LITERAL, and that is deliberate. It is the one
+ * place in the participant app where a hardcoded hex is the correct answer, so
+ * the reasoning is written down rather than left to be rediscovered.
+ *
+ * This screen is dark ALWAYS. Not "dark when the system is dark" — always. The
+ * QR is the entire reason the screen exists, and a QR is decoded by a cheap
+ * phone camera pointed at a bright plate: it needs a white quiet zone and black
+ * modules, at full contrast, under venue lighting, on a screen held at an
+ * angle. Everything around it is dark so that the plate is the brightest thing
+ * in the frame and the camera's auto-exposure locks onto it.
+ *
+ * Three separate mechanisms in this codebase would otherwise repaint it:
+ *
+ *   1. `html.dark` in index.css re-points every --color-* heritage token.
+ *   2. `[data-dedal-theme="dark"]` in dedal-tokens.css swaps --surface and
+ *      --ink — so `var(--surface-card)`, which is #ffffff in light mode, is
+ *      #0f1729 inside a dark subtree. A QR plate written as var(--surface-card)
+ *      therefore becomes a NAVY plate with black modules on it, which no camera
+ *      on earth can decode. That is not hypothetical; it is what the token
+ *      resolves to.
+ *   3. `color-scheme` / forced dark UA styling on form controls.
+ *
+ * So: `color-scheme: dark` is set on the root here to stop the UA darkening
+ * anything a second time, and the palette is stated as literals so no ancestor
+ * class can reach it.
+ *
+ * NON-COLOUR tokens (--s*, --r-*, --font, the type ramp) ARE used, because none
+ * of the three mechanisms above touches them. The rule is precise: colours are
+ * literal, everything else is a token.
+ *
+ * THE PALETTE, complete. Nothing else is a colour on this screen.
+ *   #0f1729               the page
+ *   #1a2238               the card
+ *   #ffffff               the QR plate, and primary text
+ *   rgba(255,255,255,.10) every border
+ *   rgba(255,255,255,.62) secondary text
+ *   rgba(255,255,255,.42) tertiary text and disabled
+ *   #ff3b30               live now, and nothing else
+ *   #30d158               an entitlement that is still good. The dedal palette
+ *                         has no green; a "you may still claim this" state read
+ *                         in red or in grey is actively misleading at a
+ *                         counter, so one is stated here and only here.
+ *
+ * MOTION: there is none, on purpose. No entrance animation, no shimmer, no
+ * hover lift. A gate is a place where the pass has to be on screen in one
+ * frame, and every animation is a frame it is not. The only two exceptions are
+ * the loading skeleton's pulse (which is what tells you it is not stuck) and
+ * transitions on states the user themselves triggered.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The screen
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-screen {
+  color-scheme: dark; /* see the header — stops the UA re-darkening controls */
+  min-height: 100vh;
+  background: #0f1729;
+  color: #ffffff;
+  font-family: var(--font);
+  padding-bottom: var(--s8);
+}
+
+/* The screen's own bar. This route sits OUTSIDE ParticipantLayout, so there is
+   no AppHeader above it and no other way back. */
+.dqp-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 56px;
+  padding: 0 var(--s2);
+  background: #0f1729;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+.dqp-bar__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.dqp-bar__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Layout
+
+   One column on a phone. At 768px it becomes a split: the card on the left at
+   its natural size, everything a phone cannot afford to show on the right. The
+   breakpoint is 768 rather than the app's usual 640 because the card has a hard
+   floor of ~320px and the right column needs ~420px before it stops being a
+   squeezed list.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-layout {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--s5) var(--gutter) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.dqp-aside {
+  display: none; /* phone: the card is the screen. Nothing competes with it. */
+}
+
+@media (min-width: 768px) {
+  .dqp-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 400px) 1fr;
+    gap: var(--s7);
+    align-items: start;
+    padding-top: var(--s7);
+  }
+
+  .dqp-aside {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s6);
+    min-width: 0;
+  }
+}
+
+.dqp-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The brightness prompt
+
+   A PROMPT, NOT A MODAL. It sits above the card and the card is fully usable
+   behind — or rather beneath — it. Someone who already knows to turn their
+   brightness up must not have to dismiss anything to reach their pass, and
+   someone at the front of a queue must not meet a dialog.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-card);
+  background: #1a2238;
+}
+
+.dqp-prompt__icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-prompt__text {
+  margin: 0;
+  flex: 1 1 auto;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-prompt__dismiss {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  margin: -10px -8px -10px 0; /* 44px target without a 44px-tall banner */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: rgb(255 255 255 / 62%);
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The pass switcher
+
+   Real buttons, always. The swipe on the card is an accelerator for someone
+   holding a phone one-handed; it is never the only way to change pass, so a
+   keyboard, a screen reader and a shaky hand all still work.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * The strip scrolls the SELECTED pill into view on mount, which is right — with
+ * three passes the current one can start off screen. What it did without the
+ * two rules below was slice the leading pill flush against the container edge
+ * with nothing to say it was a scroller: measured at 400px wide over 444px of
+ * content, scrollLeft settled at 43px and "Alliance ONE 2026" was cut to
+ * "nce ONE 2026", which reads as a rendering fault rather than as more content.
+ *
+ * scroll-padding gives the scrolled-to pill a gutter so it never lands against
+ * the edge, and the mask fades the overflowing end so the row announces itself
+ * as scrollable. The fade is on the ends only, so a strip that fits shows no
+ * fade at all.
+ */
+.dqp-switch {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: var(--s1);
+  scroll-padding-inline: var(--s4);
+  padding-inline: var(--s1);
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--s5),
+    #000 calc(100% - var(--s5)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 var(--s5),
+    #000 calc(100% - var(--s5)),
+    transparent 100%
+  );
+}
+
+.dqp-switch::-webkit-scrollbar {
+  display: none;
+}
+
+.dqp-switch__pill {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: rgb(255 255 255 / 62%);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  /* A state the user triggered — allowed under the no-motion rule. */
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dqp-switch__pill[aria-current='true'] {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0f1729;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE CARD
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-card {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-sheet);
+  background: #1a2238;
+  overflow: hidden;
+  /* The swipe lives here. `pan-y` keeps vertical scrolling native and hands us
+     only the horizontal axis, which is what stops the gesture from fighting the
+     page. */
+  touch-action: pan-y;
+}
+
+.dqp-card__head {
+  padding: var(--s6) var(--s5) var(--s4);
+  text-align: center;
+}
+
+.dqp-card__fest {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.dqp-card__host,
+.dqp-card__dates {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-card__dates {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Live now. The only red on the screen. */
+.dqp-card__live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  background: rgb(255 59 48 / 16%);
+  color: #ff3b30;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+.dqp-card__live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: #ff3b30;
+}
+
+.dqp-card__rule {
+  height: 1px;
+  margin: 0 var(--s5);
+  background: rgb(255 255 255 / 10%);
+}
+
+/* Identity. Small, factual, and directly above the QR so a marshal comparing a
+   face to a name does not have to scroll. */
+.dqp-card__who {
+  padding: var(--s4) var(--s5);
+  text-align: center;
+}
+
+.dqp-card__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.dqp-card__id {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+  font-variant-numeric: tabular-nums;
+}
+
+.dqp-card__contact {
+  margin: 2px 0 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: rgb(255 255 255 / 42%);
+  overflow-wrap: anywhere;
+}
+
+/* ── The QR plate ────────────────────────────────────────────────────────
+   White, always, at full 255. See the file header: this is the reason the
+   whole screen is hardcoded.
+
+   The three touch properties are not decoration. On iOS a long-press on an
+   <svg> opens the share / "Save image" sheet, which covers the QR at the exact
+   moment a volunteer is holding a scanner over it. The backup code below stays
+   selectable, so nothing that needs copying loses that. */
+.dqp-plate {
+  display: flex;
+  justify-content: center;
+  padding: 0 var(--s5) var(--s5);
+}
+
+.dqp-plate__inner {
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: #ffffff;
+  line-height: 0;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ── The perforation ─────────────────────────────────────────────────────
+   Two semicircles bitten out of the card's left and right edges, plus a dashed
+   rule between them.
+
+   RADIAL-GRADIENT, not masked pseudo-elements. Two reasons, both practical:
+   a mask punches a real hole, so whatever is behind the card shows through —
+   which is fine on the phone where the card sits on the page, and wrong in the
+   desktop split and inside the pass sheet, where the card sits on a different
+   surface and the notches would suddenly glow. Painting the page colour INTO
+   the card gives the same read on every surface. And the card has
+   `overflow: hidden` for its radius, which would clip any pseudo-element hung
+   outside its edge anyway.
+
+   The card's own 1px border still runs straight across the mouth of each notch
+   — `overflow: hidden` clips at the padding box, so nothing painted here can
+   reach over it. At 1px against a 28px bite it reads as the ticket's edge
+   rather than as a mistake, and the alternatives (splitting the border into
+   four sides, or dropping it and losing the card's edge on the sheet's light
+   surface) both cost more than they buy. */
+.dqp-tear {
+  position: relative;
+  height: 28px;
+  background-repeat: no-repeat;
+  background-image:
+    radial-gradient(circle 14px at left center, #0f1729 97%, transparent 98%),
+    radial-gradient(circle 14px at right center, #0f1729 97%, transparent 98%);
+}
+
+.dqp-tear::after {
+  content: '';
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 50%;
+  border-top: 1px dashed rgb(255 255 255 / 22%);
+}
+
+/* ── The backup code ─────────────────────────────────────────────────────
+   The fallback when a camera will not focus, a lens is scratched, or the
+   scanner app has given up — which happens, and when it does the queue is
+   already behind you. Big, spaced and tabular so it can be read aloud across a
+   desk without either party squinting. Selectable, unlike the QR. */
+.dqp-code {
+  padding: var(--s3) var(--s5) var(--s6);
+  text-align: center;
+}
+
+.dqp-code__label {
+  display: block;
+  margin-bottom: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: rgb(255 255 255 / 42%);
+}
+
+.dqp-code__value {
+  display: block;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+}
+
+/* A pass that is not `active` must say so ON the card, not in a toast: a
+   suspended pass that looks identical to a live one wastes everybody's time at
+   the front of a queue. */
+.dqp-card__blocked {
+  margin: 0 var(--s5) var(--s5);
+  padding: var(--s3) var(--s4);
+  border: 1px solid rgb(255 59 48 / 40%);
+  border-radius: var(--r-card);
+  background: rgb(255 59 48 / 12%);
+  color: #ff3b30;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sections below the card
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-section {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-card);
+  background: #1a2238;
+  overflow: hidden;
+}
+
+.dqp-section__title {
+  margin: 0;
+  padding: var(--s4) var(--s4) var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+.dqp-section__note {
+  margin: 0;
+  padding: 0 var(--s4) var(--s4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+/* ── Entitlements ────────────────────────────────────────────────────────
+   What this one QR is good for. The count reads as what is LEFT, never as what
+   is spent: at a counter the only question is "can I still claim this", and
+   "1 of 2 used" makes the reader do the subtraction. An uncapped entitlement —
+   gate access, where maximumUses is null — gets a tick, because "unlimited" as
+   a number is not a thing. */
+.dqp-ent {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.dqp-ent__icon {
+  flex: 0 0 auto;
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-ent__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dqp-ent__label {
+  display: block;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+.dqp-ent__meta {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: rgb(255 255 255 / 42%);
+}
+
+.dqp-ent__count {
+  flex: 0 0 auto;
+  padding: 2px var(--s2);
+  border: 1px solid rgb(48 209 88 / 45%);
+  border-radius: var(--r-pill);
+  color: #30d158;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dqp-ent__count--spent {
+  border-color: rgb(255 255 255 / 20%);
+  color: rgb(255 255 255 / 42%);
+}
+
+.dqp-ent__tick {
+  flex: 0 0 auto;
+  color: #30d158;
+}
+
+/* ── Campus access ───────────────────────────────────────────────────────
+   Above the entitlement list, because it is the precondition for every row in
+   it: being allowed into an event is meaningless if you are not on campus.
+   Silently absent when the request fails — see the fetch. */
+.dqp-gate {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4);
+}
+
+.dqp-gate__badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-gate__badge--in {
+  background: rgb(48 209 88 / 18%);
+  color: #30d158;
+}
+
+.dqp-gate__state {
+  display: block;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.dqp-gate__hint {
+  display: block;
+  margin-top: 1px;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-gate__history {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+  list-style: none;
+}
+
+.dqp-gate__day {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--micro-size);
+  line-height: 18px;
+  color: rgb(255 255 255 / 62%);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Buttons
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dqp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: 0 var(--s5);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-card);
+  background: #1a2238;
+  color: #ffffff;
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dqp-button:hover {
+  background: #212a45;
+}
+
+.dqp-button:disabled {
+  color: rgb(255 255 255 / 42%);
+  cursor: default;
+}
+
+.dqp-button--primary {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0f1729;
+}
+
+.dqp-button--primary:hover {
+  background: rgb(255 255 255 / 88%);
+}
+
+.dqp-note {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: 16px;
+  color: rgb(255 255 255 / 42%);
+  text-align: center;
+}
+
+.dqp-note--ok {
+  color: #30d158;
+}
+
+.dqp-note--bad {
+  color: #ff3b30;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The desktop column
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-aside__title {
+  margin: 0 0 var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+
+.dqp-aside__text {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-facts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+
+.dqp-fact {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   "Your events"
+
+   This replaces `.dqp-regs`, the desktop-only list of registrations that used
+   to sit in this column. There is now ONE list, rendered in one of two places:
+   inside the card on a phone, in this column on a desktop. Same markup, same
+   component, one `--panel` modifier for the chrome.
+
+   ── THE LOAD-BEARING RULE ────────────────────────────────────────────────
+   On a phone the QR and the backup code MUST NOT scroll out of view. A student
+   at the front of a queue is holding the phone out; if reading down the list
+   pushes the credential off the top, the pass has failed at the only moment it
+   exists for.
+
+   So the scroll is on the LIST REGION, never on the card and never on the page:
+   `max-height` + `overflow-y: auto` on `.dqp-events__scroll` alone. The head,
+   the plate, the perforation and the code above it are all outside that box and
+   therefore fixed in the card's flow — the credential half is always on screen,
+   and the list moves underneath it.
+
+   `max-height`, not `height`: two events produce a two-row box with no empty
+   gutter and nothing to scroll, so a short list costs nothing. `min()` against
+   a vh so it also holds on a short landscape phone, and `overscroll-behavior:
+   contain` so reaching the end of the list does not start scrolling the page
+   underneath and carry the QR away after all.
+
+   Desktop drops the cap entirely (see `--panel`): the column has the height, so
+   an inner scroller there would only hide rows for no reason.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-events__scroll {
+  max-height: min(38vh, 268px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 24%) transparent;
+}
+
+/* The scroll region is a tab stop so it can be scrolled with the arrow keys.
+   It must therefore show focus, or the tab order gains an invisible step. */
+.dqp-events__scroll:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
+
+.dqp-events--panel {
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-card);
+  background: #1a2238;
+  overflow: hidden;
+}
+
+.dqp-events__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dqp-event {
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+/* The whole row is the button. 48px floor, so every row clears the 44px target
+   even when the name fits on one line. */
+.dqp-event__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--s3) var(--s4);
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dqp-event__row:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
+
+/* LIVE. A 2px accent rule down the left edge and the time reading "Now" are the
+   whole treatment — the row is found by eye in a glance without anything on the
+   screen moving. The left padding is reduced by the rule's width so the text
+   does not shift when a row goes live under the reader's thumb. */
+.dqp-event--live .dqp-event__row {
+  border-left: 2px solid #ff3b30;
+  padding-left: calc(var(--s4) - 2px);
+}
+
+.dqp-event__status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  color: rgb(255 255 255 / 42%);
+}
+
+.dqp-event__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 42%);
+}
+
+.dqp-event__dot--live {
+  background: #ff3b30;
+}
+
+/* THE ONLY MOTION ON THIS SCREEN besides the loading skeleton. It is spent
+   here because "which of these is happening right now" is the one question the
+   list answers that a static glyph answers slowly. Opacity only — nothing
+   moves, nothing reflows, and it is off under prefers-reduced-motion, where the
+   red dot and the "Now" label still carry the state on their own. */
+@media (prefers-reduced-motion: no-preference) {
+  .dqp-event__dot--live {
+    animation: dqp-live-pulse 1.6s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes dqp-live-pulse {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0.35;
+  }
+}
+
+.dqp-event__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dqp-event__name {
+  display: block;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: #ffffff;
+  overflow-wrap: anywhere;
+}
+
+/* Wrapping flex rather than a joined string: at 360px a long venue behind a
+   time needs to fall to its own line, and there is no separator character
+   between them to strand at the end of a line. */
+.dqp-event__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s3);
+  margin-top: 1px;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: rgb(255 255 255 / 42%);
+}
+
+.dqp-event__time {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Starting in under thirty minutes. Colour, and nothing else — no banner, no
+   icon, no alarm. Bold as well as red so it survives a red-blind reader and a
+   sunlit screen. */
+.dqp-event__time--soon,
+.dqp-event--live .dqp-event__time {
+  color: #ff3b30;
+  font-weight: 700;
+}
+
+.dqp-event__venue {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dqp-event__chevron {
+  flex: 0 0 auto;
+  color: rgb(255 255 255 / 42%);
+}
+
+/* No transition on the flip. The expand is a show/hide and the chevron matches
+   it — see the file header on motion. */
+.dqp-event__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* The expanded panel. Indented to line up with the event name above it, so the
+   detail reads as belonging to that row rather than to the list. */
+.dqp-event__panel {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--s4) var(--s2) calc(var(--s4) + 16px + var(--s3));
+}
+
+.dqp-event__fact {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  min-height: 44px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+.dqp-event__fact > svg {
+  flex: 0 0 auto;
+}
+
+/* The directions link fills the fact row so the 44px target is the whole line,
+   not just the venue text. Underlined, because a coloured word on a dark card
+   is not enough on its own to say "this leaves the app". */
+.dqp-event__link {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s2);
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.dqp-event__link-note {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: rgb(255 255 255 / 42%);
+  text-decoration: none;
+}
+
+/* Sponsors. Logos arrive as arbitrary artwork on arbitrary backgrounds, so each
+   sits on its own white-ish tile rather than free on the navy, where a dark
+   logo would vanish. */
+.dqp-sponsors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.dqp-sponsor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s2) var(--s3);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-card);
+  background: rgb(255 255 255 / 8%);
+}
+
+.dqp-sponsor img {
+  display: block;
+  height: 28px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+/* "Open on phone" — the desktop-only bridge. Someone reading this on a laptop
+   cannot take the laptop to the gate, so the useful thing a big screen can do
+   is hand the pass to the phone in their pocket. This QR encodes the pass URL,
+   NOT the pass token: scanning it opens the page, it does not admit anyone. */
+.dqp-handoff {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s4);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--r-card);
+  background: #1a2238;
+}
+
+.dqp-handoff__plate {
+  flex: 0 0 auto;
+  padding: var(--s2);
+  border-radius: var(--r-card);
+  background: #ffffff;
+  line-height: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Loading and failure
+
+   DARK SKELETONS. Not .drg-skel or .ddp-skel: both pulse 50% → 100% opacity,
+   which is tuned for a grey block on a white page. The same animation on #1a2238
+   over #0f1729 is a barely-visible flicker at one end and a hard grey slab at
+   the other. 40% → 60% is the equivalent perceived movement on a dark surface.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-skel {
+  border-radius: var(--r-card);
+  background: rgb(255 255 255 / 12%);
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dqp-skel {
+    animation: dqp-skel-pulse 1s linear infinite alternate;
+  }
+}
+
+@keyframes dqp-skel-pulse {
+  from {
+    opacity: 0.4;
+  }
+
+  to {
+    opacity: 0.6;
+  }
+}
+
+.dqp-skel--card {
+  height: 460px;
+  border-radius: var(--r-sheet);
+}
+
+.dqp-skel--row {
+  height: 64px;
+}
+
+.dqp-fail {
+  padding: var(--s7) var(--gutter);
+  text-align: center;
+}
+
+.dqp-fail__title {
+  margin: 0 0 var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.dqp-fail__text {
+  margin: 0 auto var(--s5);
+  max-width: 320px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: rgb(255 255 255 / 62%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The card inside the pass sheet
+
+   The sheet is a light surface. The card keeps its own dark palette there —
+   it is the same credential and it must look like the same credential — so
+   `compact` only trims what a 208px-wide sheet cannot afford, it does not
+   restyle anything.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dqp-card--compact .dqp-card__head {
+  padding: var(--s4) var(--s4) var(--s3);
+}
+
+.dqp-card--compact .dqp-card__who {
+  padding: var(--s3) var(--s4);
+}
+
+.dqp-card--compact .dqp-plate {
+  padding: 0 var(--s4) var(--s4);
+}
+
+.dqp-card--compact .dqp-code {
+  padding: var(--s2) var(--s4) var(--s4);
+}
+
+.dqp-card--compact .dqp-card__fest {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+}
+
+/* 360px. The plate is 240 + 32 of padding = 272, plus 2 × 16 of gutter = 304,
+   so it fits — but the card's own 20px side padding does not, and the fest name
+   is the first thing to suffer. Tighten the card, never the plate. */
+@media (max-width: 374px) {
+  .dqp-card__head,
+  .dqp-card__who,
+  .dqp-code {
+    padding-left: var(--s3);
+    padding-right: var(--s3);
+  }
+
+  .dqp-plate {
+    padding-left: var(--s2);
+    padding-right: var(--s2);
+  }
+
+  .dqp-code__value {
+    font-size: var(--body-m-size);
+    letter-spacing: 0.14em;
+  }
+}
+
+/* The entitlement list sits inside the card, so it gets a list reset rather
+   than the section chrome — the card's border is already around it. */
+.dqp-ent-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Available to a screen reader, invisible to everyone else. Used where an icon
+   IS the content — the uncapped tick — and the icon alone would read as
+   nothing at all. */
+.dqp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dqp-handoff__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The pass sheet goes dark end to end
+
+   The pass card has always been dark, but the sheet around it stayed on
+   --surface, so opening the pass gave you a dark rectangle floating in a white
+   panel: black at the card, white everywhere else.
+
+   That is not only inconsistent, it works against the one job this surface has.
+   A phone screen showing a QR code is read by a camera, and a bright white
+   border around a dark card is a large light source right next to the thing
+   being scanned. Filling the sheet with --ink puts the whole screen at one low
+   luminance so the only bright thing left is the QR's own white quiet zone,
+   which is exactly what the scanner is looking for.
+
+   Scoped with :has() rather than a prop on BottomSheet: the sheet is shared by
+   the account menu, the registration detail and the confirmations, and none of
+   those should go dark. The pass card's presence IS the condition.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsh-panel:has(.dqp-card) {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+/* Centred over a centred card. Left-aligned, the title hung off the edge of a
+   composition whose every other element is on the middle axis. */
+.dsh-panel:has(.dqp-card) .dsh-title {
+  color: #ffffff;
+  text-align: center;
+}
+
+/* The grab handle has to stay visible against --ink. */
+.dsh-panel:has(.dqp-card) .dsh-grip,
+.dsh-panel:has(.dqp-card) .dsh-handle {
+  background: rgb(255 255 255 / 32%);
+}
+
+/* The card no longer needs to draw its own surface: it is the same colour as
+   the sheet now, so the border is what separates them. */
+.dsh-panel:has(.dqp-card) .dqp-card {
+  border: 1px solid rgb(255 255 255 / 12%);
+}

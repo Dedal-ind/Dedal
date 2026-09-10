@@ -1,0 +1,249 @@
+/*
+ * checkout.css — what is true only of the payment step.
+ *
+ * The column, the sticky context card, the action bar, the button and its
+ * loading state, and the offline strip all come from registration.css: checkout
+ * is the sixth screen of one flow, not a separate product, and it must not
+ * introduce a second visual system at the exact moment somebody is deciding
+ * whether to trust this with money.
+ *
+ * What is genuinely local: the fee table, the hold countdown, and the "no money
+ * was taken" reassurance under a failed attempt.
+ *
+ * Tokens only. --primary appears in exactly three places on this screen — the
+ * pay button, the countdown once it turns urgent, and the failure reassurance —
+ * and nowhere else, so each of them still means something.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The fee table
+   ─────────────────────────────────────────────────────────────────────────
+
+   Rows, not cards. Every line here is the same kind of fact and the eye should
+   be able to run straight down the amounts, which is what tabular figures and a
+   single right edge are for. Only the lines the backend actually charged are
+   rendered — a "₹0 platform fee" row is noise that invites a question.
+*/
+
+.dck-lines {
+  display: grid;
+}
+
+.dck-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-block: var(--s3);
+  border-top: 1px solid var(--divider);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dck-line:first-child {
+  border-top: 0;
+}
+
+.dck-line__amount {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dck-line--total {
+  border-top: 1px solid var(--divider);
+  padding-top: var(--s4);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.dck-line--total .dck-line__amount {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Who is being registered — one line, not a card of its own. */
+.dck-for {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dck-for__meta {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The hold countdown
+   ─────────────────────────────────────────────────────────────────────────
+
+   A real deadline: the seat is held server-side and the hold does expire. It is
+   stated in --muted for most of its life and only takes --primary inside the
+   last five minutes, because a timer that is red for thirty minutes is
+   decoration and a student stops reading it long before it matters.
+*/
+
+.dck-hold {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-block: var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dck-hold__time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dck-hold--urgent {
+  color: var(--primary);
+}
+
+.dck-hold--urgent .dck-hold__time {
+  color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   After a dismissed or failed attempt
+   ─────────────────────────────────────────────────────────────────────────
+
+   THE POINT OF THIS STATE IS THE SENTENCE, not the styling. Razorpay has just
+   shown its own error and closed, and the single question left in the student's
+   head is "did that take my money?". The answer is rendered in words, above the
+   button, before they have to ask — and the button itself resets to "Try again"
+   carrying the same amount, so nothing on screen implies a second charge.
+
+   It takes the --primary left rule that every error in the flow takes, because
+   it IS the error report; the reassurance is the body text, in --ink, at full
+   body size rather than a 12px footnote.
+*/
+
+.dck-retry {
+  display: grid;
+  gap: var(--s1);
+  padding: var(--s4);
+  margin-block: var(--s4);
+  background: var(--surface-card);
+  border-radius: var(--r-card);
+  border-inline-start: 2px solid var(--primary);
+  box-shadow: var(--e1);
+}
+
+.dck-retry__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dck-retry__body {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink); /* NOT --muted: this is the reassurance, not a caption. */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Chrome and states
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* One control, top-left, floating over the content. Checkout owns no other
+   action — a title bar here would spend 56px repeating the word the context
+   card underneath already answers better. */
+.dck-back {
+  position: absolute;
+  top: var(--s2);
+  left: var(--s2);
+  z-index: 21;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dck-back:active {
+  background: var(--ink-dim-4);
+}
+
+/*
+ * The back control floats, so the context card needs room for it or the poster
+ * sits under the arrow. Overriding the shared .drg-context padding from here
+ * rather than editing registration.css, because this offset is true of checkout
+ * only — the form screens have no floating control over their card.
+ */
+.dck-screen .drg-context__inner {
+  padding-left: calc(var(--page-pad) + 44px);
+}
+
+.dck-screen {
+  position: relative;
+}
+
+.dck-expired {
+  display: grid;
+  gap: var(--s4);
+  justify-items: start;
+  padding-block: var(--s8);
+}
+
+.dck-expired__title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dck-expired__body {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dck-note {
+  margin: 0;
+  padding-block: var(--s4) 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dck-skeletons {
+  display: grid;
+  gap: var(--s4);
+  padding-block: var(--s6);
+}
+
+/*
+ * The shared loading stroke is drawn in --surface-card so it reads against the
+ * --primary button. On the quiet (cancel) button the surfaces match and the
+ * stroke would be invisible, so it takes --ink here. Overridden from this file
+ * rather than in registration.css because the quiet button is only ever in a
+ * loading state on the payment screens.
+ */
+.dck-screen .drg-button--quiet .drg-button__progress {
+  background: var(--ink);
+  opacity: 0.35;
+}

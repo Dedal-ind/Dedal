@@ -1,0 +1,584 @@
+/*
+ * scanner.css — the volunteer checkpoint scanner, on the dedal design system.
+ *
+ * THE RULE THIS FILE IS BUILT AROUND: nothing here animates. No transitions, no
+ * keyframes, no pulses, no skeletons. This is a gate tool held by a volunteer
+ * with a queue in front of them on a mid-range Android phone, and every frame
+ * the compositor spends on decoration is a frame the jsQR decode loop does not
+ * get. The retired design had a sweep line falling through the viewfinder
+ * forever; it has been deleted, not restyled.
+ *
+ * There are exactly TWO exceptions, both deliberate and both specified:
+ *   1. `.dvs-viewport` transitions its background-colour for the 120ms scan
+ *      flash — the one piece of feedback that has to be impossible to miss.
+ *   2. `.dvs-sheet` slides on `transform` — a sheet that appears without
+ *      travelling reads as a rendering glitch rather than a panel.
+ * Both are CSS. There is no JS animation loop on this screen.
+ *
+ * COLOUR. This screen does NOT set data-dedal-theme="dark". It is drawn on
+ * --ink (#0F1729) with white text, which is what the dark theme would give it
+ * anyway — but the white scan flash has to be --surface (#FAFAFA), and under
+ * the dark theme --surface IS --ink. Reading the root tokens keeps "flash
+ * white" and "canvas dark" as two different tokens instead of the same one.
+ *
+ * FOCUS. design/focus.css owns focus for the whole participant surface and its
+ * policy is "no ring, anywhere". Nothing in this file adds one back.
+ */
+
+.dvs-root {
+  /*
+   * Explicit, so the browser paints form controls, scrollbars and the digit
+   * inputs' caret for a dark surface. Without it the six backup-code boxes get
+   * a light-scheme caret that is invisible on --ink.
+   */
+  color-scheme: dark;
+
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font);
+
+  /*
+   * iOS Safari's native pull-to-refresh RELOADS the page, which destroys the
+   * camera stream mid-queue. Scoped to this screen's root — every other screen
+   * keeps the normal bounce.
+   */
+  overscroll-behavior: none;
+}
+
+/* ── Top bar ──────────────────────────────────────────────────────────────
+   Flush to the top edge INCLUDING the safe area: the bar itself grows into
+   the notch rather than sitting below a strip of a different colour. */
+
+.dvs-topbar {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  height: calc(56px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  background: var(--ink);
+}
+
+/*
+ * 48px tap target, but only 16px of visual inset from the edge — the button is
+ * padded outward from the icon rather than pushed inward from the screen, so
+ * the arrow lands where the thumb expects it and the target is still legal.
+ */
+.dvs-iconbutton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dvs-topbar__back {
+  margin-left: 4px; /* 4 + 12 of internal slack = the 16px optical inset */
+}
+
+.dvs-topbar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dvs-topbar__mute {
+  color: rgb(255 255 255 / 60%);
+}
+
+.dvs-topbar__count {
+  flex: 0 0 auto;
+  margin: 0 16px 0 0;
+  color: rgb(255 255 255 / 60%);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-variant-numeric: tabular-nums; /* the count must not shuffle its own width */
+  white-space: nowrap;
+}
+
+/* The mute toggle sits 8px left of the count; its 48px box already carries
+   14px of slack each side, so the margin only makes up the difference. */
+.dvs-topbar__mute {
+  margin-right: -6px;
+}
+
+/* ── Stage + camera viewport ──────────────────────────────────────────────
+   The feed fills the space between the top bar and the bottom panel; the
+   square viewport is centred in it and everything outside the square is
+   dimmed. */
+
+.dvs-stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.dvs-stage__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The decode canvas is never shown; it exists only to hand pixels to jsQR. */
+.dvs-canvas {
+  display: none;
+}
+
+.dvs-viewport {
+  position: relative;
+  width: 100%;
+  /* QR codes are square, so the target is square. A rectangular target invites
+     the volunteer to fill the width and clip the code's quiet zone. */
+  aspect-ratio: 1 / 1;
+  background-color: transparent;
+
+  /*
+   * THE VIGNETTE, as a single ring rather than four masking elements. A spread
+   * this large paints everything outside the square in one composited layer;
+   * four positioned divs would be four layers over a live video feed.
+   */
+  box-shadow: 0 0 0 100vmax rgb(15 23 41 / 60%);
+
+  /* EXCEPTION 1 of 2. See the file header. */
+  transition: background-color 120ms linear;
+}
+
+.dvs-viewport--flash-accept {
+  background-color: var(--surface);
+}
+
+.dvs-viewport--flash-reject {
+  background-color: var(--primary);
+}
+
+/* Four L-brackets. Static geometry: two borders per corner, no sweep, no
+   pulse, nothing that repaints once the layout has settled. */
+.dvs-corner {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: rgb(255 255 255 / 80%);
+  border-style: solid;
+  border-width: 0;
+}
+
+.dvs-corner--tl {
+  top: 0;
+  left: 0;
+  border-top-width: 3px;
+  border-left-width: 3px;
+}
+
+.dvs-corner--tr {
+  top: 0;
+  right: 0;
+  border-top-width: 3px;
+  border-right-width: 3px;
+}
+
+.dvs-corner--bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 3px;
+  border-left-width: 3px;
+}
+
+.dvs-corner--br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 3px;
+  border-right-width: 3px;
+}
+
+/* Camera-permission failure. Static text over the dimmed stage — a dead
+   viewport with no explanation is indistinguishable from a crashed app. */
+.dvs-stage__notice {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: var(--s6);
+  margin: 0;
+  color: #fff;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  text-align: center;
+}
+
+/* ── Bottom panel ─────────────────────────────────────────────────────────
+   160px, two fixed zones. Fixed rather than content-sized so the viewport
+   above never resizes when a result lands — a camera that reflows between
+   scans is a camera that stutters. */
+
+.dvs-panel {
+  flex: 0 0 auto;
+  height: calc(160px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--ink);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.dvs-result {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  height: 80px;
+  padding: 0 var(--gutter);
+}
+
+.dvs-result__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--body-s-size);
+  line-height: 1;
+  font-weight: 700;
+}
+
+.dvs-result__avatar--rejected {
+  background: var(--primary);
+}
+
+.dvs-result__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dvs-result__name {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dvs-result__reason {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dvs-result__time {
+  display: block;
+  margin: 0;
+  color: rgb(255 255 255 / 40%);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+}
+
+.dvs-result__mark {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  color: #fff;
+}
+
+/*
+ * The resting state. Static placeholder text, NOT a skeleton — a pulsing grey
+ * bar in the one place a volunteer looks for the last scan is a bar they will
+ * mistake for a scan in progress.
+ */
+.dvs-result--empty {
+  color: rgb(255 255 255 / 40%);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dvs-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 64px;
+  padding: 0 var(--gutter);
+}
+
+.dvs-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+  padding: 0 var(--s3);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--r-card);
+  background: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Torch on: border and label take --primary and the bolt fills. The fill is
+   what reads at a glance in the dark, which is the only place this is used. */
+.dvs-action--on {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.dvs-action:disabled {
+  color: rgb(255 255 255 / 30%);
+  border-color: rgb(255 255 255 / 10%);
+  cursor: default;
+}
+
+.dvs-action__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Bottom sheets ────────────────────────────────────────────────────────
+   The backup-code sheet and the check-in confirmation. Both are sheets rather
+   than routes: the scanner must never unmount, or the camera restarts. */
+
+.dvs-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: var(--scrim);
+}
+
+.dvs-sheet {
+  min-height: 240px;
+  padding: var(--s5) var(--gutter) calc(var(--s5) + env(safe-area-inset-bottom, 0px));
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  background: var(--ink);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+/*
+ * EXCEPTION 2 of 2. `transform` only — it runs on the compositor and never
+ * touches layout, so the decode loop behind the scrim keeps its frame budget.
+ * The starting offset is applied by the mount class below.
+ */
+.dvs-sheet--slide {
+  transform: translateY(0);
+  transition: transform var(--d-move) var(--ease-enter);
+}
+
+.dvs-sheet--enter {
+  transform: translateY(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dvs-sheet--slide {
+    transition: none;
+  }
+}
+
+.dvs-sheet__title {
+  margin: 0 0 var(--s4);
+  color: #fff;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+}
+
+.dvs-sheet__subtitle {
+  margin: 0 0 var(--s4);
+  color: rgb(255 255 255 / 60%);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+/* Six 48px squares, matching the auth OTP row's proportions on a dark ground. */
+.dvs-digits {
+  display: flex;
+  gap: var(--s2);
+}
+
+.dvs-digits__box {
+  width: 48px;
+  height: 48px;
+  min-width: 0;
+  flex: 1 1 0;
+  max-width: 56px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--r-card);
+  background: var(--ink);
+  color: #fff;
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.dvs-sheet__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s2);
+  margin-top: var(--s5);
+}
+
+/* A text action, not a button shape: it is the way out, not the thing to do. */
+.dvs-textaction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 var(--s3);
+  border: 0;
+  background: none;
+  color: rgb(255 255 255 / 60%);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The scan-then-confirm sheet's decision buttons. */
+.dvs-sheet__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+}
+
+.dvs-sheet__meta {
+  display: block;
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: rgb(255 255 255 / 60%);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dvs-sheet__choices {
+  display: flex;
+  gap: var(--s2);
+}
+
+.dvs-choice {
+  flex: 1 1 0;
+  min-height: 48px;
+  padding: 0 var(--s4);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--r-card);
+  background: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dvs-choice--primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ── The two states where no camera runs ──────────────────────────────────
+   No active shift, and desktop. Both are centred on the bare --ink canvas. */
+
+.dvs-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  padding: var(--gutter);
+  text-align: center;
+}
+
+.dvs-empty__title {
+  margin: 0;
+  color: #fff;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.dvs-empty__body {
+  max-width: 300px;
+  margin: 0;
+  color: rgb(255 255 255 / 60%);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+/* Ghost action, same shape as the bottom-panel actions so the screen has one
+   button vocabulary rather than two. */
+.dvs-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  margin-top: var(--s2);
+  padding: 0 var(--s6);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--r-card);
+  background: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The desktop QR sits on --surface-card because a QR code has to be dark
+   modules on a light ground to be readable by another phone's camera. */
+.dvs-empty__qr {
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  line-height: 0;
+}

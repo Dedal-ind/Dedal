@@ -1,0 +1,1213 @@
+/*
+ * settings.css — the participant Settings/Profile hub.
+ *
+ * ONE FILE FOR THREE ROUTES, on the same reasoning auth-sign-in.css gives for
+ * covering four: /settings, /profile and /profile/edit are one surface wearing
+ * three URLs. The hub at /settings now contains the profile form as an inline
+ * expand; /profile/edit renders THE SAME field-set component for deep links and
+ * for anything that still navigates there. Giving the route its own stylesheet
+ * is precisely how this codebase ended up with two divergent copies of one form
+ * last time, so there is one `.dst-form` and both render it.
+ *
+ * TOKEN MAPPING — read this before reaching for a variable that is not here.
+ * The design brief this implements names three tokens that do not exist in
+ * dedal-tokens.css. They are mapped once, here, and nowhere else:
+ *
+ *   --haze  →  --ink-dim-4   (the switch's off track, and any inert fill)
+ *   --r-1   →  --r-card      (12px — rows, inputs, buttons)
+ *   --r-2   →  --r-sheet     (20px — the confirmation sheet)
+ *
+ * There is no error colour in this system beyond --primary, and --primary is
+ * the signature: the one action per surface, live state, and refusals. On this
+ * surface it appears in exactly five places — the save action, an invalid
+ * field's border and message, the "updated version available" flag on a
+ * superseded consent, the confirm word in the sign-out sheet, and the delete
+ * confirmation. It is on no row, no icon and no switch. The switches are --ink,
+ * for the same reason dedal-tokens.css gives for the focus ring being --ink:
+ * five red switches down one column turns the signature into upholstery.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The page
+   ─────────────────────────────────────────────────────────────────────────
+
+   DESKTOP IS THE SAME COLUMN, CENTRED. No sidebar and no split. A settings
+   surface is a list of rows and a form; a two-pane layout would put a
+   navigation tree next to seven items, and a full-width one would run a 1600px
+   hairline under the word "Language". 560px is the widest the rows read as
+   rows rather than as a table.
+*/
+
+.dst-screen {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+/*
+ * ── THE SETTINGS COLUMN. 840px, and DELIBERATELY NOT 1440. ───────────────
+ *
+ * Shared by /settings, /profile and /profile/edit.
+ *
+ * 560px measured badly on a desktop: 440px of empty canvas down each side at
+ * 1440px, which is the "narrow ribbon in a wide window" the whole pass is
+ * about. But the fix the list screens get — run to 1440 — is the wrong fix
+ * here and would make this screen worse, not better. Every row on this surface
+ * is `label ......... value`, justified to the two ends. Stretch that row to
+ * 1312px and the label and its value are a foot apart with nothing between
+ * them, and reading "Notifications" and then finding its switch becomes a
+ * saccade across the whole window. A settings row has a natural maximum and it
+ * is nowhere near a page width.
+ *
+ * So the room is bought twice over instead: the column widens by half, and
+ * from 1024px the sections sit two across (see below). At 1440px that is a
+ * 840px column with 300px of margin a side instead of 560px with 440px, and
+ * roughly half the vertical run — the surface stops being a ribbon without any
+ * row being stretched.
+ */
+.dst-col {
+  max-width: 840px;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  padding-block: var(--s7) var(--s8);
+}
+
+/*
+ * ── TWO COLUMNS OF GROUPS FROM 1024px. ──────────────────────────────────
+ *
+ * Twelve tracks, because it is the same grid the detail pages use and because
+ * twelve divides by two — the sections take 6 each and the full-width blocks
+ * take 12, with no second set of numbers to keep in step.
+ *
+ * `minmax(0, 1fr)`, not `1fr`: a 1fr track has an `auto` minimum, so a long
+ * unbroken value in a row — an email address, a college name — would push its
+ * track past its half and shove the other column off centre. That is the exact
+ * asymmetry this pass exists to remove, so it is designed out rather than
+ * hoped against.
+ *
+ * The title, the identity block and the stats strip stay full width: they are
+ * the header of the page, not one of the groups.
+ *
+ * Sections keep their source order and read left-to-right in pairs. That is
+ * safe here in a way it is not on the notifications feed, because these groups
+ * are named, self-contained and unordered — you arrive looking for "Legal",
+ * you do not read a settings page top to bottom.
+ *
+ * Below 1024px none of this exists and the column is the single stack it has
+ * always been, in the same order.
+ */
+@media (min-width: 1024px) {
+  .dst-col {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--s7);
+    align-content: start;
+  }
+
+  .dst-col > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .dst-col > .dst-section {
+    grid-column: span 6;
+  }
+
+  /*
+   * `margin-block-start` is how these were spaced as a stack, and inside a
+   * grid it would apply to the first row of the pair as well as the rest,
+   * pushing the two tracks out of step with each other. The grid's own row gap
+   * does the job uniformly.
+   */
+  .dst-col > .dst-section {
+    margin-block-start: 0;
+  }
+
+  .dst-col {
+    row-gap: var(--s7);
+  }
+}
+
+/* The floating back control overlaps the top of the content on the /profile/edit
+   route, so that column starts lower. /settings and /profile are tab roots with
+   no back affordance and do not need the clearance. */
+.dst-col--under-chrome {
+  padding-block-start: calc(var(--s8) + var(--s4));
+}
+
+.dst-title {
+  margin: 0 0 var(--s6);
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/*
+ * A section is a label and a run of rows. NOT a card. The old screen stacked
+ * five identical rounded containers down the page, which spends a border, a
+ * shadow and 16px of padding per group to communicate something a line of type
+ * already says.
+ */
+.dst-section {
+  margin-block-start: var(--s7);
+}
+
+.dst-section__label {
+  margin: 0 0 var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Rows
+   ─────────────────────────────────────────────────────────────────────────
+
+   The whole surface is this one shape: a label on the left, a value or a
+   control on the right, and a hairline between neighbours. 52px minimum, which
+   is above the 44px floor with room for a two-line label at 360px.
+*/
+
+.dst-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-block-start: 1px solid var(--divider);
+}
+
+.dst-rows > li {
+  border-block-end: 1px solid var(--divider);
+}
+
+.dst-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 52px;
+  padding-block: var(--s3);
+  background: none;
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  text-align: start;
+}
+
+/* Only rows that DO something get the press feedback and the pointer. */
+.dst-row--action {
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dst-row--action:hover {
+  background: var(--ink-dim-2);
+}
+
+.dst-row--action:active {
+  background: var(--ink-dim-4);
+}
+
+.dst-row--action:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+  border-radius: var(--r-card);
+}
+
+.dst-row__icon {
+  flex: 0 0 auto;
+  display: flex;
+  color: var(--muted);
+}
+
+.dst-row__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--ink);
+}
+
+/*
+ * The value on the right. --muted at body-s (14px), never below it: the rule
+ * for this surface is that nothing meaningful is drawn in --muted under 14px,
+ * and an email address or a participant ID is the most meaningful thing on its
+ * row. It is allowed to wrap rather than truncate — a truncated email is a
+ * value the person cannot read, which is the same as no value at all.
+ */
+.dst-row__value {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.dst-row__chev {
+  flex: 0 0 auto;
+  display: flex;
+  color: var(--muted);
+  transition: transform var(--d-move) var(--ease-enter);
+}
+
+.dst-row__chev--open {
+  transform: rotate(180deg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The switch
+   ─────────────────────────────────────────────────────────────────────────
+
+   A REAL <input type="checkbox" role="switch">, drawn with appearance:none.
+   Not a <button aria-checked> and not a hidden input behind a styled span. The
+   native control is focusable, is toggled by Space, is announced as a switch,
+   and participates in the form — all of which a div has to re-implement and
+   two of which the previous hand-rolled button got wrong.
+
+   The off track is --ink-dim-4 (the brief's "--haze"; see the mapping at the
+   top of this file). The on track is --ink.
+*/
+
+.dst-switch {
+  flex: 0 0 auto;
+  appearance: none;
+  position: relative;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  cursor: pointer;
+  transition: background-color var(--d-instant) var(--ease-enter);
+}
+
+.dst-switch::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 3px;
+  inset-inline-start: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+  transition: transform var(--d-instant) var(--ease-enter);
+}
+
+.dst-switch:checked {
+  background: var(--ink);
+}
+
+.dst-switch:checked::after {
+  transform: translateX(18px);
+}
+
+.dst-switch:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/*
+ * The switch is 26px tall inside a 52px row, so the tap target is the row's
+ * full height rather than the drawn track. A transparent overlay on the label
+ * would be one way; making the whole <label> the target is simpler and keeps
+ * the accessible name attached to the control it names.
+ */
+.dst-row--switch {
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Identity — the avatar and the name
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dst-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--s3);
+}
+
+/*
+ * 80px, centred, and the whole thing is the button — not a 24px pencil badge
+ * hanging off one corner, which is a 24px target on a control people reach for
+ * with a thumb. The camera mark sits in the corner as a HINT that the picture
+ * is changeable; the target is the full 80px circle behind it.
+ */
+.dst-avatar {
+  position: relative;
+  display: block;
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  cursor: pointer;
+}
+
+/* The same circle on /profile, where the picture is shown but not changed —
+   the upload lives in one place, in the hub. */
+.dst-avatar--static {
+  cursor: default;
+}
+
+.dst-avatar:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.dst-avatar__img,
+.dst-avatar__fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.dst-avatar__fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--surface-card);
+  font-size: var(--display-m-size);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/*
+ * A NEW PICTURE FADES IN OVER THE OLD, 200ms. The old image stays underneath
+ * for the length of the fade, so the circle never blinks empty between the
+ * PATCH returning and the new file being decoded — which is what a plain src
+ * swap does on a slow connection, and it reads as the upload having failed.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .dst-avatar__img--fresh {
+    animation: dst-avatar-in 200ms var(--ease-enter) both;
+  }
+}
+
+@keyframes dst-avatar-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* The corner mark. On its own small surface so it stays legible over a light
+   photo as well as a dark one. */
+.dst-avatar__mark {
+  position: absolute;
+  inset-block-end: -2px;
+  inset-inline-end: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--divider);
+  background: var(--surface-card);
+  color: var(--ink);
+}
+
+/* While the file is going up. Not a spinner over the face — the circle simply
+   holds back, and the caption underneath says what is happening. */
+.dst-avatar--busy {
+  opacity: 0.5;
+}
+
+.dst-name {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dst-identity__line {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.dst-identity__line--error {
+  color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The inline expand
+   ─────────────────────────────────────────────────────────────────────────
+
+   Edit profile is not a screen any more, it is this. The grid 0fr → 1fr trick
+   animates to the content's OWN height without anybody having to measure it in
+   JavaScript and without a max-height guess that clips a fourteen-field form
+   the first time somebody's college name wraps.
+*/
+
+.dst-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--d-move) var(--ease-enter);
+}
+
+.dst-expand--open {
+  grid-template-rows: 1fr;
+}
+
+.dst-expand__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+/*
+ * OVERFLOW HAS TO COME BACK ONCE THE PANEL IS OPEN.
+ *
+ * The college and department pickers drop an absolutely positioned list below
+ * their field. Inside `overflow: hidden` that list is clipped to the panel and
+ * the person sees the top two results of a 900-college search with no way to
+ * scroll to the rest — which is the failure this would have shipped with, since
+ * the clip only appears when a picker is opened near the bottom of the form.
+ *
+ * It cannot simply be visible: the 0fr → 1fr grow needs the clip, or fourteen
+ * fields spill over the rows below while the panel is still 40px tall.
+ *
+ * So it is a discrete transition, delayed by the length of the grow. Opening:
+ * clipped for 240ms, then visible. Closing: the --open class goes and `hidden`
+ * applies on the same frame, which is the direction that needs it. Browsers
+ * without `allow-discrete` get `visible` immediately on open — the open
+ * direction degrades to a brief spill rather than to a clipped dropdown, which
+ * is the right way round for this to fail.
+ */
+.dst-expand--open .dst-expand__inner {
+  overflow: visible;
+  transition: overflow var(--d-move) allow-discrete;
+  transition-delay: var(--d-move);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The form
+   ─────────────────────────────────────────────────────────────────────────
+
+   The same field shape as the authentication surface and the profile-completion
+   form: hairline box, 16px text, --ink focus ring, --primary only on an invalid
+   field. Its own class names, because importing another screen's stylesheet is
+   how one screen's change becomes three screens' regression — but deliberately
+   the same visual language, so a person who has just completed their profile
+   recognises the form they are editing it in.
+*/
+
+.dst-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  padding-block: var(--s5);
+}
+
+.dst-form__group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.dst-form__legend {
+  padding: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.dst-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dst-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* --primary on the required marker: it is the one thing on the row that can
+   stop the form being saved, which is the job this colour does everywhere. */
+.dst-label__required {
+  color: var(--primary);
+}
+
+.dst-label__optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/*
+ * 16px is a floor. Under it, mobile Safari zooms the viewport on focus and does
+ * not zoom back — on a form this long that means finishing it on a page a third
+ * too wide with the save button off the right edge.
+ */
+.dst-input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dst-input::placeholder {
+  color: var(--muted);
+}
+
+.dst-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-color: var(--ink);
+}
+
+.dst-input[aria-invalid='true'] {
+  border-color: var(--primary);
+}
+
+/*
+ * readOnly, not disabled. The email stays readable, selectable and reachable by
+ * a screen reader; the fill and the lock say "fixed" without removing it from
+ * the page. A disabled input is skipped by keyboard navigation entirely, so
+ * somebody checking which address they signed in with cannot get to it.
+ */
+.dst-input--fixed {
+  background: var(--ink-dim-2);
+  color: var(--muted);
+  padding-inline-end: var(--s8);
+}
+
+.dst-field__wrap {
+  position: relative;
+}
+
+.dst-field__mark {
+  position: absolute;
+  inset-inline-end: var(--s4);
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.dst-help {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dst-fielderror {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}
+
+/* The slot the shared college and department pickers render into. Nothing
+   inside it is styled here — they are shared components with their own
+   register, and restyling them from this file would reach three other screens. */
+.dst-embed {
+  min-height: 48px;
+}
+
+/* Year of study. Chips, not a select: four options, and a select on four
+   options is two taps and a system sheet to do what one tap can. */
+.dst-years {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.dst-year {
+  min-width: 48px;
+  min-height: 48px;
+  padding-inline: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter);
+}
+
+.dst-year[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface-card);
+}
+
+.dst-year:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* The student-ID drop zone. */
+.dst-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 120px;
+  padding: var(--s4);
+  border: 1px dashed var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  cursor: pointer;
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dst-upload:hover {
+  border-color: var(--ink);
+}
+
+.dst-upload:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.dst-upload:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.dst-upload__preview {
+  max-height: 160px;
+  width: 100%;
+  border-radius: var(--r-card);
+  object-fit: contain;
+}
+
+.dst-upload__hint {
+  color: var(--muted);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+}
+
+/* Visually hidden, still announced. Used by the file input (which is driven by
+   a real button beside it) and by the save confirmation's live region. */
+.dst-file,
+.dst-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The one action
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dst-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--s3) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--e1);
+  transition: transform var(--d-instant) var(--ease-enter);
+}
+
+.dst-cta:active {
+  transform: scale(0.98);
+}
+
+.dst-cta:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Inert rather than disabled: aria-disabled keeps it in the tab order, so a
+   keyboard user reaches it and is told what is unmet instead of finding a
+   control that silently is not there. */
+.dst-cta--inert {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: var(--e0);
+}
+
+.dst-spin {
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentcolor;
+  border-top-color: transparent;
+  border-radius: var(--r-pill);
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dst-spin {
+    animation: dst-spin 700ms linear infinite;
+  }
+}
+
+@keyframes dst-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * THE CONFIRM STROKE. The same idea as .drg-confirm-stroke in
+ * design/registration.css — a 2px --primary rule drawn left to right in 240ms
+ * and held for 1.2s — written out here rather than imported, because that file
+ * belongs to the registration surface and a shared rule between two unrelated
+ * screens is a shared regression waiting to happen.
+ *
+ * Why a stroke rather than a toast: the save happened at the top of a form the
+ * person is still looking at, and a toast at the bottom of the viewport is
+ * confirmation delivered somewhere they are not looking. The stroke is at the
+ * top edge of the window, where the page's own progress would be.
+ *
+ * Under `reduce` the element still renders and still fires animationend — the
+ * duration tokens collapse rather than the animation being removed — so the
+ * state machine that clears it cannot stall.
+ */
+.dst-stroke {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-start: 0;
+  z-index: 60;
+  height: 2px;
+  background: var(--primary);
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dst-stroke {
+    animation: dst-stroke 1.44s var(--ease-enter) forwards;
+  }
+}
+
+@keyframes dst-stroke {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+
+  /* 240ms of 1440ms — the draw. */
+  16.7% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Consent standing
+   ─────────────────────────────────────────────────────────────────────────
+
+   THIS BLOCK INFORMS AND DOES NOT RE-PROMPT. There is no withdrawal control
+   here and there is no tick-again here, by design: the acceptance record is
+   append-only, and a settings screen that offers to re-collect consent turns a
+   receipt into a form. Restyled, not rethought.
+*/
+
+.dst-consent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding-block: var(--s4);
+}
+
+.dst-consent__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dst-consent__meta {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * "Updated version available", on a superseded acceptance.
+ *
+ * NOT micro. The brief put this at 11px, and 11px is where this system stops
+ * being willing to carry meaning — but the harder problem is the colour:
+ * --primary is #FF3B30 on --surface #FAFAFA, which measures about 3.3:1. That
+ * passes WCAG AA for large text and FAILS it for small text, so at 11px this
+ * line would be both the smallest and the least legible thing on the screen
+ * while being the only thing on it a person might need to act on.
+ *
+ * So it is body-s (14px) at weight 700, which clears the 3:1 bar the same way
+ * the standard treats bold text, and it carries a mark beside it so the meaning
+ * does not rest on the colour alone for anyone who cannot separate the two.
+ */
+.dst-consent__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.dst-consent__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dst-consent__link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Loading and failure
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dst-skel {
+  height: 16px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dst-skel {
+    animation: dst-pulse 1200ms var(--ease-enter) infinite;
+  }
+}
+
+@keyframes dst-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.dst-notice {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dst-notice--refusal {
+  border-color: var(--primary);
+}
+
+.dst-retry {
+  min-height: 44px;
+  margin-block-start: var(--s1);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sign out, and the end of the page
+   ─────────────────────────────────────────────────────────────────────────
+
+   SIGN OUT IS A ROW. It was a filled button, and a filled button is what a
+   screen uses to say "this is the thing to do here". Signing out is not the
+   thing to do on a settings screen; it is one of the things you can do, and it
+   sits in the same list as everything else you can do.
+
+   DELETE ACCOUNT IS AT THE VERY BOTTOM, IN --muted, BELOW A RULE. It is not a
+   red button. A destructive control drawn in the signature colour is a
+   destructive control that catches the eye of everybody who did not come here
+   for it — the red belongs on the CONFIRMATION, where it is describing what is
+   about to happen rather than advertising it.
+*/
+
+.dst-end {
+  margin-block-start: var(--s8);
+  padding-block-start: var(--s5);
+  border-block-start: 1px solid var(--divider);
+  text-align: center;
+}
+
+.dst-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding-inline: var(--s3);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  cursor: pointer;
+  transition: color var(--d-quick) var(--ease-enter);
+}
+
+.dst-danger:hover {
+  color: var(--ink);
+}
+
+.dst-danger:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+.dst-foot {
+  margin: var(--s6) 0 0;
+  text-align: center;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The confirmations
+   ─────────────────────────────────────────────────────────────────────────
+
+   These replaced window.confirm() and window.alert(). A native dialog cannot be
+   styled, cannot carry the product's voice, is rendered by the BROWSER rather
+   than by the app — so on a phone it appears attached to the address bar with
+   the site's hostname above it — and on this surface it was being used to ask
+   the single most consequential question the app asks. Every other decision in
+   this app is taken in a bottom sheet; so are these two now.
+*/
+
+.dst-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding-block-end: var(--s2);
+}
+
+.dst-confirm__note {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dst-confirm__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--s2);
+}
+
+@media (min-width: 480px) {
+  .dst-confirm__actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+.dst-confirm__cancel,
+.dst-confirm__go {
+  min-height: 48px;
+  padding-inline: var(--s5);
+  border-radius: var(--r-card);
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dst-confirm__cancel {
+  color: var(--ink);
+  border: 1px solid var(--divider);
+}
+
+/*
+ * The confirm word is --primary TEXT, not a --primary fill. A filled red button
+ * is the loudest thing this system can draw, and putting it under a question
+ * makes the answer look pre-selected. As text it still reads as the consequence
+ * without pulling the thumb towards it.
+ */
+.dst-confirm__go {
+  color: var(--primary);
+}
+
+.dst-confirm__cancel:focus-visible,
+.dst-confirm__go:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   /profile — the same rows, plus the two things only that screen has
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * The stats. Three numbers on one line, divided by hairlines — not three cards.
+ * They are shown only when all three were actually derived from
+ * /registrations/mine and /certificates/mine; a fest count that quietly renders
+ * 0 because a request failed is worse than no strip at all.
+ */
+.dst-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-block-start: var(--s6);
+  border-block: 1px solid var(--divider);
+}
+
+.dst-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding-block: var(--s4);
+}
+
+.dst-stat + .dst-stat {
+  border-inline-start: 1px solid var(--divider);
+}
+
+.dst-stat__value {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sentence case, 14px. The old strip was 10px ALL-CAPS with letter-spacing —
+   the smallest type on the screen used for the label of the largest. */
+.dst-stat__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The count on a quick-access row. A plain figure, right-aligned before the
+   chevron; it was a bordered circle, which made a number look like a badge that
+   needed clearing. */
+.dst-count {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The live-shift dot on Backstage. --primary, and this is the colour's own job:
+ * something is happening right now. It is not the only signal — the row's value
+ * says "On shift now" beside it — because a 8px dot is not readable state on
+ * its own.
+ */
+.dst-live {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dst-live {
+    animation: dst-live 1600ms var(--ease-enter) infinite;
+  }
+}
+
+@keyframes dst-live {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.dst-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--s1) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}

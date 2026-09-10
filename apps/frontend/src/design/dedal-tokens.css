@@ -1,0 +1,287 @@
+/*
+ * dedal-tokens.css — THE design system.
+ *
+ * Six colours, one typeface, a 4px spacing base, four radii, three elevations
+ * and five motion durations. Everything the redesigned participant surface
+ * draws from is in this file; nothing here refers to the older Heritage
+ * Institutional palette, which survives only as scaffolding under screens that
+ * have not been redesigned yet.
+ *
+ * Imported once, at the root (src/main.jsx), BEFORE index.css so a screen that
+ * still uses a Tailwind heritage utility keeps working while a redesigned
+ * screen uses these variables directly.
+ */
+
+:root {
+  /* ── Colour. Six tokens. Nothing else is a colour. ─────────────────────── */
+  --surface: #fafafa; /* the canvas */
+  --surface-card: #ffffff; /* anything elevated off the canvas */
+  --ink: #0f1729; /* every piece of primary text; the dark-mode surface */
+  --primary: #ff3b30; /* the signature. CTAs, live, the wordmark thread. */
+  --accent: #7b61ff; /* gradients on featured content, secondary actions */
+  --muted: #8e8e93; /* secondary text, icons, timestamps */
+
+  /*
+   * Derived alphas, written once so no component invents its own. These are
+   * the SAME six colours at a stated opacity, not new colours.
+   */
+  --divider: rgb(142 142 147 / 20%); /* --muted at 20% */
+  --ink-dim-2: rgb(15 23 41 / 2%); /* the 2% hover dim */
+  --ink-dim-4: rgb(15 23 41 / 4%);
+  --scrim: rgb(15 23 41 / 55%); /* over media, so white text survives */
+
+  /*
+   * ── THE TWO COLOURS OUTSIDE THE SIX ────────────────────────────────────────
+   *
+   * The palette is six colours and adding to it is normally the wrong answer.
+   * These two are certificates-only, and each buys something the six cannot.
+   *
+   * --gold: a winner's certificate has to LOOK different from a participation
+   * one across a room, and the six colours cannot say "first place". --primary
+   * is the destructive/urgent red and --accent is already spoken for by staff
+   * roles, so a winner rendered in either would collide with an existing
+   * meaning. Gold is the one colour a trophy is allowed to be.
+   *
+   * --verified: green is the universal signal for "this is genuine", and the
+   * public verification page is the single screen in the product whose entire
+   * job is to answer that question for a stranger. Nowhere else.
+   *
+   * Neither is available to any other screen. Both are used at full strength
+   * only on a mark or a badge; the card washes are the /8% and /12% mixes.
+   */
+  --gold: #b8860b;
+  --gold-wash: rgb(184 134 11 / 8%);
+  --verified: #1a7f4b;
+  --verified-wash: rgb(26 127 75 / 10%);
+  /*
+   * THE FOCUS RING. --ink, not --primary.
+   *
+   * The spec called for a 2px --primary ring, and it was built that way. In use
+   * it was wrong: --primary is #FF3B30, a red-orange, and a 2px ring of it
+   * appears the instant you click into a search field — a colour this app
+   * otherwise reserves for "live now" and for the one CTA on the screen,
+   * suddenly drawing a hot rectangle around a text box you were merely about to
+   * type in. It read as an error, and against the older screens it read as a
+   * leftover from the retired orange palette.
+   *
+   * --ink at 2px carries more contrast against --surface than the red did
+   * (≈16:1 versus ≈3.3:1), so this is a stronger indicator, not a softer one.
+   * --primary stays what it is: live indicators, the wordmark thread, and the
+   * single primary action per screen.
+   */
+  --focus-ring: var(--ink);
+  /* Retained as an alias so nothing that still names it breaks; it now resolves
+     to the same ink as everything else. */
+  --primary-ring: var(--focus-ring);
+  /*
+   * The text-selection highlight. --primary held well back, because a selection
+   * is a transient wash behind live text and the text has to stay readable
+   * through it: at full strength the signature red inverts the copy and the
+   * selection reads as an error state. A tint also lets the text keep its own
+   * colour, so this works unchanged on the dark pass surface.
+   */
+  --selection: rgb(255 59 48 / 20%);
+
+  /* ── Type. One family, one variable file. ──────────────────────────────── */
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --display-l-size: 28px;
+  --display-l-line: 34px;
+  --display-m-size: 24px;
+  --display-m-line: 30px;
+  --body-m-size: 16px;
+  --body-m-line: 24px;
+  --body-s-size: 14px;
+  --body-s-line: 20px;
+  --micro-size: 11px;
+  --micro-line: 14px;
+
+  /* ── Space. 4px base, tight. ───────────────────────────────────────────── */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s7: 32px;
+  --s8: 48px;
+
+  /* ── Radius. ───────────────────────────────────────────────────────────── */
+  --r-flush: 0; /* full-bleed media, table rows */
+  --r-card: 12px; /* cards, inputs, buttons */
+  --r-sheet: 20px; /* bottom sheets, modals */
+  --r-pill: 9999px; /* avatars, badges, chips */
+
+  /* ── Elevation. Three levels; there is no fourth. ──────────────────────── */
+  --e0: none;
+  --e1: 0 1px 3px rgb(15 23 41 / 8%);
+  --e2: 0 8px 24px rgb(15 23 41 / 16%);
+
+  /* ── Motion. Exit is always faster than enter. ─────────────────────────── */
+  --d-instant: 80ms; /* press, toggle */
+  --d-quick: 150ms; /* hover, focus */
+  --d-move: 240ms; /* sheet open, expand */
+  --d-exit: 180ms; /* closing */
+  /*
+   * THE ENTER CURVE IS THE iOS SHEET CURVE, and the difference is the whole of
+   * why motion here read as "web" rather than "app".
+   *
+   * This was cubic-bezier(0.25, 0.1, 0.25, 1) — which is simply CSS `ease`, the
+   * browser default under another name. `ease` spends its first third slowly
+   * accelerating, so a panel appears to hesitate before it commits, then coasts
+   * to a stop at a constant-ish rate.
+   *
+   * cubic-bezier(0.32, 0.72, 0, 1) is the curve iOS uses to present a sheet. It
+   * leaves at full speed — the surface is already moving on the frame you
+   * touched it — and spends its last two thirds in a long, flat settle. That
+   * combination is what reads as weight: the thing responds instantly and then
+   * comes to rest rather than stopping.
+   *
+   * The exit stays an accelerating curve. Something leaving should gather speed
+   * and be gone; a long settle on the way out is a thing you are waiting for.
+   */
+  --ease-enter: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ── Layout. No component hardcodes these. ─────────────────────────────── */
+  /*
+   * The content column. 1200px is the widest the feed ever gets, and at that
+   * width it is three columns rather than one very long line of text — the
+   * measure is protected by the column count, not by the container.
+   */
+  --feed-max: 1200px;
+  --gutter: 16px; /* horizontal page padding on mobile */
+  --card-pad: 12px; /* card internal padding */
+  --card-gap: 8px; /* space between cards */
+  --header-h: 56px;
+  --offline-h: 40px;
+  /*
+   * The end of a scrolling surface. This used to be --tabbar-clearance: 88px,
+   * sized for the floating bottom-navigation capsule; that capsule is gone and
+   * navigation is a sticky top header now, so what is left is an ordinary
+   * end-of-content margin — enough that the last card does not sit flush
+   * against the bottom edge of the screen, and no more.
+   */
+  --feed-end: var(--s6);
+
+  /*
+   * THE PAGE-WIDTH LADDER. Two values — how far content sits from the edge of
+   * the screen, and how much air goes between cards — both growing with the
+   * viewport, because 16px of gutter that reads as generous on a phone reads as
+   * a mistake at 1920px.
+   *
+   * On :root with media queries rather than container queries on the feed,
+   * because the STICKY HEADER IS NOT INSIDE THE FEED'S CONTAINER. A container
+   * query on the shell is invisible to the header, and the two would drift: the
+   * wordmark on a 40px gutter and the first card on a 16px one. There is one
+   * ladder and both read it.
+   *
+   * The column COUNT is deliberately not here. That is emergent, from the
+   * grid's own auto-fill, and needs no breakpoint at all.
+   */
+  --page-pad: 16px;
+  --grid-gap: var(--card-gap); /* 8px */
+  /* No maximum until ultra-wide: capping the container would cap the grid,
+     which is the thing that is supposed to use the room. */
+  --col-max: none;
+}
+
+/* Tablet */
+@media (min-width: 640px) {
+  :root {
+    --page-pad: 24px;
+    --grid-gap: 12px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  :root {
+    --page-pad: 40px;
+    --grid-gap: 16px;
+  }
+}
+
+/* Wide */
+@media (min-width: 1440px) {
+  :root {
+    --page-pad: 64px;
+    --grid-gap: 20px;
+  }
+}
+
+/*
+ * Ultra-wide — the first width at which a maximum earns its place. Past this
+ * the grid would keep adding columns until a row is a wall of eight and the eye
+ * has nowhere to rest. 1800px holds five or six comfortably; the rest is margin.
+ */
+@media (min-width: 1920px) {
+  :root {
+    --col-max: 1800px;
+  }
+}
+
+/*
+ * REDUCED MOTION. Durations collapse rather than animations being removed, so
+ * every transitionend/animationend listener still fires and no state machine
+ * stalls waiting for a callback that never comes.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-instant: 0.001ms;
+    --d-quick: 0.001ms;
+    --d-move: 0.001ms;
+    --d-exit: 0.001ms;
+  }
+}
+
+/*
+ * The dark variant. Applied by adding data-dedal-theme="dark" to a subtree —
+ * the pass and the scanner only. It is a straight swap of surface and ink, not
+ * a second palette: --primary, --accent and --muted are unchanged.
+ */
+[data-dedal-theme="dark"] {
+  --surface: #0f1729;
+  --surface-card: #0f1729;
+  --ink: #fafafa;
+  --divider: rgb(142 142 147 / 28%);
+  --ink-dim-2: rgb(250 250 250 / 4%);
+  --ink-dim-4: rgb(250 250 250 / 8%);
+}
+
+/*
+ * ── MOBILE SCALE: ABOUT 4% DOWN ─────────────────────────────────────────────
+ *
+ * The whole system was drawn at desktop sizes and used unchanged on a phone,
+ * where everything read a little too large: headings crowding the content under
+ * them, and section gaps eating fold space that a 915px-tall screen does not
+ * have to give. This steps the type and the spacing down by roughly 4% below
+ * 480px.
+ *
+ * Two things are deliberately NOT scaled:
+ *
+ *   · --body-m and --body-s keep their 16px and 14px. 16px is the smallest size
+ *     that does not trigger iOS Safari's zoom-on-focus for form fields, and 14px
+ *     is the floor this system allows for --muted text to stay legible. Shrinking
+ *     body copy to "fit more" is how an app becomes hard to read.
+ *   · --s1 and --s2 stay at 4px and 8px. Below 4px a gap stops reading as a gap
+ *     and starts reading as a rendering error.
+ *
+ * So the reduction lands where it is actually felt: display sizes and the larger
+ * spacing steps.
+ */
+@media (max-width: 479px) {
+  :root {
+    --display-l-size: 27px;
+    --display-l-line: 33px;
+    --display-m-size: 23px;
+    --display-m-line: 29px;
+
+    --s3: 11px;
+    --s4: 15px;
+    --s5: 19px;
+    --s6: 23px;
+    --s7: 30px;
+    --s8: 46px;
+  }
+}

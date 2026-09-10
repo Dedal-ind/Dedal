@@ -1,0 +1,780 @@
+/*
+ * registration.css — the shared furniture of the registration flow.
+ *
+ * THE FLOW IS ONE EXPERIENCE, NOT FIVE SCREENS. A student taps Register on an
+ * event and does not care that solo-free, solo-paid, team-free, team-paid and a
+ * contingent purchase are five different code paths and up to seven routes.
+ * What they see has to be one thing: the same context card at the top, the same
+ * fields, the same action bar at the bottom, the same confirm at the end.
+ *
+ * So the parts that are genuinely shared live here, `drg-` prefixed, and each
+ * screen keeps only what is truly its own. This mirrors how detail-page.css
+ * serves the fest and event pages.
+ *
+ * Tokens only, from dedal-tokens.css. Six colours, and --primary is the
+ * signature: the one action per screen, live/urgent state, and errors. Nothing
+ * else may take it.
+ */
+
+.drg-screen {
+  container-type: inline-size;
+  container-name: drg;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  /* Clears the fixed action bar. Generous on purpose — the bar grows with a
+     disabled reason line or a wrapped price label, and content hidden under it
+     is worse than a little dead space. */
+  padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+}
+
+.drg-col {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The way out
+   ─────────────────────────────────────────────────────────────────────────
+
+   These screens drop the app's floating ScreenHeader, because it is positioned
+   over the top of the content and would land on top of the sticky context card.
+   Dropping it without replacing it leaves somebody mid-purchase with no route
+   back except the browser's own control — which on an installed PWA may not be
+   on screen at all.
+
+   So the back control is part of the flow's own furniture: a plain 44px target
+   above the context card, in the normal flow rather than floating, so the two
+   cannot collide. It is not sticky — the context card is the thing worth
+   keeping on screen, and two stacked sticky bars eat a third of a phone.
+*/
+
+.drg-backbar {
+  display: flex;
+  align-items: center;
+  padding: var(--s2) calc(var(--page-pad) - var(--s2));
+  padding-top: calc(var(--s2) + env(safe-area-inset-top, 0px));
+}
+
+.drg-backbar__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .drg-backbar__button:hover {
+    background: var(--ink-dim-4);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The event context card
+   ─────────────────────────────────────────────────────────────────────────
+
+   Sticky, and it never scrolls away. The single most common way a registration
+   form goes wrong is somebody filling it in for the wrong event — they came
+   from a grid of forty cards. Keeping the poster and the name on screen is the
+   cheapest possible guard against that.
+
+   It COLLAPSES on scroll rather than disappearing: past a threshold the
+   thumbnail and the fest line are dropped and the row becomes name + price on
+   one line, which is the minimum that still answers "what am I paying for".
+*/
+
+.drg-context {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+  transition: padding var(--d-quick) var(--ease-enter);
+}
+
+.drg-context__inner {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: var(--s3) var(--page-pad);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.drg-context__thumb {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  background: var(--ink-dim-4);
+  /* A zero-area box never becomes visible, so a lazy image inside one never
+     loads — the same trap the feed's sponsor strip documents. */
+  min-width: 48px;
+  transition:
+    width var(--d-quick) var(--ease-enter),
+    height var(--d-quick) var(--ease-enter),
+    min-width var(--d-quick) var(--ease-enter),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+.drg-context__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.drg-context__thumb-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--accent), var(--ink));
+  color: rgb(255 255 255 / 78%);
+  font-size: var(--body-m-size);
+  font-weight: 700;
+}
+
+.drg-context__text {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: grid;
+  gap: 2px;
+}
+
+.drg-context__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drg-context__meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.drg-context__price {
+  flex: 0 0 auto;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Collapsed: name and price on one line. The thumbnail is taken to zero rather
+   than display:none so the width transition has something to animate. */
+.drg-context--collapsed .drg-context__inner {
+  padding-block: var(--s2);
+}
+
+.drg-context--collapsed .drg-context__thumb {
+  width: 0;
+  min-width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.drg-context--collapsed .drg-context__meta {
+  display: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Step indicator — team flows only
+   ─────────────────────────────────────────────────────────────────────────
+
+   A solo registration is ONE screen and gets no indicator at all: a progress
+   bar that only ever reads "1 of 1" invents a journey out of a single tap. It
+   appears only where there genuinely is a second step.
+*/
+
+.drg-steps {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding-block: var(--s4) var(--s2);
+}
+
+.drg-steps__item {
+  flex: 1 1 0;
+  display: grid;
+  gap: var(--s1);
+}
+
+.drg-steps__bar {
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  transition: background-color var(--d-move) var(--ease-enter);
+}
+
+.drg-steps__item--active .drg-steps__bar,
+.drg-steps__item--done .drg-steps__bar {
+  background: var(--primary);
+}
+
+.drg-steps__label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.drg-steps__item--active .drg-steps__label {
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Fields
+   ─────────────────────────────────────────────────────────────────────────
+
+   Four states, declared once: rest, focus, error, disabled. Every input in the
+   flow takes these, so a custom question and a team member slot cannot look
+   like two different form systems.
+*/
+
+.drg-field {
+  display: grid;
+  gap: var(--s2);
+  padding-block: var(--s3);
+}
+
+.drg-field__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Sentence case, and the marker is a word where it matters rather than a bare
+   asterisk nobody can hover on a phone. */
+.drg-field__optional {
+  margin-left: var(--s1);
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.drg-field__hint {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drg-input,
+.drg-textarea,
+.drg-select {
+  width: 100%;
+  /* 16px minimum: iOS Safari zooms the whole page on focus of anything
+     smaller, which throws away the sticky context card. */
+  font-size: 16px;
+  line-height: 24px;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--surface-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  padding: var(--s3);
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    box-shadow var(--d-quick) var(--ease-enter);
+  appearance: none;
+}
+
+.drg-textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+
+.drg-input::placeholder,
+.drg-textarea::placeholder {
+  color: var(--muted);
+}
+
+.drg-input:focus-visible,
+.drg-textarea:focus-visible,
+.drg-select:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  /* The ring is the border doubled rather than an outline, so the field does
+     not jump by a pixel when it takes focus. */
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+/*
+ * ERROR. A 2px --primary rule down the left edge plus a message under the
+ * field. The rule is what makes an error findable when three fields are
+ * on screen and one of them is wrong — colour alone on a border is easy to
+ * miss, and colour alone is invisible to a person who cannot see it, which is
+ * why the message is always rendered too and tied by aria-describedby.
+ */
+.drg-field--error .drg-input,
+.drg-field--error .drg-textarea,
+.drg-field--error .drg-select {
+  border-color: var(--divider);
+  border-left: 2px solid var(--primary);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+}
+
+.drg-field__error {
+  display: flex;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.drg-field--disabled {
+  opacity: 0.4;
+}
+
+.drg-input:disabled,
+.drg-textarea:disabled,
+.drg-select:disabled {
+  cursor: not-allowed;
+}
+
+/* Radio / yes-no, rendered as real inputs so the keyboard and screen reader
+   behaviour is the browser's rather than something re-implemented. */
+.drg-choices {
+  display: grid;
+  gap: var(--s2);
+}
+
+.drg-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  cursor: pointer;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.drg-choice:has(input:checked) {
+  border-color: var(--ink);
+}
+
+.drg-choice:has(input:focus-visible) {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.drg-choice input {
+  accent-color: var(--primary);
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The action bar
+   ─────────────────────────────────────────────────────────────────────────
+
+   Fixed to the bottom edge. There is exactly one thing to do on each of these
+   screens and it should never be something a person has to scroll to find.
+*/
+
+.drg-actions {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  background: var(--surface-card);
+  border-top: 1px solid var(--divider);
+  padding: var(--s3) var(--page-pad);
+  padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+}
+
+.drg-actions__inner {
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  display: grid;
+  gap: var(--s2);
+}
+
+.drg-button {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.drg-button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.drg-button--quiet {
+  background: var(--surface-card);
+  color: var(--ink);
+  border: 1px solid var(--divider);
+}
+
+.drg-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/*
+ * LOADING. The label fades rather than being replaced, and the button keeps its
+ * width — a button that shrinks to a spinner moves the thing under the user's
+ * thumb at the exact moment they are watching to see whether their tap worked.
+ */
+.drg-button__label {
+  transition: opacity var(--d-quick) var(--ease-enter);
+}
+
+.drg-button--loading .drg-button__label {
+  opacity: 0.5;
+}
+
+.drg-button__progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  transform-origin: left center;
+  background: var(--surface-card);
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drg-button--loading .drg-button__progress {
+    animation: drg-progress 1.1s var(--ease-enter) infinite;
+  }
+}
+
+@keyframes drg-progress {
+  0% {
+    transform: scaleX(0);
+  }
+  60% {
+    transform: scaleX(1);
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+/* The reason a disabled button is disabled. A dead control that does not say
+   why is the commonest dead end in a form. */
+.drg-actions__reason {
+  margin: 0;
+  text-align: center;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.drg-actions__reason--alert {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Offline
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drg-offline {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  height: var(--offline-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sections and states
+   ───────────────────────────────────────────────────────────────────────── */
+
+.drg-section {
+  padding-block: var(--s5);
+  border-top: 1px solid var(--divider);
+}
+
+.drg-section:first-of-type {
+  border-top: 0;
+}
+
+.drg-section__title {
+  margin: 0 0 var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.drg-state {
+  display: grid;
+  gap: var(--s4);
+  justify-items: start;
+  padding-block: var(--s7);
+}
+
+.drg-state__text {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.drg-state--error {
+  width: 100%;
+  padding: var(--s4);
+  background: var(--surface-card);
+  border-radius: var(--r-card);
+  box-shadow: var(--e1);
+  border-inline-start: 2px solid var(--primary);
+}
+
+.drg-skel {
+  background: var(--ink-dim-4);
+  border-radius: var(--r-card);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drg-skel {
+    animation: drg-skel 1s linear infinite alternate;
+  }
+}
+
+@keyframes drg-skel {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE CONFIRM STROKE
+   ─────────────────────────────────────────────────────────────────────────
+
+   The one piece of non-user-triggered motion in the whole flow: a 2px --primary
+   line drawing left to right across the top of the success screen, 240ms, held
+   1.2s. It earns its place because it marks the single moment the flow exists
+   to produce — the commitment landing — and because a person who has just paid
+   is watching the screen for exactly that confirmation.
+
+   Under reduced motion the tokens collapse the duration, so the line is simply
+   present rather than absent: the confirmation is information, not decoration,
+   and must not vanish for somebody who asked for less movement.
+*/
+
+.drg-confirm-stroke {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 40;
+  height: 2px;
+  background: var(--primary);
+  transform-origin: left center;
+  animation: drg-confirm-stroke 1.44s var(--ease-enter) forwards;
+}
+
+@keyframes drg-confirm-stroke {
+  0% {
+    transform: scaleX(0);
+    opacity: 1;
+  }
+  /* 240ms of 1440ms — the draw. */
+  16.7% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  /* Held for 1.2s, then gone. */
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DESKTOP
+   ─────────────────────────────────────────────────────────────────────────
+
+   Two things change at 768px, and both are the same idea: a phone's constraints
+   stop applying, so the patterns that exist to work around them should stop too.
+
+   THE CONTEXT CARD UNSTICKS. It is sticky on a phone because a 667px viewport
+   cannot hold the form and the "what am I registering for" at the same time. A
+   desktop viewport can, so pinning it just welds a bar across the window for no
+   benefit — and it keeps its border, so it still reads as the header of the
+   column rather than as loose text.
+
+   THE ACTION BAR UNPINS. Same reason: these forms are short, and on a desktop
+   the button sits inside the column where the form ends, which is where a person
+   looks for it. A full-width bar across 1600px to hold one button is a phone
+   pattern wearing a desktop layout.
+
+   The widths are per screen and are set by each screen on its own column via
+   the `--drg-col-max` custom property, because a solo form (520px), a team form
+   (640px), a contingent purchase (720px) and a success screen (480px) genuinely
+   want different measures — a single shared width would be wrong for three of
+   the four.
+*/
+
+@media (min-width: 768px) {
+  .drg-screen {
+    /* No fixed bar to clear any more. */
+    padding-bottom: var(--s8);
+  }
+
+  .drg-col,
+  .drg-context__inner,
+  .drg-actions__inner {
+    max-width: var(--drg-col-max, 640px);
+  }
+
+  .drg-context {
+    position: static;
+  }
+
+  /* Never collapsed on desktop: the collapse exists to reclaim sticky space,
+     and nothing is sticky here. */
+  .drg-context--collapsed .drg-context__inner {
+    padding-block: var(--s3);
+  }
+
+  .drg-context--collapsed .drg-context__thumb {
+    width: 48px;
+    min-width: 48px;
+    height: 48px;
+    opacity: 1;
+  }
+
+  .drg-context--collapsed .drg-context__meta {
+    display: flex;
+  }
+
+  .drg-actions {
+    position: static;
+    background: transparent;
+    border-top: 0;
+    padding-inline: var(--page-pad);
+    padding-bottom: var(--s6);
+  }
+
+  /* The button is full width WITHIN the column, not across the window. */
+  .drg-button {
+    width: 100%;
+  }
+
+  .drg-backbar {
+    padding-inline: calc(var(--page-pad) - var(--s2));
+  }
+}
+
+/*
+ * Per-screen measures. Set on the screen root so every column, the context card
+ * and the action row inside it agree without each screen repeating the number.
+ */
+.drg-screen--solo {
+  --drg-col-max: 520px;
+}
+
+.drg-screen--team {
+  --drg-col-max: 640px;
+}
+
+.drg-screen--purchase {
+  --drg-col-max: 720px;
+}
+
+.drg-screen--success {
+  --drg-col-max: 480px;
+}
+
+/*
+ * TEAM MEMBER SLOTS become a row per member instead of a stack: on a phone,
+ * name and email stacked is the only thing that fits; at 768px putting them
+ * side by side turns a long scroll of fields into something that reads like a
+ * roster, which is what it is.
+ *
+ * Screens opt in by putting .drg-slots on the list. Below 768px it is a plain
+ * stack and this rule does not apply at all.
+ */
+@media (min-width: 768px) {
+  .drg-slots__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+    gap: var(--s3);
+    align-items: start;
+  }
+
+  .drg-slots__row .drg-field {
+    padding-block: var(--s2);
+  }
+}
+
+/* Add-to-calendar and other paired actions sit side by side once there is room
+   for two comfortable targets on one line. */
+@media (min-width: 768px) {
+  .drg-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s3);
+  }
+}

@@ -1,0 +1,672 @@
+/*
+ * operator-screens.css — the pieces only one coordinator screen needs.
+ *
+ * Everything shared lives in operator-kit.css; this file is the residue: a
+ * switch, a bracket timeline, a broadcast thread, a rating distribution. Same
+ * `dop-` prefix, same six colours, same rule that a state is a word first.
+ */
+
+/* ── The leaderboard-visibility switch (panel, details form) ───────────────
+   --accent when on: it is a setting the coordinator chose, not a state of the
+   world. The word beside it says "On" or "Off" regardless. */
+
+.dop-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dop-switch__track {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dop-switch__track--on {
+  background: var(--accent);
+}
+
+.dop-switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+  transition: transform var(--d-quick) var(--ease-enter);
+}
+
+.dop-switch__track--on .dop-switch__knob {
+  transform: translateX(18px);
+}
+
+/* ── Bracket round timeline (panel) ───────────────────────────────────────
+   A numbered rail. The rule is a single background on the container rather
+   than a pseudo-element per row, so there is one painted line, not N. */
+
+.dop-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dop-timeline__row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+.dop-timeline__marker {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  align-self: center;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  font-size: var(--body-s-size);
+  line-height: 1;
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The round being played. --primary, the same "happening now" this surface
+   uses everywhere; the row's own text says "In progress". */
+.dop-timeline__marker--live {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.dop-timeline__marker--done {
+  color: var(--ink);
+}
+
+.dop-timeline__button {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dop-timeline__button:hover {
+  background: var(--ink-dim-2);
+}
+
+.dop-timeline__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+}
+
+/* ── Match card (panel) ───────────────────────────────────────────────────
+   Two competitor rows and a score box each. The winner is stated in words
+   under the pair; the inset rule only repeats it. */
+
+.dop-match {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dop-match__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dop-match__side {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s2);
+  border-radius: var(--r-card);
+}
+
+.dop-match__side--won {
+  background: var(--ink-dim-4);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.dop-match__name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dop-match__name--won {
+  font-weight: 700;
+}
+
+.dop-match__vs {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dop-match__vs::before,
+.dop-match__vs::after {
+  content: '';
+  flex: 1 1 0;
+  height: 1px;
+  background: var(--divider);
+}
+
+/* ── Roster team card (panel) ─────────────────────────────────────────────
+   A team is a group of rows, so it gets a header and then the same table rows
+   the solo roster uses. */
+
+.dop-team {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.dop-team__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s3);
+  background: var(--ink-dim-2);
+}
+
+.dop-team__name {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The one person to call on the day. Its own line, with the number tappable. */
+.dop-team__captain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s2);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-top: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dop-team__captain a {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.dop-avatar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--ink);
+  font-size: var(--micro-size);
+  line-height: 1;
+  font-weight: 700;
+  object-fit: cover;
+}
+
+/* ── Search field (panel roster) ──────────────────────────────────────────
+   A field, not a pill: it sits above a table and shares its geometry. */
+
+.dop-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+}
+
+.dop-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  outline: none;
+}
+
+.dop-search input::placeholder {
+  color: var(--muted);
+}
+
+/* ── Event identity header (coordinator event, panel) ─────────────────────
+   The name, the type, and the live word. No poster: the coordinator knows
+   which event they opened, and a 160px image is 160px of roster. */
+
+.dop-ident {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  min-width: 0;
+}
+
+.dop-ident__name {
+  margin: 0;
+  min-width: 0;
+  flex: 1 1 240px;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dop-ident__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+/* ── Expanded roster detail (scoreboard) ──────────────────────────────────
+   Opens under its row, inside the same table, sharing its hairlines. */
+
+.dop-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s3);
+  border-top: 1px solid var(--divider);
+  background: var(--ink-dim-2);
+}
+
+.dop-detail__label {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dop-detail__members {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dop-detail__member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dop-detail__college {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Broadcast thread ─────────────────────────────────────────────────────
+   A thread, because a broadcast is short and frequent. The audience is a WORD
+   on the bubble, not a tint: three tints in a burst of messages is a legend
+   nobody has. */
+
+.dop-thread {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--s2);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--s4) var(--s4);
+}
+
+.dop-bubble {
+  align-self: flex-end;
+  max-width: min(560px, 88%);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dop-bubble__text {
+  display: block;
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dop-bubble__meta {
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dop-composer {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--divider);
+  background: var(--surface-card);
+  padding: var(--s3) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+}
+
+.dop-composer__inner {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s2);
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.dop-composer__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  max-height: 132px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  resize: none;
+}
+
+.dop-composer__input::placeholder {
+  color: var(--muted);
+}
+
+/* ── Audience picker (broadcast sheet) ────────────────────────────────────
+   Real checkboxes in a list, not tinted cards: the coordinator is choosing
+   who receives this, and a checkbox is the control that says so. */
+
+.dop-pick {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 56px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dop-pick--on {
+  border-color: var(--accent);
+}
+
+.dop-pick__box {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--divider);
+  border-radius: 6px;
+  color: #fff;
+}
+
+.dop-pick--on .dop-pick__box {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.dop-pick__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── Feedback (summary + card) ────────────────────────────────────────────
+   The average is a number with the words "out of 5" after it. The stars are
+   --ink, not a second colour: a star already means "rating". */
+
+.dop-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink);
+}
+
+.dop-stars--muted {
+  color: var(--muted);
+}
+
+.dop-starpick {
+  display: flex;
+  gap: var(--s2);
+}
+
+.dop-starpick__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 64px;
+  height: 48px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dop-starpick__btn--on {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.dop-starpick__btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.dop-dist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.dop-dist__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dop-dist__label {
+  flex: 0 0 auto;
+  width: 44px;
+}
+
+.dop-dist__count {
+  flex: 0 0 auto;
+  width: 28px;
+  text-align: right;
+}
+
+.dop-dist__track {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  overflow: hidden;
+}
+
+.dop-dist__fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+}
+
+.dop-quote {
+  margin: 0;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dop-quote__rating {
+  display: block;
+  margin-bottom: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dop-quote__text {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+/* ── Feedback prompt card (participant side of the feedback pair) ─────────
+   Lives on a registration row, so it is a card rather than a section. */
+
+.dop-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dop-prompt__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── Notify participants (panel) ──────────────────────────────────────────
+   The remaining daily budget sits under the button, before anything is typed:
+   a coordinator with one send left should know that while deciding what to say. */
+
+.dop-notify {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  align-items: flex-start;
+}
+
+/* ── Two odds and ends ────────────────────────────────────────────────────
+   A label with a control on the right (the leaderboard toggle), and the match
+   grid, which needs a wider minimum than the action tiles: two names and two
+   score boxes do not fit in 190px. */
+
+.dop-switchrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: 44px;
+}
+
+.dop-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: var(--grid-gap);
+}

@@ -1,0 +1,809 @@
+/*
+ * notifications.css — the /notifications feed.
+ *
+ * Prefixed `dnt-` for the reason every sheet here is prefixed: this loads
+ * beside the Tailwind @theme the not-yet-redesigned screens still depend on,
+ * and an unprefixed `.row` or `.dot` would eventually be won or lost by a
+ * utility class nobody was thinking about.
+ *
+ * Tokens only, from dedal-tokens.css. Six colours; --gold and --verified are
+ * certificates-only and do not appear here at any strength. There is no amber
+ * "warning" colour in this system, so an elimination is not painted differently
+ * from a round start — the ICON carries the difference, not a hue the palette
+ * does not own.
+ *
+ * MEDIA QUERIES, NOT CONTAINER QUERIES, for the same reason certificates-list
+ * uses them: this screen has no sidebar and no second pane, so the column is
+ * always the viewport minus the page padding and the viewport is the honest
+ * thing to measure.
+ */
+
+.dnt-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Focus is not stated here. `.dnt-screen` is listed in design/focus.css's own
+   root set, so this screen inherits the app-wide policy from the one file that
+   owns it — a second copy here would be a second place to change. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Column
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * 720px, and STILL ONE COLUMN.
+ *
+ * This is the one screen in this pass that does not get the room. A grid was
+ * considered and rejected for the reason that was already written here: the
+ * feed is time-ordered, and columns destroy the reading order that the
+ * ordering exists to create. Newest-first down a single column is the whole
+ * interaction; newest-first snaking across three tracks is not an interaction
+ * anyone can follow.
+ *
+ * What DID change is the measure. 560px was sized for a row that was one
+ * clipped line of title over one clipped line of body. The row is
+ * content-height now — it wraps, and people read the whole thing here — so the
+ * relevant limit is a reading measure rather than an ellipsis budget. 720px
+ * less the gutter is about 58 characters at --body-s-size, comfortably inside
+ * the 45-to-85 band, and it takes 160px off each of the two dead margins:
+ * measured at 1440px the column ran 560px with 440px of empty canvas a side,
+ * and now runs 720px with 360px.
+ *
+ * It is deliberately not 1440. A notification row stretched across a wide
+ * window is a very long ruler with a 40px circle marooned at one end, which is
+ * the failure the original number was avoiding and is still real.
+ */
+.dnt-col {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* Clears the floating ScreenHeader, which is positioned over the content. */
+.dnt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s4);
+  /*
+   * NO SECOND HEADER CLEARANCE. `.dhd-header` is `position: sticky`, which
+   * means it still occupies flow space — the content after it already starts
+   * below it. Adding `var(--header-h)` here reserved the header's height a
+   * second time and left 56px of empty page above the title. (A `fixed` header
+   * would need it; a sticky one does not.)
+   */
+  padding-top: calc(var(--s5) + env(safe-area-inset-top, 0px));
+  padding-bottom: var(--s4);
+}
+
+.dnt-title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Mark all read
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * A text action, not a button shape. It is the second thing on the screen and
+ * the rows are the first; giving it a filled --primary pill would make the
+ * loudest element on a notifications screen the one that empties it.
+ */
+.dnt-markall {
+  flex: 0 0 auto;
+  border: 0;
+  background: none;
+  padding: var(--s1) 0;
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 150ms var(--ease-exit);
+}
+
+/*
+ * The label outlives the last unread dot by 150ms and then goes. Fading it at
+ * the same time as the dots would read as the button having been taken away
+ * mid-press; fading it after is the button acknowledging that it finished.
+ */
+.dnt-markall--fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dnt-markall:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* The reason sits beside the disabled action, because a control that is dead
+   without saying why is indistinguishable from one that is broken. */
+.dnt-markall__reason {
+  display: block;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Offline strip
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* The app's strip, unchanged: --ink ground, --surface text, --offline-h tall.
+   Sticky here because the feed scrolls under it. */
+.dnt-offline {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  height: var(--offline-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The feed
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dnt-list {
+  display: flex;
+  flex-direction: column;
+  /* The gap IS the separation now — see the note on .dnt-row. 8px is enough to
+     read as a break between two things without turning a feed of five into a
+     page you have to scroll. */
+  gap: var(--s2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * The row is a clipping frame and nothing else: the delete action lives behind
+ * it and the band slides over the top. Height is animated on the frame, so a
+ * committed delete collapses the row and its neighbours close into the gap
+ * without the list reflowing in one jump.
+ */
+/*
+ * A GRID WITH ONE CELL, not a fixed-height box.
+ *
+ * The row used to be `height: 72px` with the text clipped to one line each. On
+ * a phone that defeats the point of the screen: /notifications exists on mobile
+ * precisely BECAUSE there is room to read the whole thing, and a truncated
+ * title on a full page is worse than the same truncation in a panel, where at
+ * least the space is genuinely scarce. So the height is now driven by the
+ * content and 72px is only a floor.
+ *
+ * Band and delete are both placed in the single grid cell, which is what
+ * guarantees the band covers the delete exactly however tall the row turns out
+ * to be. Absolute positioning could not promise that: the delete was `inset-block:
+ * 0` on the row while the band was its own height, so any pixel of difference
+ * showed as a red edge — which is exactly what appeared once rows could wrap.
+ * The delete is first in DOM order, so it paints underneath without a z-index.
+ */
+/*
+ * SEPARATE CARDS, NOT A CONTINUOUS COLUMN.
+ *
+ * These were flush rows divided by a hairline, which is the right treatment for
+ * a settings list — every row there is the same kind of thing and the group is
+ * the unit. A notification is not like that: each one is a separate event from a
+ * separate moment, and stacked edge to edge with only a 1px line between them
+ * they read as one block of text you have to parse to find the boundaries.
+ * Giving each its own surface and a real gap makes the count legible before you
+ * have read a word of it.
+ */
+.dnt-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  min-height: 72px;
+  max-height: 400px;
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dnt-row:last-child {
+  border-bottom: 0;
+}
+
+/* max-height rather than height, because the row no longer has a height to
+   animate from — it is whatever its text needs. 400px is a ceiling no
+   notification reaches; the visible motion is the last 72-or-so pixels. */
+.dnt-row--collapsing {
+  min-height: 0;
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 200ms var(--ease-exit),
+    min-height 200ms var(--ease-exit),
+    opacity 120ms var(--ease-exit);
+}
+
+/*
+ * The band. 72px on mobile and 72px everywhere else — one horizontal band that
+ * never wraps to a second line, which is what lets the eye scan a column of
+ * these rather than read them.
+ */
+.dnt-band {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  /*
+   * `min-height` plus `height: 100%`, not a fixed 72px. The delete action is
+   * absolutely positioned to the row's full block extent and sits BEHIND the
+   * band; any pixel the row is taller than the band is a pixel of red showing
+   * through at rest. That is exactly what happened inside the desktop panel,
+   * where a row picks up a divider the page version does not have. 72px stays
+   * the floor, the band covers whatever the row actually turns out to be.
+   */
+  grid-area: 1 / 1;
+  min-height: 72px;
+  padding: 0;
+  border: 0;
+  background: var(--surface);
+  font-family: inherit;
+  text-align: left;
+  touch-action: pan-y;
+}
+
+/* Only a row that has somewhere to go, or something to mark, says so. */
+.dnt-band--interactive {
+  cursor: pointer;
+}
+
+.dnt-band--interactive:active {
+  background: var(--ink-dim-4);
+}
+
+@media (hover: hover) {
+  .dnt-band--interactive:hover {
+    background: var(--ink-dim-2);
+  }
+}
+
+/*
+ * An informational row that has already been read is not a control at all — no
+ * link, nothing left to mark. It renders as a plain band rather than a button
+ * that would depress under a tap and then do nothing, which is the specific
+ * dishonesty a "tappable-then-nothing" row commits.
+ */
+.dnt-band--inert {
+  cursor: default;
+}
+
+/* The drag follows the finger with no transition; the release animates back or
+   through. The class is applied only while settling. */
+.dnt-band--settling {
+  transition: transform var(--d-quick) var(--ease-exit);
+}
+
+/* ── Icon circle ───────────────────────────────────────────────────────── */
+
+.dnt-mark {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  color: var(--ink);
+}
+
+/*
+ * Two treatments, not seven. An achievement — results, an advance, a
+ * certificate — gets the --accent wash, so the things worth opening are
+ * findable in a scroll without reading a word. Everything else gets
+ * --surface-card, which on --surface is a near-silent lift: present, ranked
+ * below, and still a circle so the column of circles stays a column.
+ */
+.dnt-mark--achievement {
+  background: rgb(123 97 255 / 10%);
+  color: var(--accent);
+}
+
+.dnt-mark--informational {
+  background: var(--surface-card);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--divider);
+}
+
+/* ── Text ──────────────────────────────────────────────────────────────── */
+
+.dnt-text {
+  flex: 1 1 auto;
+  min-width: 0; /* without this the flex child refuses to shrink and the
+                   ellipsis never appears */
+}
+
+/*
+ * TEXT WRAPS BY DEFAULT; TRUNCATION IS THE DESKTOP-PANEL EXCEPTION.
+ *
+ * The one-line-each rule was written for scanning a column quickly, and it is
+ * right in the header panel, where the box is 420px and the job is a glance.
+ * On the full page it was just hiding the message on the screen whose entire
+ * purpose is to show it. So the base state wraps, and the clamp is reapplied
+ * only inside .dnp-panel further down.
+ *
+ * The time never wraps anywhere — it is three or four characters and a wrapped
+ * "5d ago" would be a bug in any context.
+ */
+.dnt-text__title,
+.dnt-text__body {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.dnt-text__time {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Title and time on one line: the title takes the room, the time keeps its
+   own width and never wraps. `align-items: baseline` so the two sit on the
+   same line of type rather than being centred against each other. */
+.dnt-text__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+}
+
+.dnt-text__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* 15px, a step down from --body-m. A notification title is a label in a
+     scannable column, not a heading; at 16px semibold it was competing with
+     the screen's own title one bar above it. */
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Unread is weight, not colour: the dot already says unread in --primary, and
+   saying it twice in two channels makes a read row look disabled. */
+.dnt-row--read .dnt-text__title {
+  font-weight: 500;
+}
+
+.dnt-text__body {
+  font-size: var(--body-s-size);
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.dnt-text__time {
+  flex: 0 0 auto;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Unread dot ────────────────────────────────────────────────────────── */
+
+.dnt-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  opacity: 1;
+  transition: opacity 200ms var(--ease-exit);
+}
+
+/* The cascade. Each dot carries its own transition-delay as an inline custom
+   property, 50ms apart down the list, so the list empties in one direction
+   instead of blinking out at once. */
+.dnt-dot--leaving {
+  opacity: 0;
+  transition-delay: var(--dnt-dot-delay, 0ms);
+}
+
+/* ── Delete ────────────────────────────────────────────────────────────── */
+
+/*
+ * The action behind the band. Full height, 80px wide, pinned to the right edge:
+ * it is revealed by the band moving off it, not by anything moving in.
+ */
+
+/*
+ * A TOUCH-ONLY DESTRUCTIVE ACTION IS UNREACHABLE ON A DESKTOP, so on a
+ * hover-capable pointer the same button is a small trailing control on the
+ * band itself — visible on row hover and whenever it has focus, which is what
+ * makes it reachable by Tab. That is a reveal, not a focus ring: the button
+ * appears so it can be used, and nothing is drawn around it.
+ */
+/*
+ * The pointer-device delete control. It is a SIBLING of the band, not a child,
+ * so that the band can slide under a touch swipe without dragging it along —
+ * but that also means it is not in the band's flex row, and left in flow it
+ * landed at the row's content origin, on top of the type icon. It is therefore
+ * placed against the row's right edge explicitly.
+ *
+ * `right` clears the unread dot rather than covering it: whether a notification
+ * is unread is still the thing you are deciding about when you reach for
+ * delete, and a control that hides the state it acts on is a control you have
+ * to move away again to read.
+ */
+.dnt-remove {
+  position: absolute;
+  top: 50%;
+  right: var(--s5);
+  transform: translateY(-50%);
+  z-index: 1;
+  /*
+   * VISIBLE EVERYWHERE. It used to be display:none off a fine pointer, because
+   * the swipe was meant to be the touch gesture — but the swipe was invisible,
+   * so on a phone there was no way to delete a notification that anybody could
+   * find. It is now the single, discoverable control on every device.
+   */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--d-quick) var(--ease-enter);
+}
+
+/*
+ * On touch it is simply there — a control you have to hover to discover is not
+ * a control on a phone. Where hovering exists it rests at 55% and comes up to
+ * full on hover or focus, so a wall of bins does not compete with the text on a
+ * desktop while still being obvious enough to find.
+ */
+.dnt-remove {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dnt-remove {
+    opacity: 0.55;
+  }
+
+  .dnt-row:hover .dnt-remove,
+  .dnt-remove:focus {
+    opacity: 1;
+  }
+
+  /*
+   * The one animated thing in the list. It is a destructive control that
+   * appears on hover, so it has to confirm it is live and armed before you
+   * commit — a colour change alone reads as a link. The tint is --primary at a
+   * low alpha rather than a fill: a solid red 32px circle under the cursor
+   * looks like the delete has already happened.
+   */
+  .dnt-remove {
+    transition:
+      opacity var(--d-quick) var(--ease-enter),
+      color var(--d-quick) var(--ease-enter),
+      background-color var(--d-quick) var(--ease-enter),
+      transform var(--d-quick) var(--ease-enter);
+  }
+
+  .dnt-remove:hover {
+    color: var(--primary);
+    background: rgb(255 59 48 / 10%);
+    transform: translateY(-50%) scale(1.08);
+  }
+
+  .dnt-remove:active {
+    transform: translateY(-50%) scale(0.94);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dnt-remove,
+    .dnt-remove:hover,
+    .dnt-remove:active {
+      transition: none;
+      transform: translateY(-50%);
+    }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Loading, empty
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Three rows at the real 72px, static. A shimmer would be a second animation
+ * competing with the cascade this screen already owns, and a skeleton that
+ * pulses is a skeleton people watch instead of the content arriving.
+ */
+.dnt-skeleton {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  height: 72px;
+  border-bottom: 1px solid var(--divider);
+}
+
+.dnt-skeleton:last-child {
+  border-bottom: 0;
+}
+
+.dnt-skeleton__mark {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dnt-skeleton__lines {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dnt-skeleton__bar {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dnt-skeleton__bar + .dnt-skeleton__bar {
+  margin-top: var(--s2);
+}
+
+.dnt-skeleton__bar--title {
+  width: 56%;
+}
+
+.dnt-skeleton__bar--body {
+  width: 78%;
+}
+
+/* The empty feed is components/empty-state now — see EmptyState.jsx. The
+   .dnt-empty block that used to sit here is gone with it. */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Reduced motion
+   ─────────────────────────────────────────────────────────────────────────
+
+   The tokens file already collapses every --d-* duration. These three are
+   hardcoded millisecond values — the 200ms dot fade, the 50ms-apart cascade
+   delay and the 200ms height collapse — chosen for their choreography rather
+   than taken from the ladder, so they have to be collapsed here as well.
+   Durations go to nothing rather than the transitions being removed, so every
+   transitionend listener still fires and the delete state machine cannot stall
+   waiting for a callback that never comes. */
+@media (prefers-reduced-motion: reduce) {
+  .dnt-dot,
+  .dnt-dot--leaving,
+  .dnt-markall,
+  .dnt-row--collapsing {
+    transition-duration: 0.001ms;
+    transition-delay: 0ms;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The desktop panel
+
+   Notifications under the header bell instead of a route change. The list
+   inside is the same component the /notifications page renders, so everything
+   above this block applies unchanged; only the container is different.
+
+   Anchored to the top-right, under the header, rather than centred like the
+   search modal. Search is a task you commit to — it takes the middle of the
+   screen and your attention. Notifications are a glance, and a glance belongs
+   next to the control you glanced at, with the page still visible behind it.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dnp-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: var(--scrim);
+  /* A scrim, not a click-catcher pretending to be one: the page behind is
+     dimmed so the panel is unambiguously the thing in front. */
+}
+
+/*
+ * CENTRED, AND WIDE ENOUGH TO READ.
+ *
+ * This began anchored under the bell at 420px, on the argument that
+ * notifications are a glance and a glance belongs next to the control you
+ * glanced at. In use that was the wrong trade: 420px minus an icon, a delete
+ * control and a dot left barely 250px of text column, so every title and every
+ * body was cut mid-sentence and the panel could not answer the question you
+ * opened it to ask. A glance you cannot read is not a glance, it is a detour.
+ *
+ * So it takes the middle of the screen, at the same weight as the search modal
+ * beside it — same scrim, same centring, same "this is the thing now". 560px is
+ * where the body text stops wrapping every few words, and the height cap keeps
+ * a long feed scrolling inside the panel instead of running off the window.
+ */
+.dnp-scrim {
+  display: grid;
+  place-items: center;
+  padding: var(--s5);
+}
+
+.dnp-panel {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: min(680px, 86vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border-radius: var(--r-sheet);
+  box-shadow: var(--e2);
+}
+
+/* The page's own column padding is wrong inside a panel that is already inset. */
+.dnp-panel .dnt-col {
+  max-width: none;
+  padding-inline: var(--s4);
+  padding-bottom: var(--s4);
+}
+
+.dnp-panel .dnt-head {
+  padding-top: var(--s4);
+}
+
+/* The full-page title is a page heading; in a panel the dialog is already
+   labelled and a 24px heading crowds a 420px box. */
+.dnp-panel .dnt-title {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+}
+
+/* ── The panel's motion: one shape, played both ways ─────────────────────── */
+
+/*
+ * THIS WAS A KEYFRAME AND A KEYFRAME CANNOT CLOSE. `animation: dnp-in` fires
+ * when the node enters the DOM and there is no corresponding moment on the way
+ * out — the panel was conditionally rendered, so React deleted it and the
+ * carefully drawn 4px rise was answered by a hard cut. Replaced with a class
+ * the component toggles, which is a state the element can be transitioned
+ * INTO and OUT OF; NotificationsPanel.jsx holds it mounted for the exit.
+ *
+ * Enter 240ms decelerating, exit 180ms accelerating — the same distance and
+ * the same shape both ways, but a thing arriving is worth more time than a
+ * thing leaving. Transform and opacity only.
+ */
+.dnp-panel {
+  opacity: 0;
+  transform: translate3d(0, -4px, 0);
+  transition:
+    opacity var(--d-exit) var(--ease-exit),
+    transform var(--d-exit) var(--ease-exit);
+}
+
+.dnp-panel--open {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity var(--d-move) var(--ease-enter),
+    transform var(--d-move) var(--ease-enter);
+}
+
+.dnp-scrim {
+  opacity: 0;
+  transition: opacity var(--d-exit) var(--ease-exit);
+}
+
+.dnp-scrim--open {
+  opacity: 1;
+  transition: opacity var(--d-move) var(--ease-enter);
+}
+
+/*
+ * Reduced motion lands both states outright. Durations are already collapsed
+ * by dedal-tokens.css; pinning the transform as well means the panel can never
+ * be caught partway through a rise it will not finish.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dnp-panel,
+  .dnp-panel--open {
+    transform: none;
+  }
+}
+
+/* Below the breakpoint that hides the bell, the panel cannot be opened at all —
+   but if it somehow is, it must not render as a floating box on a phone. */
+/* The bell is hidden below 1024px, so this cannot normally be opened there —
+   but if it ever is, it must not be a floating box on a phone. */
+@media (max-width: 1023px) {
+  .dnp-scrim {
+    padding: 0;
+  }
+
+  .dnp-panel {
+    width: 100%;
+    max-height: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}
+
+/* ── Panel text: clamped, and clear of the delete control ────────────────── */
+
+/*
+ * In the panel the band is 420px wide and shares its right edge with the hover
+ * delete button, which was overlapping the last few characters of every line.
+ * The padding reserves that column outright rather than letting the two fight.
+ */
+/*
+ * THE DELETE CONTROL GETS A COLUMN, IT DOES NOT SIT ON TOP OF THE WORDS.
+ *
+ * The hover trash is absolutely positioned at the band's trailing edge, and the
+ * unread dot sits there too. 32px of padding cleared the dot and nothing else,
+ * so the button landed on the last few characters of every line. The reserve
+ * has to cover the whole rail: the 32px control, the 8px dot, and the gaps
+ * between them and the edge.
+ *
+ * Only on a pointer-fine device, because that is the only place the button can
+ * appear — a phone gets the swipe instead and should not pay 72px for a control
+ * it will never see.
+ */
+/*
+ * The delete control is the only path now, so the band always reserves its
+ * column — on every device, not just where a mouse can hover. 72px covers the
+ * 32px control, the 8px unread dot, and the gaps between them and the edge.
+ */
+.dnt-band {
+  /*
+   * 60px, measured rather than guessed: the delete control is 32px sitting at
+   * right: var(--s5) (20px), so it ends 52px in, and the unread dot needs the
+   * remaining sliver. 72px was over-reserved and it showed at narrow widths —
+   * on a 320px screen it took a fifth of the row away from the title.
+   */
+  padding-right: 60px;
+}
+
+/*
+ * Two lines, not one. A single line cut most bodies mid-sentence; two is enough
+ * for the great majority of them to finish, and the row is still a fixed,
+ * scannable shape. `line-clamp` puts the ellipsis at the end of the SECOND
+ * line, which one-line `text-overflow` could never do.
+ */
+/*
+ * No clamp. At 420px the body had to be cut to two lines to keep the rows
+ * scannable; at 560px it simply fits, and a notification you can read in full
+ * is the entire reason for opening the panel.
+ */
+
+/*
+ * The empty feed, in components/empty-state. A bigger offset than the default
+ * because this screen carries a title row (.dnt-head, ~66px) above the feed on
+ * top of the 56px header; without it the block would run past the fold.
+ */
+.dnt-empty-state {
+  --des-empty-offset: 150px;
+}

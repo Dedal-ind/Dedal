@@ -1,0 +1,299 @@
+/*
+ * payment-processing.css — /payment-processing/:paymentGroupId.
+ *
+ * Prefixed `dpp-`, tokens only from dedal-tokens.css, for the reason every
+ * sheet here is: it loads alongside the retired Heritage Tailwind @theme and
+ * must not be able to lose a cascade to it.
+ *
+ * ── THIS SCREEN IS A BLOCKING WAIT, AND IT IS DESIGNED AS ONE ───────────────
+ *
+ * NO BACK CONTROL, and therefore no ScreenHeader at all. Leaving mid-
+ * confirmation is exactly the mistake this screen exists to prevent: the money
+ * has been captured, the webhook is in flight, and somebody who navigates away
+ * and taps Pay again is the failure mode. The screen that this replaces made
+ * the same choice and rendered `<ScreenHeader showBack={false} />`, which with
+ * no title and no action returns null — 56px of nothing. The component is
+ * simply not mounted now.
+ *
+ * The route also sits OUTSIDE ParticipantLayout, so there is no app header
+ * above it either. That is deliberate and unchanged: while a payment is
+ * confirming there is no wordmark to tap, no bell, no avatar, nothing that
+ * leads anywhere.
+ *
+ * Consequently the screen owns its own <h1>, which is the ONE exception to the
+ * rule that the bar carries the heading — there is no bar.
+ *
+ * NOT A CENTRED-IN-THE-VIEWPORT SPINNER. The block is pinned near the top with
+ * a fixed offset instead, because the still-pending state grows two buttons and
+ * a transaction card beneath it, and a vertically centred layout would slide
+ * the headline upward at the exact moment the copy under it changes. Something
+ * moving on its own during a payment reads as the payment doing something.
+ */
+
+.dpp-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding: calc(var(--s8) + env(safe-area-inset-top, 0px)) var(--page-pad)
+    calc(var(--s8) + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+}
+
+/*
+ * 480px, and NOT the fluid-to-1440 grid the browse screens use. This is the one
+ * screen in the migration where a narrow measure is right: there is a single
+ * sentence, one card and at most two buttons, and stretching that across a
+ * laptop would put a 1200px-wide "Confirming your payment" over a 1200px-wide
+ * rule. Nothing here is a list, so there is no width for extra width to buy.
+ */
+.dpp-col {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s5);
+}
+
+/* ── The arc ──────────────────────────────────────────────────────────────
+ *
+ * An SVG circle with a dasharray gap, rotated by a CSS animation. --accent, not
+ * --primary: the red on this surface belongs to a failure, and a spinning red
+ * ring over the words "confirming your payment" reads as an error being
+ * reported rather than work in progress.
+ *
+ * Reduced motion stops the rotation rather than hiding the ring, so the mark
+ * still holds its place in the layout and the page does not reflow for it.
+ */
+
+.dpp-arc {
+  width: 56px;
+  height: 56px;
+  color: var(--accent);
+  animation: dpp-spin 1.2s linear infinite;
+}
+
+@keyframes dpp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The still-pending mark. --muted: waiting longer than usual is not an error
+   and must not be coloured like one. */
+.dpp-mark {
+  color: var(--muted);
+}
+
+.dpp-title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dpp-body {
+  /* The column's own gap sets the space above; nothing is nudged. */
+  margin: 0;
+  max-width: 42ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+/* ── The transaction card ─────────────────────────────────────────────────
+ *
+ * Rendered only when checkout actually passed the details along. Left-aligned
+ * inside a centred column, because it is a pair of label/value rows and centred
+ * key-value rows are unreadable.
+ */
+
+.dpp-card {
+  width: 100%;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  text-align: left;
+}
+
+.dpp-card__title {
+  margin: 0 0 var(--s3);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dpp-card__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dpp-card__row + .dpp-card__row {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--divider);
+}
+
+.dpp-card__value {
+  min-width: 0;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dpp-card__amount {
+  flex: none;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The hint and the reassurance ─────────────────────────────────────────
+ *
+ * "Do not close this screen" is the single most important sentence on the page
+ * and it used to be set in 12px stamped uppercase inside a bordered box, which
+ * is the treatment this app gives to a caption. It is body text at --ink now,
+ * directly under the headline, where it will actually be read.
+ */
+
+.dpp-hint {
+  margin: 0;
+  max-width: 42ch;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dpp-secure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* ── The still-pending actions ────────────────────────────────────────────
+ *
+ * NEITHER IS --primary. The screen has no primary action: "check again" and
+ * "my registrations" are two equally reasonable things to do, and painting one
+ * red would nominate it — which on a payment screen is a nudge with money
+ * behind it. Both are quiet outlined controls.
+ */
+
+.dpp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  width: 100%;
+}
+
+@media (min-width: 560px) {
+  .dpp-actions {
+    flex-direction: row;
+  }
+}
+
+.dpp-button {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .dpp-button:hover {
+    border-color: var(--muted);
+  }
+}
+
+.dpp-button:active {
+  transform: scale(0.98);
+}
+
+/* ── The error state ──────────────────────────────────────────────────────
+ *
+ * PERMISSION_DENIED only: the caller cannot see this payment group at all, so
+ * polling stops and the screen says so. Every other failure keeps the poll
+ * running, which is why this is a small block rather than a takeover.
+ */
+
+.dpp-error {
+  width: 100%;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  text-align: left;
+}
+
+.dpp-error__line {
+  margin: 0 0 var(--s4);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dpp-error__retry {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpp-arc {
+    animation: none;
+  }
+
+  .dpp-button:active {
+    transform: none;
+  }
+}

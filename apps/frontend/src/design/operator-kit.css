@@ -1,0 +1,911 @@
+/*
+ * operator-kit.css — the shared vocabulary for the COORDINATOR surface.
+ *
+ * PREFIX: `dop-` (dedal / operator). `dcd-` is certificates and `dco-` is
+ * college onboarding; both were already taken. Every class in this file and in
+ * operator-screens.css / operator-scoring.css carries this one prefix.
+ *
+ * WHO THIS IS FOR, and why it does not look like the participant surface.
+ *
+ * A coordinator opens these screens while an event is running: seeding rounds,
+ * typing scores with people waiting, messaging a few hundred inboxes. The
+ * participant app optimises for browsing — generous cards, posters, a poster
+ * gradient behind everything. That is exactly wrong here. This kit optimises
+ * for two things and nothing else:
+ *
+ *   · SCANNING. Rosters and score tables are TABLES: 40px rows, hairline
+ *     dividers, tabular numerals in a right-aligned column that never shifts
+ *     width as a score changes from 9 to 10. No card per person.
+ *   · NOT MAKING MISTAKES. Every state is a WORD. There is no green "done"
+ *     and no amber "in progress", partly because the palette has neither, and
+ *     mostly because a coordinator glancing at a scoreboard under stage
+ *     lighting should not have to remember what a colour means.
+ *
+ * COLOUR. The six tokens, used strictly:
+ *   --ink        every state that is simply true ("Done", "Scored", a name)
+ *   --muted      every state that is merely not-yet ("Not started", counts)
+ *   --primary    two meanings only: LIVE RIGHT NOW, and DESTRUCTIVE. Both are
+ *                things a coordinator must not walk past.
+ *   --accent     the operator's own decisions: a selected round, an assigned
+ *                placement, the confirmed-send action.
+ *   --surface / --surface-card  canvas and table.
+ * There is no third signal colour, so nothing here encodes meaning in hue
+ * alone; the colour only ever amplifies a word that is already on screen.
+ *
+ * ANIMATION. One, `dop-settle`, a 400ms fade of a row's background after a
+ * write lands. It exists to answer "did that save?" and nothing else. No
+ * skeleton pulse (a pulsing bar where a score should be reads as a save in
+ * flight), no press-scale, no card bounce.
+ *
+ * FOCUS. design/focus.css owns focus for the whole participant surface.
+ * Nothing here adds a ring back; `.dop-screen` must be added to that file's
+ * root list.
+ */
+
+.dop-screen {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+
+  /*
+   * A CONTAINER, and why it is not the :root page-pad ladder.
+   *
+   * --page-pad is a media-query ladder: it reads the VIEWPORT and reaches 64px
+   * at 1440px wide. Every coordinator route sits under /backstage, and
+   * ResponsiveShell centres those in a 480px column on desktop — so on a 1920px
+   * laptop the ladder handed a 480px column 64px of padding on each side and
+   * left 352px for a roster. The padding has to answer to the column, not to
+   * the window, so this element is a container and the steps below are
+   * container queries reading it.
+   *
+   * The steps are the same 16 / 24 / 40 / 64 as the root ladder. When the
+   * 480px cap in ResponsiveShell is lifted, these screens widen to 1440px and
+   * pick up the wide gutters with no change here.
+   */
+  container-type: inline-size;
+}
+
+/*
+ * The one screen that must not scroll as a whole: the broadcast composer is
+ * pinned to the bottom edge and the thread scrolls inside it. 100dvh, not
+ * 100vh, so a mobile browser's collapsing toolbar cannot push the composer off
+ * the bottom of the screen.
+ */
+.dop-screen--fixed {
+  height: 100dvh;
+}
+
+/*
+ * The content column. Fluid to 1440px rather than a fixed narrow ribbon: a
+ * roster of 200 people in a 1600px window should use the window. Mobile falls
+ * to one column at the same padding ladder the rest of the app uses.
+ */
+.dop-page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--s4) var(--s4) var(--s8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+}
+
+/* A narrower column for the screens that are a single form or a single thread
+   rather than a table — reading measure still matters for those. */
+.dop-page--narrow {
+  max-width: 760px;
+}
+
+/* The gutter ladder, read from the column rather than the window. Applied to
+   every full-bleed band as well as the content column, so the sticky bar and
+   the composer stay in line with the rows above them. */
+@container (min-width: 640px) {
+  .dop-page,
+  .dop-bar,
+  .dop-thread,
+  .dop-composer {
+    padding-inline: var(--s6);
+  }
+}
+
+@container (min-width: 1024px) {
+  .dop-page,
+  .dop-bar,
+  .dop-thread,
+  .dop-composer {
+    padding-inline: 40px;
+  }
+}
+
+@container (min-width: 1440px) {
+  .dop-page,
+  .dop-bar,
+  .dop-thread,
+  .dop-composer {
+    padding-inline: 64px;
+  }
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────────
+   A label and a hairline. Deliberately NOT a display-size heading: the page
+   already has its name in ScreenHeader, and a second 24px word above every
+   block pushes the content the coordinator came for below the fold. */
+
+.dop-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+.dop-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dop-section__title {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dop-section__meta {
+  flex: 0 0 auto;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dop-note {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dop-note--ink {
+  color: var(--ink);
+}
+
+/* An error the coordinator caused or must act on. --primary on the text only;
+   a filled red panel over a score sheet is a false alarm at a glance. */
+.dop-alert {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* A neutral receipt: "Sent to 84 people." Not a colour, a surface. */
+.dop-receipt {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────
+   44px minimum, one shape, four intents. */
+
+.dop-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dop-btn:hover {
+  background: var(--ink-dim-2);
+}
+
+.dop-btn--primary,
+.dop-btn--primary:hover {
+  border-color: transparent;
+  background: var(--primary);
+  color: #fff;
+}
+
+.dop-btn--accent,
+.dop-btn--accent:hover {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+.dop-btn--quiet,
+.dop-btn--quiet:hover {
+  border-color: transparent;
+  background: none;
+  color: var(--muted);
+}
+
+.dop-btn--block {
+  width: 100%;
+}
+
+.dop-btn--sm {
+  min-height: 32px;
+  padding: 0 var(--s3);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+}
+
+.dop-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* A 44px square for an icon-only control. */
+.dop-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dop-iconbtn:hover {
+  background: var(--ink-dim-4);
+}
+
+.dop-iconbtn--danger {
+  color: var(--primary);
+}
+
+.dop-iconbtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* A row of actions that shares the width. */
+.dop-actions {
+  display: flex;
+  gap: var(--s2);
+}
+
+.dop-actions > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ── Fields ───────────────────────────────────────────────────────────────
+   16px, always: below that iOS Safari zooms the page on focus, and a page that
+   zooms while a coordinator is typing a score is a page that loses the score. */
+
+.dop-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.dop-field__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dop-input,
+.dop-textarea,
+.dop-select {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+}
+
+.dop-textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.dop-input::placeholder,
+.dop-textarea::placeholder {
+  color: var(--muted);
+}
+
+.dop-input:disabled,
+.dop-textarea:disabled,
+.dop-select:disabled {
+  background: var(--ink-dim-4);
+  color: var(--muted);
+}
+
+/* The score box. Tabular so 9 and 10 occupy the same width and the column
+   never jitters as marks go in. */
+.dop-input--num {
+  width: 72px;
+  min-width: 0;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dop-count {
+  align-self: flex-end;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A form grid that collapses to one column on a phone. minmax(0, 1fr), never
+   a bare 1fr — grid items default to min-width:auto and a long value would
+   push the page wider than the viewport. */
+.dop-grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: var(--s3);
+}
+
+/* ── Status, as words ─────────────────────────────────────────────────────
+   Every one of these renders TEXT. The dot and the colour are amplification. */
+
+.dop-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Happening now, and destructive warnings. The only two --primary meanings. */
+.dop-state--live {
+  color: var(--primary);
+}
+
+/* A fact that is settled: "Done", "Scored", "Finalised". */
+.dop-state--done {
+  color: var(--ink);
+}
+
+/* Something the coordinator chose: a selected round, an assigned placement. */
+.dop-state--chosen {
+  color: var(--accent);
+}
+
+.dop-state__dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: currentcolor;
+}
+
+/* A small standing label — a category, a placement, a role. */
+.dop-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--ink);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dop-tag--chosen {
+  background: var(--accent);
+  color: #fff;
+}
+
+.dop-tag--live {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ── Tables and rosters ───────────────────────────────────────────────────
+   One card around the whole list, hairlines between rows. Not one card per
+   person: 200 cards with 16px of padding each is 200 scroll-heights of air. */
+
+.dop-table {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.dop-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  /*
+   * The divider is on the TOP of every row but the first, not the bottom of
+   * every row but the last. Two adjacent boxes each painting their own edge is
+   * how a hairline lands on a fractional pixel and doubles at high DPR.
+   */
+  border-top: 1px solid var(--divider);
+  background: var(--surface-card);
+  text-align: left;
+}
+
+.dop-row:first-child {
+  border-top: 0;
+}
+
+.dop-row--button {
+  width: 100%;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dop-row--button:hover {
+  background: var(--ink-dim-2);
+}
+
+.dop-row__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dop-row__name {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dop-row__meta {
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dop-row__end {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--s2);
+}
+
+/* Selected for a destructive batch. The inset rule plus the word on the row. */
+.dop-row--marked {
+  background: var(--ink-dim-4);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* Chosen by the coordinator — a placement, a target. */
+.dop-row--chosen {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* Numbers in a list line up or they are not worth printing. */
+.dop-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* The rank gutter on a sorted table. Fixed width so the names still align. */
+.dop-rank {
+  flex: 0 0 auto;
+  width: 28px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* A hairline caption dividing one part of a list from another. */
+.dop-divide {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-top: 1px solid var(--divider);
+  background: var(--ink-dim-2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ── Stats ────────────────────────────────────────────────────────────────
+   A number and the word for it. No ring charts: a coordinator reads "84 of
+   120 checked in", not an arc. */
+
+.dop-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: var(--grid-gap);
+}
+
+.dop-stat {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dop-stat__value {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dop-stat__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dop-stat__action {
+  align-self: flex-start;
+  margin-top: var(--s1);
+}
+
+/* A plain proportion bar, used once, under capacity. --ink on --ink-dim-4:
+   the number beside it carries the meaning. */
+.dop-meter {
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  overflow: hidden;
+}
+
+.dop-meter__fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+}
+
+/* ── Tiles ────────────────────────────────────────────────────────────────
+   The action grid. Left-aligned, label first: these are destinations, and a
+   centred icon-over-word tile makes eight of them look identical. */
+
+.dop-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
+  gap: var(--grid-gap);
+}
+
+.dop-tile {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  min-height: 84px;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dop-tile:hover {
+  background: var(--ink-dim-2);
+}
+
+.dop-tile__icon {
+  color: var(--muted);
+}
+
+.dop-tile__label {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+}
+
+.dop-tile__meta {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Segmented pickers ────────────────────────────────────────────────────
+   Rounds, audiences, tiers. A horizontal strip that scrolls on a phone. */
+
+.dop-strip {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding-bottom: var(--s1);
+  scrollbar-width: none;
+}
+
+.dop-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.dop-chip {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 44px;
+  justify-content: center;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dop-chip__meta {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Selected. --accent, because this is the coordinator's own choice of view,
+   not a state of the world. */
+.dop-chip--on {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.dop-chip--on .dop-chip__meta {
+  color: rgb(255 255 255 / 75%);
+}
+
+.dop-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* A single-line variant for the tier / placement pickers inside a row. */
+.dop-chip--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s1);
+  min-height: 36px;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+}
+
+.dop-chipwrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+/* ── Sticky command bar ───────────────────────────────────────────────────
+   The one action that finishes what the page is for. Pinned to the bottom
+   edge so it is reachable without scrolling a 200-row roster back down. */
+
+.dop-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  /* The bar and the canvas are different colours, so the boundary is a real
+     edge; a 1px border keeps it from painting a seam at fractional DPR. */
+  border-top: 1px solid var(--divider);
+  background: var(--surface-card);
+  padding: var(--s3) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+}
+
+.dop-bar__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+/* ── Sheet contents ───────────────────────────────────────────────────────
+   Rendered INSIDE the app's BottomSheet, which owns the scrim, the drag, the
+   focus trap and the exit animation. Nothing here is a second sheet. */
+
+.dop-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.dop-sheet__body {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+/* What will happen, itemised, because none of it can be undone. */
+.dop-sheet__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding-left: var(--s5);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The message being confirmed, shown back so nobody sends a draft blind. */
+.dop-sheet__quote {
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dop-sheet__quote strong {
+  display: block;
+  margin-bottom: var(--s1);
+  font-weight: 700;
+}
+
+/* ── Loading, error, offline ──────────────────────────────────────────────
+   Skeletons match the shape of the thing arriving and DO NOT PULSE: a pulsing
+   bar where a score belongs reads as a save in flight. */
+
+.dop-sk {
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dop-sk--line {
+  height: 20px;
+}
+
+.dop-sk--row {
+  height: 44px;
+}
+
+.dop-sk--block {
+  height: 96px;
+}
+
+.dop-skstack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dop-retry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dop-retry__text {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+/* Offline. States the reason AND that writes are off, in the same sentence. */
+.dop-offline {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── The one animation ────────────────────────────────────────────────────
+   A row that just took a write settles from a wash back to the table colour.
+   Nothing else on this surface moves. Under prefers-reduced-motion the token
+   durations collapse rather than the rule being removed, so nothing that
+   listens for animationend stalls. */
+
+@keyframes dop-settle {
+  from {
+    background-color: var(--ink-dim-4);
+  }
+
+  to {
+    background-color: var(--surface-card);
+  }
+}
+
+.dop-settled {
+  animation: dop-settle 400ms var(--ease-exit) 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dop-settled {
+    animation-duration: 1ms;
+  }
+}

@@ -1,0 +1,484 @@
+/*
+ * for-colleges.css — the public /for-colleges landing page, and the wordmark
+ * header the public college pages share.
+ *
+ * THIS IS THE ONE PARTICIPANT SURFACE THAT IS A PITCH, NOT A TOOL. Everywhere
+ * else in this app a screen is furniture around a task and motion is limited to
+ * the transition that gets you there. Here the reader has never heard of Dedal,
+ * arrives cold from a search or a flyer, and is deciding whether the platform is
+ * real. So the page is built as a short deck: each section is about one viewport
+ * on a phone, and scrolling is the thing that advances it.
+ *
+ * ALL THE MOTION IS CSS SCROLL-DRIVEN — `animation-timeline: scroll()` and
+ * `view()`. No GSAP, no ScrollTrigger, no scroll listener: those run script on
+ * every frame of a scroll on a marketing page that is most often opened on a
+ * mid-range Android phone over college wifi. The two @supports blocks mean a
+ * browser without scroll-driven animations (Safari and Firefox at the time of
+ * writing) gets the page in its FINAL state — every card visible, the wash off —
+ * rather than a blank page. That is the correct failure: the animation is
+ * decoration, the copy is the product.
+ *
+ * Tokens only, from dedal-tokens.css. Six colours; --primary is the signature
+ * and is spent on exactly two things here, the CTA and the closing band.
+ * --gold/--verified are certificates-only and appear nowhere below.
+ *
+ * PREFIX NOTE: the shared PublicWordmarkHeader is styled here too, under
+ * `.dfc-hdr`, rather than in a sheet of its own. It is one 56px bar with two
+ * rules in it, and the pages it sits on are the pages this file already serves.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The shared public header
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfc-hdr {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--header-h);
+  padding-inline: var(--page-pad);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--divider);
+  font-family: var(--font);
+}
+
+/*
+ * The wordmark is the whole header and it is a link home, so the tap target is
+ * the mark itself plus enough padding to clear 44px on the cross axis.
+ */
+.dfc-hdr__home {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--s3) var(--s2);
+  color: var(--ink);
+  text-decoration: none;
+  transition: opacity var(--d-quick) var(--ease-enter);
+}
+
+.dfc-hdr__home:active {
+  opacity: 0.6;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The page
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfc-screen {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * THE BACKGROUND SHIFT. A fixed sheet behind everything, faded in against the
+ * document's own scroll progress over the first viewport. Fixed rather than
+ * tall-and-absolute so there is one compositor layer whatever the page height,
+ * and `pointer-events: none` because it covers the viewport.
+ *
+ * It is a separate element rather than an animated `background` on .dfc-screen
+ * because animating opacity is a compositor property and animating a gradient
+ * is a repaint of the entire page on every frame.
+ */
+.dfc-wash {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent) 3%, transparent) 100%
+  );
+}
+
+@supports (animation-timeline: scroll()) {
+  .dfc-wash {
+    animation: dfc-wash-in linear both;
+    animation-timeline: scroll(root block);
+    /* Fully arrived one viewport down — i.e. as the hero leaves. */
+    animation-range: 0 100vh;
+  }
+}
+
+@keyframes dfc-wash-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Everything real sits above the wash. */
+.dfc-main {
+  position: relative;
+  z-index: 1;
+}
+
+/*
+ * The measure for the sections that are TEXT. The hero and the closing band are
+ * a single column of reading matter and want the 800px cap; the features and the
+ * stats are a grid and a row of figures, and capping those at 800px on a 1600px
+ * window is how a desktop layout ends up as a narrow ribbon with a field of
+ * empty pixels on each side. Those get --dfc-wide instead.
+ */
+.dfc-col {
+  width: 100%;
+  max-width: 800px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+.dfc-col--wide {
+  max-width: 1400px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Hero
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfc-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* The header is sticky and part of the same scroll, so the hero is a viewport
+     MINUS the header — otherwise the chevron sits one header-height below the
+     fold, which is exactly where an affordance that means "there is more" must
+     not be. */
+  min-height: calc(100dvh - var(--header-h));
+  padding: var(--s8) 0 calc(var(--s8) + var(--s7));
+  text-align: center;
+}
+
+.dfc-hero__title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s6);
+  margin: 0;
+}
+
+/*
+ * DedalWordmark writes its own width/height attributes from its `size` prop;
+ * this overrides them so the mark is fluid down to a 320px phone without the
+ * component needing a breakpoint of its own. The SVG carries its own aria-label,
+ * so the accessible name of the h1 is "dedal Your way through the fest".
+ */
+.dfc-hero__mark {
+  display: block;
+  width: min(62vw, 340px);
+  height: auto;
+}
+
+.dfc-hero__tagline {
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dfc-hero__lede {
+  max-width: 34ch;
+  margin: var(--s4) 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The one action, in both places it appears
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfc-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  margin-top: var(--s7);
+  padding-inline: var(--s6);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--d-instant) var(--ease-exit),
+    opacity var(--d-quick) var(--ease-enter);
+}
+
+.dfc-cta:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* Inverted, for the --primary band where a red button on red is invisible. */
+.dfc-cta--onband {
+  background: var(--surface-card);
+  color: var(--primary);
+}
+
+@media (min-width: 640px) {
+  .dfc-cta {
+    width: 240px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The chevron
+   ─────────────────────────────────────────────────────────────────────────
+
+   Bottom of the first viewport, and its whole job is to say the page does not
+   end here. Decorative: it is aria-hidden and there is nothing to click.
+*/
+
+.dfc-scrollcue {
+  position: absolute;
+  bottom: var(--s6);
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  color: var(--muted);
+  animation: dfc-nudge 1800ms var(--ease-enter) infinite;
+}
+
+@keyframes dfc-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sections
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfc-section {
+  padding-block: var(--s8);
+}
+
+@media (min-width: 640px) {
+  .dfc-section {
+    padding-block: calc(var(--s8) * 1.5);
+  }
+}
+
+.dfc-section__heading {
+  margin: 0 0 var(--s6);
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Features
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dfc-features {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+}
+
+@media (min-width: 900px) {
+  .dfc-features {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.dfc-feature {
+  box-sizing: border-box;
+  padding: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+@supports (animation-timeline: view()) {
+  .dfc-feature {
+    /* No stagger. Four cards on one row of a desktop grid entering one after
+       another reads as a loading spinner, not as an effect. */
+    animation: dfc-appear 200ms var(--ease-enter) both;
+    animation-timeline: view();
+    animation-range: entry 10% entry 60%;
+  }
+}
+
+@keyframes dfc-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dfc-feature__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+}
+
+.dfc-feature__title {
+  margin: var(--s4) 0 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dfc-feature__body {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Stats
+   ─────────────────────────────────────────────────────────────────────────
+
+   Three figures, one row, at every width — three columns is narrow enough to
+   hold on a 320px phone and wrapping one figure onto its own line would break
+   the comparison the row exists to make.
+*/
+
+.dfc-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  text-align: center;
+}
+
+.dfc-stat__value {
+  display: block;
+  font-size: 32px;
+  line-height: 38px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--primary);
+}
+
+.dfc-stat__label {
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The closing band
+   ─────────────────────────────────────────────────────────────────────────
+
+   Full window width, deliberately. It is the end of the deck and the only
+   place on the page besides the CTA where --primary is spent.
+*/
+
+.dfc-band {
+  padding-block: calc(var(--s8) * 1.5);
+  background: var(--primary);
+  text-align: center;
+}
+
+.dfc-band__heading {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--surface-card);
+}
+
+.dfc-band .dfc-cta {
+  margin-top: var(--s6);
+}
+
+.dfc-foot {
+  padding: var(--s6) var(--page-pad) calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  text-align: center;
+  background: var(--surface);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Reduced motion
+   ─────────────────────────────────────────────────────────────────────────
+
+   Everything lands in its final state at once: the wash off, the cards visible,
+   the chevron still, the figures at their final values (the count-up is stopped
+   in the screen itself, which reads the same media query).
+*/
+
+@media (prefers-reduced-motion: reduce) {
+  .dfc-wash {
+    animation: none;
+    opacity: 0;
+  }
+
+  .dfc-feature {
+    animation: none;
+    opacity: 1;
+  }
+
+  .dfc-scrollcue {
+    animation: none;
+    opacity: 0.7;
+  }
+
+  .dfc-cta:active {
+    transform: none;
+  }
+}
+
+/*
+ * The figure's own <p>. The number animates and is aria-hidden while it does;
+ * the final value is read out once, from the label, via this.
+ */
+.dfc-stat {
+  margin: 0;
+}
+
+.dfc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

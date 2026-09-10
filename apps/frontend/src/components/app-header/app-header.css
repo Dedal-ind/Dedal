@@ -1,0 +1,517 @@
+/*
+ * app-header.css — the participant header and the sheets it opens.
+ *
+ * Prefixed `dhd-` (header) and `dsh-` (sheet) for the same reason discover.css
+ * is prefixed `dsc-`: this loads alongside a Tailwind @theme belonging to the
+ * older design system, and an unprefixed `.header` or `.sheet` would sooner or
+ * later be won or lost by a utility class nobody was thinking about.
+ *
+ * Tokens only, from dedal-tokens.css.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Header
+   ─────────────────────────────────────────────────────────────────────────
+
+   NO BLUR AND NO SHADOW — a 1px border and nothing else. And it does not hide
+   on scroll, at any scroll direction, ever: the pass shortcut lives in it, and
+   the moment that matters most for the pass is standing at a gate with a queue
+   behind you. A header that has to be scrolled back into view is a header that
+   is missing exactly when it is needed.
+*/
+
+.dhd-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+  font-family: var(--font);
+  color: var(--ink);
+}
+
+/*
+ * NO RULE ACROSS A FULL-BLEED HERO.
+ *
+ * A detail page opens with a poster running edge to edge. The header's
+ * --divider bottom rule drew a hard pale line straight across the top of that
+ * image — a seam between two things meant to read as one surface.
+ *
+ * Only the rule goes. The background stays --surface, so the header remains
+ * legible whatever the poster happens to be; a transparent header over an
+ * arbitrary photograph is a contrast problem you cannot solve from CSS,
+ * because you do not know what the image is. Losing the line is what was
+ * actually wrong.
+ *
+ * `border-bottom-color: transparent`, not `border: 0`, so the 1px of layout is
+ * still there and the hero does not shift by a pixel between page types.
+ *
+ * The selector reaches the header through its PARENT, because the header and
+ * the screen are siblings inside ParticipantChrome — a descendant selector from
+ * .ddp-screen would never match it.
+ */
+.min-h-screen:has(.ddp-hero) .dhd-header,
+.min-h-screen:has(.ded-hero) .dhd-header {
+  /*
+   * WIDTH ZERO, NOT JUST A TRANSPARENT COLOUR.
+   *
+   * Making the colour transparent removed the rule but LEFT ITS 0.8px of
+   * layout, so the header ended at y=56.8 — a fractional boundary. At a device
+   * pixel ratio of 3.5 that lands between physical pixels, and the rounding
+   * paints a hairline of the header's --surface background across the top of
+   * the hero. The line was reported as "the nav border is back"; it was not the
+   * border, it was the gap the border's width had left behind.
+   *
+   * With the width at zero the header ends on a whole pixel and there is
+   * nothing to round. The 1px of layout is not worth keeping: the hero below
+   * measures from the header's box either way, and the seam is what people
+   * actually see.
+   */
+  border-bottom-width: 0;
+}
+
+
+.dhd-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: var(--header-h);
+  width: 100%;
+  /* The SAME two variables the feed uses, so the wordmark and the first card
+     share a left edge at every width. */
+  max-width: var(--col-max, none);
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* The wordmark takes the slack, so the three controls stay pinned right at any
+   width without any of them being given a width of its own. */
+.dhd-brand {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    max-width var(--d-move) var(--ease-enter);
+  max-width: 100%;
+}
+
+.dhd-brand--yielded {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dhd-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  flex: 0 0 auto;
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    max-width var(--d-move) var(--ease-enter);
+  max-width: 100%;
+}
+
+/* Search pushes the other elements aside rather than dropping to a second
+   line. A second line changes the height of a sticky header, which moves every
+   card on the page by 56px the instant someone taps a magnifying glass. */
+.dhd-actions--yielded {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dhd-iconbutton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* The 44px minimum touch target, set once here so no individual control has
+     to remember it and none of them can be 32px because it looked tidier. */
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+.dhd-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  object-fit: cover;
+  background: var(--ink-dim-4);
+  display: block;
+}
+
+.dhd-avatar--initial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--body-s-size);
+  line-height: 1;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* The count badge on the avatar, for active registrations. */
+.dhd-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding-inline: 4px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 600;
+  text-align: center;
+  /* A ring in the surface colour so the badge reads as separate from the
+     avatar underneath it rather than as part of the photograph. */
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* ── Search ───────────────────────────────────────────────────────────────
+
+   THE ONE LAYOUT ANIMATION IN THE APP. Everything else is transform and
+   opacity; this transitions `width`, which the compositor cannot do on its own
+   thread. It is here because an expanding search field is the behaviour that
+   was asked for, and the honest way to build that is to animate the width
+   rather than fake it with a scaleX that would stretch the placeholder as it
+   goes. It runs once per tap, over 240ms, on one element in the header — not
+   per frame of a scroll — so the cost is paid where nothing competes with it.
+*/
+
+.dhd-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 0 1 auto;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  transition: width var(--d-move) var(--ease-enter);
+}
+
+.dhd-search--open {
+  width: 100%;
+}
+
+/* Closing is faster than opening, like everything else. */
+.dhd-search:not(.dhd-search--open) {
+  transition-duration: var(--d-exit);
+  transition-timing-function: var(--ease-exit);
+}
+
+.dhd-search__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  padding-inline: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+}
+
+.dhd-search__input::placeholder {
+  color: var(--muted);
+}
+
+.dhd-search__cancel {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding-inline: var(--s2);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sheets
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dsh-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.dsh-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  opacity: 0;
+  transition: opacity var(--d-exit) var(--ease-exit);
+}
+
+.dsh-scrim--open {
+  opacity: 1;
+  transition: opacity var(--d-move) var(--ease-enter);
+}
+
+.dsh-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin-inline: auto;
+  /* Wide screens get a centred sheet rather than a 1400px-wide strip glued to
+     the bottom edge. */
+  max-width: 560px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-card);
+  /* 20px — the sheet radius. Top corners only: the bottom two are off screen. */
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  box-shadow: var(--e2);
+  /* Starts fully below the fold and slides up. Transform only. */
+  transform: translate3d(0, 100%, 0);
+  transition: transform var(--d-exit) var(--ease-exit);
+  outline: none;
+}
+
+.dsh-sheet--open {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--d-move) var(--ease-enter);
+}
+
+/* The grab area. Generous — 28px of height for a 4px bar, because the bar is
+   the affordance and the target is the whole strip. */
+.dsh-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  flex: 0 0 auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.dsh-grip__bar {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--divider);
+}
+
+/*
+ * SHEET PADDING: --s6, not --s4.
+ *
+ * 16px is the gutter of a full-page list, where the screen edge IS the
+ * container. A sheet is a card lifted off the page, and at 16px its content
+ * ran hard against its own rounded corner — the radius visibly cut the corner
+ * off the first line. 24px is the smallest step that clears the corner and
+ * lets the panel read as a surface with margins rather than a cropped page.
+ * Applied to the title and the body together so the two stay in one column.
+ */
+.dsh-title {
+  margin: 0;
+  padding: 0 var(--s6) var(--s4);
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  flex: 0 0 auto;
+}
+
+.dsh-body {
+  padding: 0 var(--s6) calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── Sheet rows (the account menu) ───────────────────────────────────────── */
+
+.dsh-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dsh-row:last-child {
+  border-bottom: 0;
+}
+
+.dsh-row__label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dsh-row__count {
+  flex: 0 0 auto;
+  min-width: 20px;
+  height: 20px;
+  padding-inline: 6px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-size: var(--micro-size);
+  line-height: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.dsh-row--danger {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* ── Sheet empty state ──────────────────────────────────────────────────── */
+
+.dsh-empty {
+  display: grid;
+  gap: var(--s4);
+  justify-items: start;
+  padding-block: var(--s5) var(--s6);
+}
+
+.dsh-empty__text {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 500;
+  color: var(--ink);
+  max-width: 40ch;
+}
+
+.dsh-button {
+  min-height: 44px;
+  padding-inline: var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Interaction states — the same five as the rest of the system
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (hover: hover) {
+  .dhd-iconbutton:hover,
+  .dhd-brand:hover,
+  .dsh-row:hover,
+  .dhd-search__cancel:hover,
+  .dsh-button:hover {
+    background-image: linear-gradient(var(--ink-dim-2), var(--ink-dim-2));
+  }
+}
+
+.dhd-iconbutton:active,
+.dsh-row:active,
+.dsh-button:active {
+  transform: scale(0.97);
+}
+
+.dhd-iconbutton:disabled,
+.dsh-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Reduced motion: the sheet still appears and still leaves, it just does not
+   travel. Durations are already collapsed by dedal-tokens.css; pinning the
+   transform here means a sheet can never be caught mid-slide. */
+@media (prefers-reduced-motion: reduce) {
+  .dsh-sheet,
+  .dsh-sheet--open {
+    transform: none;
+  }
+}
+
+/* ── The pass, inside its sheet ──────────────────────────────────────────── */
+
+.dps {
+  display: grid;
+  justify-items: center;
+  gap: var(--s2);
+  padding-block: var(--s2) var(--s4);
+}
+
+/* White plate under the code regardless of theme. A QR scanner needs the
+   quiet zone and the contrast the spec assumes; tinting it to match the
+   surface is the commonest way a pass stops scanning. */
+.dps__code {
+  background: #ffffff;
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  line-height: 0;
+}
+
+.dps__fest {
+  margin: var(--s2) 0 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-align: center;
+}
+
+.dps__host {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+}
+
+.dsh-button--quiet {
+  margin-top: var(--s2);
+  background: var(--surface-card);
+  color: var(--ink);
+  border: 1px solid var(--divider);
+}

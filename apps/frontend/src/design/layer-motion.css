@@ -1,0 +1,144 @@
+/*
+ * layer-motion.css — the enter AND exit for every transient layer.
+ *
+ * WHY THIS FILE EXISTS. Six layers in this app were built with a conditional
+ * render and no exit: they appeared with intent and disappeared as a hard cut.
+ * Three of them (the confirm dialog, the identity menu, the avatar picker) are
+ * older Tailwind-utility screens with no stylesheet of their own to put a
+ * transition in, and spelling a cubic-bezier out as a Tailwind arbitrary value
+ * six times is how the durations drift apart. So the motion lives here, in the
+ * design layer, in three named shapes, and the components carry a class.
+ *
+ * THE RULE, applied identically to all three:
+ *
+ *   · Same distance and same shape both ways. An exit that travels a different
+ *     path from the entrance reads as a different object leaving.
+ *   · Enter --d-move (240ms) on --ease-enter, exit --d-exit (180ms) on
+ *     --ease-exit. Something arriving deserves more time than something
+ *     leaving, and it should decelerate into place and accelerate out.
+ *   · THE CLOSED STATE CARRIES THE EXIT TRANSITION and the --in modifier
+ *     overrides it for the way in. Declaring it in that order is what makes
+ *     the exit the default rather than the afterthought.
+ *   · transform and opacity only. Nothing here relayouts.
+ *
+ * Pair with useExitTransition(), which keeps the node in the tree for --d-exit
+ * after the close so these rules have something to run on.
+ */
+
+/* ── A scrim, or anything that only fades ────────────────────────────────── */
+
+.dlm-fade {
+  opacity: 0;
+  transition: opacity var(--d-exit) var(--ease-exit);
+}
+
+.dlm-fade--in {
+  opacity: 1;
+  transition: opacity var(--d-move) var(--ease-enter);
+}
+
+/* ── A centred dialog: fades and settles the last 2% of its scale ────────── */
+
+.dlm-pop {
+  opacity: 0;
+  transform: scale(0.97);
+  transition:
+    opacity var(--d-exit) var(--ease-exit),
+    transform var(--d-exit) var(--ease-exit);
+}
+
+.dlm-pop--in {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity var(--d-move) var(--ease-enter),
+    transform var(--d-move) var(--ease-enter);
+}
+
+/*
+ * The confirm dialog is centred with `top: 50%; -translate-y-1/2` from a
+ * Tailwind utility, so its resting transform is not identity and a bare
+ * `scale()` here would wipe the centring out. It gets its own pair that keeps
+ * the -50% and scales around it.
+ */
+.dlm-pop-centred {
+  opacity: 0;
+  transform: translateY(-50%) scale(0.97);
+  transition:
+    opacity var(--d-exit) var(--ease-exit),
+    transform var(--d-exit) var(--ease-exit);
+}
+
+.dlm-pop-centred--in {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+  transition:
+    opacity var(--d-move) var(--ease-enter),
+    transform var(--d-move) var(--ease-enter);
+}
+
+/* ── A menu or listbox dropping from the control above it ────────────────── */
+
+/*
+ * 4px, and scaled from the top edge. A dropdown that grows from its own centre
+ * appears to come from nowhere; anchoring the origin to the control it belongs
+ * to is what makes it read as having come OUT of that control.
+ */
+.dlm-drop {
+  opacity: 0;
+  transform: translate3d(0, -4px, 0) scale(0.98);
+  transform-origin: top center;
+  transition:
+    opacity var(--d-exit) var(--ease-exit),
+    transform var(--d-exit) var(--ease-exit);
+}
+
+.dlm-drop--in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    opacity var(--d-move) var(--ease-enter),
+    transform var(--d-move) var(--ease-enter);
+}
+
+.dlm-drop--right {
+  transform-origin: top right;
+}
+
+/* ── A bottom sheet ──────────────────────────────────────────────────────── */
+
+.dlm-sheet {
+  transform: translate3d(0, 100%, 0);
+  transition: transform var(--d-exit) var(--ease-exit);
+}
+
+.dlm-sheet--in {
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--d-move) var(--ease-enter);
+}
+
+/*
+ * REDUCED MOTION. The durations are already collapsed to ~0 by
+ * dedal-tokens.css, but that alone is not enough: an element interrupted
+ * partway through a transform the instant the preference flips would keep the
+ * value it had reached, because nothing would ever animate it the rest of the
+ * way. Pinning both ends outright means every layer here is either fully open
+ * or fully closed, and never stranded mid-flight. Opacity is left alone — a
+ * cross-fade is not the vestibular problem this preference is about, and
+ * removing it would make layers appear with a bang.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dlm-pop,
+  .dlm-pop--in,
+  .dlm-drop,
+  .dlm-drop--in,
+  .dlm-sheet,
+  .dlm-sheet--in {
+    transform: none;
+  }
+
+  .dlm-pop-centred,
+  .dlm-pop-centred--in {
+    transform: translateY(-50%);
+  }
+}

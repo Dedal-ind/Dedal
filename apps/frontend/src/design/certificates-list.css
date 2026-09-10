@@ -1,0 +1,513 @@
+/*
+ * certificates-list.css — the /my-certificates grid.
+ *
+ * Prefixed `dcl-` for the same reason every other stylesheet here is: this
+ * loads alongside the Tailwind @theme belonging to the older design system, and
+ * an unprefixed `.grid` or `.tile` would sooner or later be won or lost by a
+ * utility class nobody was thinking about.
+ *
+ * Tokens only, from dedal-tokens.css. Two colours outside the six appear here —
+ * --gold and --gold-wash — and ONLY on a winner. --verified is not in this
+ * file at any strength: green is the public verification page's answer to "is
+ * this genuine", and borrowing it for a list the owner is already signed into
+ * would spend the signal where no stranger is reading it.
+ *
+ * MEDIA QUERIES, NOT CONTAINER QUERIES. detail-page.css and registration.css
+ * both open a container because their content sits inside a column that can be
+ * narrowed by furniture beside it. This screen has no sidebar and no second
+ * pane — the grid is always the viewport minus the page padding, so the
+ * viewport is the honest thing to measure.
+ */
+
+.dcl-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * FLUID TO 1440, THEN FIXED.
+ *
+ * This was capped at 960px on the argument that a personal archive is not a
+ * browsing feed. In use that was simply wrong: on a 1568px window it left ~600px
+ * of empty page on either side and pushed eight certificates onto four rows of
+ * scrolling, which is the opposite of what a trophy case is for — you want to
+ * see what you have won at a glance, not page through it.
+ *
+ * 1440 is the standard stop: layouts are conventionally fluid up to it and fixed
+ * above, because past that a grid stops looking generous and starts looking
+ * stretched. Between 960 and 1440 the extra width buys a whole additional
+ * column, which is real content, not padding.
+ */
+.dcl-col {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+/* Clears the floating ScreenHeader, which is positioned over the content. */
+.dcl-head {
+  /*
+   * NO SECOND HEADER CLEARANCE. `.dhd-header` is `position: sticky`, which
+   * means it still occupies flow space — the content after it already starts
+   * below it. Adding `var(--header-h)` here reserved the header's height a
+   * second time and left 56px of empty page above the title. (A `fixed` header
+   * would need it; a sticky one does not.)
+   */
+  padding-top: calc(var(--s5) + env(safe-area-inset-top, 0px));
+}
+
+.dcl-title {
+  margin: 0;
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Offline notice
+   ─────────────────────────────────────────────────────────────────────────
+
+   Shown ONLY when there are already certificates in state. Offline with an
+   empty list is an error state, not a caveat, and the two must not both appear.
+*/
+
+.dcl-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-top: var(--s4);
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dcl-notice svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Fest sections
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dcl-section {
+  margin-top: var(--s7);
+}
+
+.dcl-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-bottom: var(--s3);
+  margin-bottom: var(--s4);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dcl-section__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dcl-section__dates {
+  flex: none;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The grid
+   ─────────────────────────────────────────────────────────────────────────
+
+   Mobile-first: two columns, and a winner takes both. A certificate you WON is
+   the thing you open this screen to look at, and giving it the full width is
+   the cheapest way to say so without inventing a second card design.
+
+   A list, semantically — `list-style: none` plus an explicit role in the JSX,
+   because Safari drops list semantics from a <ul> whose markers are removed.
+*/
+
+.dcl-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /*
+   * DENSE, AND IT HAS TO BE.
+   *
+   * Winners span two columns. In a three-column row that leaves a one-column
+   * hole beside every winner, and the sort deliberately puts all the winners
+   * first — so a student with three wins and two participations gets three
+   * holes stacked down the right-hand side before any narrow tile appears. It
+   * read as broken layout, not as emphasis.
+   *
+   * `dense` backfills those holes with the next tile that fits. The cost is
+   * that a narrow tile can appear visually before a wider one it follows in
+   * the DOM. That is the usual reason to avoid dense — it desynchronises
+   * reading order from visual order for anyone tabbing or using a screen
+   * reader. Here the list is a trophy case, not a sequence: the tiles carry no
+   * ordinal meaning, nothing refers to "the third one", and each is a complete
+   * labelled destination on its own. Nothing is lost by reading them in a
+   * different order from seeing them, and a wall of gaps is lost by not.
+   */
+  grid-auto-flow: dense;
+}
+
+.dcl-grid__cell {
+  display: flex;
+  min-width: 0;
+}
+
+.dcl-grid__cell--wide {
+  grid-column: span 2;
+}
+
+/*
+ * INTRINSIC COLUMNS, NOT A COUNT PER BREAKPOINT.
+ *
+ * `auto-fill` with a 264px floor lets the track count follow the window instead
+ * of a hand-picked number: two columns around 600px, three by 900, four by 1200,
+ * five at the 1440 cap. That is the well-worn pattern precisely because it needs
+ * no breakpoint per size and cannot leave a half-empty row of over-wide cards.
+ *
+ * 264px is the floor because a tile has to hold an event name of real length
+ * ("Group Dance Championship") on two lines without hyphenating, and the badge
+ * plus the issue date plus the QR glyph need a line of their own under it.
+ *
+ * Winners still span two tracks, so they stay visibly larger at every width
+ * while the dense flow keeps narrow tiles packed into the gaps beside them.
+ */
+@media (min-width: 768px) {
+  .dcl-grid {
+    grid-template-columns: repeat(auto-fill, minmax(264px, 1fr));
+  }
+
+  .dcl-grid__cell--wide {
+    grid-column: span 2;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The tile
+   ─────────────────────────────────────────────────────────────────────────
+
+   One <button>, not a card containing a link. There is exactly one destination
+   per certificate, so anything smaller than the whole tile is a smaller target
+   for no gain.
+*/
+
+.dcl-tile {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 148px;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--e0);
+  transition:
+    transform var(--d-instant) var(--ease-exit),
+    box-shadow var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dcl-tile:hover {
+    box-shadow: var(--e1);
+    border-color: var(--muted);
+  }
+}
+
+.dcl-tile:active {
+  transform: scale(0.97);
+}
+
+/*
+ * NO LOCAL FOCUS RING, DELIBERATELY.
+ *
+ * A grid of near-identical tiles is the strongest case in the app for a visible
+ * focus indicator, and this file originally stated one. It was removed: the
+ * participant app's focus policy lives in exactly one file (design/focus.css),
+ * which suppresses the ring everywhere, documents the WCAG 2.4.7 cost of doing
+ * so in full, and is reversible in a single block. A screen that opts itself
+ * back in is how the six scattered, divergent focus rules that file was written
+ * to replace came to exist in the first place. If the tradeoff is wrong — and
+ * on this screen it may well be — it should be corrected for the whole app in
+ * focus.css, not quietly here.
+ */
+
+/* WINNER. The gold wash is a gradient rather than a flat fill so the tile has a
+   direction — it lifts towards the badge, which is the line it is making. */
+.dcl-tile--winner {
+  border-color: rgb(184 134 11 / 24%);
+  background:
+    linear-gradient(135deg, var(--gold-wash), transparent 70%),
+    var(--surface-card);
+}
+
+/* STAFF. --accent held right back: this is a role, not an achievement, and at
+   any more strength it competes with the winner beside it. */
+.dcl-tile--staff {
+  background:
+    linear-gradient(135deg, rgb(123 97 255 / 5%), transparent 70%),
+    var(--surface-card);
+}
+
+/* ── The badge row ────────────────────────────────────────────────────── */
+
+.dcl-tile__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  align-self: flex-start;
+  max-width: 100%;
+  padding: var(--s1) var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+.dcl-tile__badge svg {
+  flex: none;
+}
+
+.dcl-tile--winner .dcl-tile__badge {
+  background: var(--gold-wash);
+  color: var(--gold);
+}
+
+.dcl-tile--staff .dcl-tile__badge {
+  background: rgb(123 97 255 / 10%);
+  color: var(--accent);
+}
+
+/* ── The body ─────────────────────────────────────────────────────────── */
+
+.dcl-tile__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  /* Two lines, then ellipsis. Event names run long and a tile that grows to
+     four lines drags every tile in its row with it. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* A winner tile is wider, so its name can carry the display size the tone
+   deserves without the clamp doing any more work. */
+.dcl-tile--winner .dcl-tile__name {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+}
+
+.dcl-tile__fest {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dcl-tile__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  /* Pins the date row to the bottom edge whatever the name above it did, so a
+     row of tiles has one baseline across it. */
+  margin-top: auto;
+  padding-top: var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dcl-tile__verifiable {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+/* ── The shimmer ───────────────────────────────────────────────────────────
+ *
+ * ONE 400ms sweep across a winner's gold wash, on first paint, and never again.
+ *
+ * It is an ::after that animates its own transform, with no iteration count and
+ * `forwards`, so it finishes parked off the right edge and stays there. Nothing
+ * in the JSX toggles a class to start it and nothing observes the viewport:
+ * a CSS animation runs when the element is inserted, so a re-render that keeps
+ * the same element re-runs nothing, and scrolling is not an input at all. The
+ * one thing that WOULD replay it is React remounting the tile, which is why the
+ * tiles are keyed by certificate id.
+ */
+.dcl-tile--winner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgb(184 134 11 / 18%) 50%,
+    transparent 65%
+  );
+  transform: translateX(-100%);
+  animation: dcl-shimmer 400ms var(--ease-enter) 1 forwards;
+}
+
+@keyframes dcl-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/*
+ * Reduced motion removes the sweep outright rather than shortening it. The
+ * tokens file collapses --d-* durations to ~0 so that transitionend listeners
+ * still fire; nothing listens for this one, and a 0.001ms flash of a light band
+ * across a card is exactly the kind of thing the preference is set to avoid.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dcl-tile--winner::after {
+    display: none;
+  }
+
+  .dcl-tile:active {
+    transform: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Skeletons
+   ─────────────────────────────────────────────────────────────────────────
+
+   The same grid, the same tile footprint, one wide cell first — so the layout
+   does not jump when the real thing lands. Generic bars would have to be
+   replaced by tiles of a different height, which is the jump.
+*/
+
+.dcl-skeleton {
+  min-height: 148px;
+  border-radius: var(--r-card);
+  border: 1px solid var(--divider);
+  background: var(--ink-dim-4);
+  animation: dcl-pulse 1.2s var(--ease-enter) infinite;
+}
+
+@keyframes dcl-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcl-skeleton {
+    animation: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Empty and error
+   ─────────────────────────────────────────────────────────────────────────
+
+   Left-aligned, not centred. A centred illustration block asks to be read as an
+   event; "you have not earned any certificates yet" is a fact about an empty
+   list, and it belongs on the same left margin as the list would have been.
+*/
+
+.dcl-state {
+  max-width: 42ch;
+  margin-top: var(--s7);
+}
+
+.dcl-state__title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dcl-state__body {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dcl-state__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  margin-top: var(--s5);
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dcl-state__action:active {
+  transform: scale(0.97);
+}
+
+/* An inline retry inside the stale-list note. A link, not a button shape: the
+   note is a sentence and the action is a word in it. */
+.dcl-notice__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+

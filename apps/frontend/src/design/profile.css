@@ -1,0 +1,146 @@
+/*
+ * profile.css — the READ view of a participant's profile. `dsp-` prefix.
+ *
+ * WHY A SECOND FILE. /profile borrows settings.css for its screen, column,
+ * identity block and stats, and it will keep doing that — those four shapes are
+ * genuinely shared. What is new here is a read-only description list, which
+ * Settings does not have and must not inherit. Adding `dst-` rules for it would
+ * put new selectors into a stylesheet six other surfaces read; a prefix of its
+ * own means nothing on this page can reach anything on that one.
+ *
+ * Tokens only: --ink, --muted, --divider, the --s* ladder and the type scale.
+ * No card, no border, no shadow — this is data being stated, not presented.
+ */
+
+/* The details block sits under the stats strip with the same rhythm a
+   `.dst-section` gets, so the two stacks read as one column. */
+.dsp-details {
+  margin-block-start: var(--s7);
+}
+
+.dsp-group + .dsp-group {
+  margin-block-start: var(--s6);
+}
+
+/*
+ * TWO GROUPS ACROSS FROM 1024px, matching the two-across sections on /settings
+ * — the two screens share a column and must not disagree about what a desktop
+ * looks like. /profile is a read-only list of short facts, so a single 840px
+ * stack of them was the same ribbon /settings was, only shorter.
+ *
+ * The margin between stacked groups is dropped in favour of the grid's row gap,
+ * or the first row of the pair would sit lower than the second.
+ */
+@media (min-width: 1024px) {
+  .dsp-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s6) var(--s7);
+    align-items: start;
+  }
+
+  .dsp-group + .dsp-group {
+    margin-block-start: 0;
+  }
+}
+
+/*
+ * The group label. Quiet on purpose: it is a signpost between two short runs of
+ * rows, not a heading anybody navigates by, and at --ink it would outweigh the
+ * values underneath it.
+ */
+.dsp-group__label {
+  margin: 0 0 var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.dsp-list {
+  margin: 0;
+}
+
+/*
+ * One row = one <dt>/<dd> pair, laid out by the grid rather than by floats, so
+ * the key column is the same width down the whole list without either side
+ * being given a fixed px value.
+ *
+ * KEY OVER VALUE ON A PHONE, side by side from 480px. A "Register number" label
+ * beside a 12-character USN inside 288px of usable width leaves neither of them
+ * a whole line, and the pair wraps into four ragged fragments. Stacked, both
+ * get the full measure and the hairline still separates one fact from the next.
+ */
+.dsp-row {
+  display: grid;
+  gap: 2px;
+  padding-block: var(--s3);
+  border-block-start: 1px solid var(--divider);
+}
+
+.dsp-row:first-of-type {
+  border-block-start: 0;
+}
+
+@media (min-width: 480px) {
+  .dsp-row {
+    grid-template-columns: minmax(0, 8rem) minmax(0, 1fr);
+    align-items: baseline;
+    gap: var(--s4);
+  }
+}
+
+.dsp-key {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dsp-value {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  /* A register number or an institutional address has no spaces to break at. */
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 480px) {
+  .dsp-value {
+    text-align: end;
+  }
+}
+
+/*
+ * The edit control, in ScreenHeader's action slot.
+ *
+ * It is a labelled pill rather than the bare icon button ScreenHeaderAction
+ * draws, because that component renders a Material Symbols ligature and this
+ * surface is inline-SVG only. Same 44px target either way.
+ */
+.dsp-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding-inline: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dsp-edit:hover {
+  background: var(--ink-dim-2);
+}
+
+.dsp-edit svg {
+  color: var(--muted);
+}

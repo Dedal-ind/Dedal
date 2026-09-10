@@ -1,0 +1,143 @@
+/*
+ * team-code-entry.css — the 8-box invite-code entry, wherever it is drawn.
+ *
+ * This is the stylesheet for components/team-code-entry/TeamCodeEntry.jsx, and
+ * it exists because that component is SHARED: /my-teams renders it inside a
+ * dedal panel and the event-detail screen renders it inside the join sheet. A
+ * shared component that only looks right when a particular screen's stylesheet
+ * happens to be loaded is not shared, it is borrowed — so everything the
+ * component needs is here, under its own `dtc-` prefix, and nothing it needs
+ * lives in teams.css any more.
+ *
+ * The box rules were `.dtm-codes` / `.dtm-code` in design/teams.css, written
+ * for the /my-teams-only fork of this component. They moved here verbatim when
+ * the fork was collapsed back into the shared component; no other file used
+ * them. The form/checkbox/error/hint/submit rules are deliberately RE-STATED
+ * here rather than moved, because /my-teams and TeamCard.jsx still use the
+ * `.dtm-` originals for their own composer fields — those are the screen's, and
+ * these are the component's.
+ *
+ * Loaded at the root (src/main.jsx) alongside the other design-system sheets
+ * and before index.css, for the reason all of them are: it is tokens-only and
+ * must not be able to lose a cascade to a heritage Tailwind utility.
+ *
+ * No :focus-visible rule anywhere in this file. The no-ring policy lives in
+ * design/focus.css, and both roots this component renders under (.dtm-screen,
+ * .ddp-screen) are already listed there.
+ */
+
+.dtc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/*
+ * Eight cells that shrink rather than wrap. `minmax(0, 1fr)` is what lets them:
+ * a grid track's default minimum is its content, and eight fixed minimums plus
+ * gaps overflow a 320px phone column inside the panel padding.
+ */
+.dtc-codes {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: var(--s1);
+}
+
+/* The cell itself follows the app's OTP box (.dsi-otp__box) rather than
+   inventing a third look — same radius, same border, same weight. It is width-
+   fluid instead of a fixed 48px square because there are eight of these, not
+   six, and they have to survive a narrow panel. */
+.dtc-code {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: 1;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* Eight boxes are two more than the OTP's six, so the smallest phones get the
+   OTP's own small-screen height as well as the fluid width. */
+@media (max-width: 359px) {
+  .dtc-code {
+    height: 44px;
+  }
+}
+
+/* A checkbox and its sentence. The native control, sized to the type beside it
+   and tinted with --primary, rather than a hand-drawn box: the real one already
+   announces itself correctly and already works with a keyboard. */
+.dtc-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  /* The whole sentence is the target, so the row clears 44px on a phone even
+     though the box itself is 18. */
+  min-height: 44px;
+  padding-block: var(--s1);
+  cursor: pointer;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dtc-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.dtc-error {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}
+
+.dtc-hint {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dtc-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dtc-submit:active {
+  transform: scale(0.98);
+}
+
+.dtc-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}

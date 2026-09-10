@@ -1,0 +1,976 @@
+/*
+ * teams.css — /my-teams: the composer (create a team, or join one with a code)
+ * and the roster cards for the teams you are already on.
+ *
+ * Prefixed `dtm-`, tokens only, loaded from main.jsx before index.css — the
+ * same contract every other design-system sheet here has, and for the same
+ * reason: this file shares a document with the Heritage Tailwind @theme and an
+ * unprefixed `.card` or `.panel` would eventually be won or lost by a utility
+ * class nobody was thinking about.
+ *
+ * NO --gold AND NO --verified. Both are certificate-only. A locked team is
+ * not a verified thing and a captaincy is not a trophy; the three team statuses
+ * are drawn from --accent, --ink and --primary, which is what the six colours
+ * are for.
+ *
+ * THERE IS NO WARNING COLOUR, so "forming" — the status that in another system
+ * would be amber — is --accent. That is the right reading anyway: forming is
+ * in-progress, not at-risk.
+ */
+
+.dtm-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * NO padding-top: var(--header-h). ScreenHeader carries this screen's title and
+ * stands the app header down, so nothing above the content needs clearing.
+ */
+.dtm-col {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+  padding-top: var(--s2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The two-pane layout
+   ─────────────────────────────────────────────────────────────────────────
+
+   THE COMPOSER AND THE ROSTER ARE READ TOGETHER, NOT IN SEQUENCE.
+
+   Stacked, as this screen used to be, the composer's two panels ate the whole
+   fold and the teams you are actually on — the reason most people open
+   /my-teams — began below it. On a phone that is the correct compromise, and
+   the DOM order below keeps it: compose first, because a phone screenful is one
+   thing at a time and creating or joining is the errand you arrived with.
+
+   From 1024 up they sit side by side. The composer is a form of fixed content
+   and does not benefit from extra width, so it takes a bounded left column and
+   hands the rest of the window to the roster grid, which does.
+
+   `align-items: start` so the left column stops at its own height instead of
+   stretching to match a long roster.
+*/
+
+.dtm-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--grid-gap);
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .dtm-layout {
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+    gap: var(--s6);
+  }
+
+  /* The composer stays in view while a long roster scrolls past it — it is the
+     screen's one input surface and hunting back up for it is the friction this
+     layout exists to remove. `--s4` clears the top edge. */
+  .dtm-compose {
+    position: sticky;
+    top: var(--s4);
+  }
+}
+
+.dtm-compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--grid-gap);
+  min-width: 0;
+}
+
+.dtm-roster {
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Panels
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dtm-panel {
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+/*
+ * `h2`, and the only headings on the screen — the `h1` is the one in the
+ * ScreenHeader bar. The old frame numbered these "1." and "2."; the numbers
+ * went with the redesign because the two steps are not sequential for somebody
+ * joining with a code, who never touches the picker at all.
+ */
+.dtm-panel__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dtm-panel__hint {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The event picker
+   ─────────────────────────────────────────────────────────────────────────
+
+   A disclosure button and a list, not a <select>: the options carry a fest name
+   under the event name, which a native option cannot hold. The outside-tap
+   close and the open state live in the screen, unchanged from the Heritage
+   version.
+*/
+
+.dtm-picker {
+  position: relative;
+  margin-top: var(--s3);
+}
+
+.dtm-picker__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dtm-picker__button:disabled {
+  cursor: not-allowed;
+}
+
+.dtm-picker__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Nothing chosen yet — the placeholder, and the "you have no eligible events"
+   sentence, are both --muted because neither is a value. */
+.dtm-picker__value--empty {
+  color: var(--muted);
+}
+
+.dtm-picker__chevron {
+  flex: none;
+  color: var(--muted);
+  transition: transform var(--d-quick) var(--ease-enter);
+}
+
+.dtm-picker__button[aria-expanded='true'] .dtm-picker__chevron {
+  transform: rotate(180deg);
+}
+
+.dtm-picker__list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + var(--s1));
+  left: 0;
+  width: 100%;
+  max-height: 264px;
+  margin: 0;
+  padding: var(--s1);
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e2);
+}
+
+.dtm-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  border: 0;
+  border-radius: var(--r-card);
+  background: none;
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dtm-picker__option:hover {
+    background: var(--ink-dim-4);
+  }
+}
+
+.dtm-picker__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+}
+
+.dtm-picker__fest {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dtm-picker__check {
+  flex: none;
+  color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Create / join — the two mode tiles
+   ─────────────────────────────────────────────────────────────────────────
+
+   Toggles, so they carry aria-pressed in the JSX and the selected one is drawn
+   in --primary: this is the single choice the panel is asking for, and the
+   panel below changes to match it.
+*/
+
+.dtm-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+
+.dtm-mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  /* Comfortably past the 44px minimum, because these are the screen's primary
+     choice and not a row of secondary controls. */
+  min-height: 76px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    background var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .dtm-mode:hover {
+    border-color: var(--muted);
+  }
+}
+
+.dtm-mode:active {
+  transform: scale(0.97);
+}
+
+.dtm-mode[aria-pressed='true'] {
+  border-color: var(--primary);
+  background: rgb(255 59 48 / 6%);
+  color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Fields
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dtm-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin-top: var(--s4);
+}
+
+.dtm-label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.dtm-input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+}
+
+.dtm-input::placeholder {
+  color: var(--muted);
+}
+
+.dtm-hint {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dtm-error {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}
+
+/* A checkbox and its sentence. The native control, sized to the type beside it
+   and tinted with --primary, rather than a hand-drawn box: the real one already
+   announces itself correctly and already works with a keyboard. */
+.dtm-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  /* The whole sentence is the target, so the row clears 44px on a phone even
+     though the box itself is 18. */
+  min-height: 44px;
+  padding-block: var(--s1);
+  cursor: pointer;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dtm-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+
+.dtm-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dtm-submit:active {
+  transform: scale(0.98);
+}
+
+.dtm-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* The secondary shape: an outlined pill for an action that is real but is not
+   the screen's one primary CTA. */
+.dtm-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    background var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .dtm-ghost:hover {
+    border-color: var(--muted);
+    background: var(--ink-dim-2);
+  }
+}
+
+.dtm-ghost:active {
+  transform: scale(0.98);
+}
+
+.dtm-ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The invite-code boxes
+   ─────────────────────────────────────────────────────────────────────────
+
+   MOVED OUT. `.dtm-codes` and `.dtm-code` used to live here, styling the
+   /my-teams-only fork of the code entry. The fork is gone and both screens now
+   render components/team-code-entry/TeamCodeEntry.jsx, which is a SHARED
+   component and must not need a screen's stylesheet to look right — so those
+   two rules moved to design/team-code-entry.css as `.dtc-codes` / `.dtc-code`.
+   Nothing else referenced them. Everything still in this file is /my-teams'
+   own: the composer fields, the panels, the roster and the verdict below.
+*/
+
+/* The live verdict under the boxes. Four states, three tones — see the comment
+   on CodeFeedback in the screen for why "fully claimed" and "already joined"
+   are not the same sentence. */
+.dtm-verdict {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dtm-verdict--good {
+  color: var(--accent);
+}
+
+.dtm-verdict--bad {
+  color: var(--primary);
+}
+
+.dtm-verdict__note {
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The join-succeeded note
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dtm-success {
+  padding: var(--s3);
+  border: 1px solid rgb(123 97 255 / 32%);
+  border-radius: var(--r-card);
+  background: rgb(123 97 255 / 8%);
+}
+
+.dtm-success__title {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dtm-success__body {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The roster
+   ─────────────────────────────────────────────────────────────────────────
+
+   INTRINSIC COLUMNS, for the same reason the certificate archive has them: a
+   single stacked column of team cards stranded a 400px strip in a 1600px
+   window and pushed four teams onto two screenfuls.
+
+   340px is the floor because a card holds an event name, a status pill beside
+   it, and a member list of full names — below that the pill starts wrapping
+   under the name it belongs to.
+*/
+
+.dtm-roster__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-bottom: var(--s2);
+  margin-bottom: var(--s3);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dtm-roster__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dtm-roster__count {
+  flex: none;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dtm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: var(--grid-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Below 400px the 340px floor would overflow the column, so the phone gets one
+   plain track. auto-fill cannot express that on its own. */
+@media (max-width: 420px) {
+  .dtm-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dtm-grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+/* ── The team card ────────────────────────────────────────────────────── */
+
+.dtm-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dtm-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.dtm-card__event {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dtm-card__fest {
+  margin: var(--s1) 0 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* ── Status ───────────────────────────────────────────────────────────── */
+
+.dtm-status {
+  flex: none;
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+/* In progress, not at risk. There is no warning colour in this system and this
+   status does not want one. */
+.dtm-status--forming {
+  background: rgb(123 97 255 / 10%);
+  color: var(--accent);
+}
+
+/* Settled. Full-strength ink on the flat dim: locked is the ordinary end state
+   of a team and does not need a colour to announce itself. */
+.dtm-status--locked {
+  background: var(--ink-dim-4);
+  color: var(--ink);
+}
+
+.dtm-status--disqualified {
+  background: rgb(255 59 48 / 10%);
+  color: var(--primary);
+  text-decoration: line-through;
+}
+
+/* ── The facts row ────────────────────────────────────────────────────── */
+
+.dtm-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s1) var(--s3);
+}
+
+.dtm-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dtm-fact svg {
+  flex: none;
+  color: var(--muted);
+}
+
+.dtm-fact--muted {
+  color: var(--muted);
+}
+
+.dtm-badge {
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--ink);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+}
+
+/* ── Members ──────────────────────────────────────────────────────────── */
+
+.dtm-members {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dtm-member {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dtm-member__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The leader's mark. --accent, so it is legible as a role rather than as the
+   urgency --primary carries; the captain below uses the same colour because
+   they are the same kind of fact. */
+.dtm-member__mark {
+  flex: none;
+  color: var(--accent);
+}
+
+/* ── The invite code ──────────────────────────────────────────────────── */
+
+.dtm-invite {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dtm-invite__label {
+  display: block;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* Letter-spaced because it is a string somebody reads aloud down a phone, and
+   `tabular-nums` so the eight glyphs sit on an even rhythm. */
+.dtm-invite__code {
+  display: block;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dtm-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dtm-copy:hover {
+    background: var(--ink-dim-2);
+  }
+}
+
+/* ── The captaincy row ────────────────────────────────────────────────── */
+
+.dtm-captain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--divider);
+}
+
+.dtm-captain__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dtm-captain__state svg {
+  flex: none;
+  color: var(--accent);
+}
+
+/* Yours. Stated in ink so it reads as a fact about you, not as a label. */
+.dtm-captain__state--mine {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Resigning is a small, reversible step, so it is a text button rather than a
+   third pill competing with Lock below it. */
+.dtm-captain__resign {
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--s2);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--body-s-size);
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dtm-captain__resign:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Loading, empty and failure
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * THE SHAPE OF A TEAM CARD, not a bar. Title line, status pill, two member
+ * rows — the same box at the same height, so nothing jumps when the real
+ * cards land.
+ */
+.dtm-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  animation: dtm-pulse 1.2s var(--ease-enter) infinite;
+}
+
+.dtm-skeleton__line {
+  height: 12px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dtm-skeleton__line--title {
+  height: 18px;
+  width: 60%;
+}
+
+.dtm-skeleton__line--short {
+  width: 40%;
+}
+
+.dtm-skeleton__row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.dtm-skeleton__avatar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+@keyframes dtm-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dtm-skeleton {
+    animation: none;
+  }
+}
+
+/* Left-aligned, one sentence, at most one action — the house empty state. */
+.dtm-state {
+  max-width: 42ch;
+}
+
+.dtm-state__title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dtm-state__body {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dtm-state__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  margin-top: var(--s4);
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* The offline / stale-data note, shown only when there is already a roster
+   behind it. Offline with nothing loaded is a full state, not a caveat. */
+.dtm-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dtm-notice svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.dtm-notice__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/*
+ * The empty roster, in components/empty-state.
+ *
+ * The only screen here that does NOT get the full remaining viewport: the
+ * roster sits below the create-or-join composer, so centring it against the
+ * window would push it off the bottom of the page and add a scrollbar to a
+ * screen with nothing to scroll. It is centred in its own section instead.
+ */
+.dtm-empty {
+  --des-empty-offset: calc(100dvh - 200px);
+}

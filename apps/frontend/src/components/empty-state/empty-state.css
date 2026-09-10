@@ -1,0 +1,63 @@
+/*
+ * empty-state.css — the one empty state, prefix des-.
+ *
+ * No border, no background, no card. The whole point is that the screen is
+ * empty and admits it; chrome drawn around nothing is what made the old
+ * version look cheap.
+ */
+
+.des-empty {
+  /*
+   * The remaining space, not the whole viewport. --des-empty-offset is the
+   * header plus the screen's own vertical padding; 120px covers the common
+   * case (56px header + ~64px of column padding) and undershoots rather than
+   * overshoots so this never creates a scrollbar.
+   */
+  min-height: calc(100dvh - var(--des-empty-offset, 120px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s5);
+  padding-inline: var(--page-pad);
+  text-align: center;
+}
+
+.des-empty__line {
+  margin: 0;
+  /*
+   * ~34ch. Without it a single sentence runs as one thin line across a
+   * desktop window, which is the one way a centred sentence can still look
+   * accidental.
+   */
+  max-width: 34ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  /* --ink, not --muted. See EmptyState.jsx. */
+  color: var(--ink);
+}
+
+.des-empty__action {
+  appearance: none;
+  border: 0;
+  border-radius: var(--r-card);
+  padding: var(--s3) var(--s6);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+.des-empty__action:hover {
+  opacity: 0.9;
+}
+
+.des-empty__action:active {
+  transform: scale(0.98);
+}

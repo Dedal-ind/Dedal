@@ -1,0 +1,290 @@
+/*
+ * account-drawer.css — the phone's profile drawer.
+ *
+ * MOBILE ONLY, and the media query is the enforcement, not a convention: at
+ * ≥1024px the whole layer is display:none and the avatar goes to /account
+ * instead. Two shapes, one of which is never rendered at the other's width.
+ */
+
+.dad-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  /*
+   * CLIPS THE PARKED PANEL. Closed, the panel is translated a full width to the
+   * right, which puts its left edge at exactly innerWidth. On a fractional
+   * device pixel ratio that edge rounds INTO the viewport and paints a hairline
+   * of --surface down the right-hand side of every screen in the app. It is
+   * invisible on the white pages and obvious over a dark hero, which is exactly
+   * how it was reported. Clipping the container removes the possibility rather
+   * than the symptom.
+   */
+  overflow: hidden;
+  /*
+   * `visibility` rather than `display`, because a display:none element cannot
+   * transition — the drawer would jump on open and vanish on close. Visibility
+   * is transitionable in the sense that matters: it is DELAYED until the slide
+   * has finished, so the panel is still painted on its way out.
+   */
+  visibility: hidden;
+  /*
+   * The delay is --d-exit, not --d-move: this hold exists only to keep the
+   * panel painted while it slides OUT, and the exit is the faster of the two.
+   * Delaying by the enter duration left the drawer occupying the layer for
+   * 60ms after it had finished leaving.
+   */
+  transition: visibility 0s linear var(--d-exit);
+}
+
+.dad-root--open {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+@media (min-width: 1024px) {
+  .dad-root {
+    display: none;
+  }
+}
+
+/* ── The scrim ───────────────────────────────────────────────────────────── */
+
+/*
+ * A real <button>, not a div with an onClick: tapping outside to dismiss is an
+ * action, and making it a button means it is announced and reachable rather
+ * than being an invisible click target that only a mouse knows about. It is
+ * removed from the tab order because the panel's own Close is the keyboard
+ * path — two dismiss controls one Tab apart is noise.
+ */
+/*
+ * KEPT, THOUGH THE PANEL NOW COVERS IT. The panel went full-bleed, so there is
+ * no strip of page left to tap and the scrim can never be clicked — the back
+ * control is the only dismiss. It still earns its place for the ~240ms the
+ * panel is TRAVELLING: for that window the page behind is visible beside the
+ * incoming edge, and dimming it is what reads as depth rather than as one
+ * screen being swapped for another. Once the panel lands it is completely
+ * occluded and costs nothing. It is aria-hidden and out of the tab order, so
+ * it is not an unreachable control being announced to anyone.
+ */
+.dad-scrim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: var(--scrim);
+  opacity: 0;
+  /* Exit: faster, accelerating. See .dad-root--open for the enter half. */
+  transition: opacity var(--d-exit) var(--ease-exit);
+  cursor: pointer;
+}
+
+.dad-root--open .dad-scrim {
+  opacity: 1;
+  transition-duration: var(--d-move);
+  transition-timing-function: var(--ease-enter);
+}
+
+/* ── The panel ───────────────────────────────────────────────────────────── */
+
+/*
+ * FROM THE RIGHT, because the control is on the right.
+ *
+ * The avatar sits at the right end of the header, and a panel that leaps out
+ * from the opposite edge of the screen has no relationship to the thing you
+ * touched. Opening from the same side means the panel appears to come out from
+ * under your thumb — which is also why the phone's own control centres,
+ * Zomato's cart and every right-hand app menu open this way.
+ */
+.dad-panel {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  /*
+   * Not full width. The strip of dimmed page still showing beside it is what
+   * says "you have not left, this is on top" — a full-width panel is a screen,
+   * and a screen should have been a route. 86% caps at 400px so it does not
+   * become a wide sheet on a tablet in portrait.
+   */
+  /*
+   * FULL SCREEN. This used to be min(86%, 400px), on the argument that the
+   * strip of dimmed page beside it is what says "you have not left". In use
+   * that strip is the problem, not the reassurance: it turns the profile into
+   * a narrow column with a 52px row squeezed into 340px, and it leaves a
+   * sliver of the feed showing that invites a tap which does nothing useful.
+   * District takes the whole viewport for the same panel, and it is right —
+   * this is a destination, and a destination should not be peering out from
+   * behind the screen it covers.
+   *
+   * It still comes FROM THE RIGHT, which is the part that matters: the avatar
+   * is at the right end of the header, so the panel appears from under the
+   * thumb that summoned it, and it leaves the same way.
+   */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  box-shadow: var(--e2);
+  /* 101%, so even an unclipped sub-pixel rounding lands outside. */
+  transform: translate3d(101%, 0, 0);
+  /*
+   * EXIT IS THE DEFAULT STATE, so the closing transition is the one declared
+   * here and --open below overrides it for the way in. Same distance, same
+   * shape, 180ms out against 240ms in, accelerating out and decelerating in.
+   * translate3d rather than translateX so the panel keeps its own compositor
+   * layer for the whole trip in both directions.
+   */
+  transition: transform var(--d-exit) var(--ease-exit);
+  /*
+   * The PANEL no longer scrolls; the menu inside it does. Full-bleed means the
+   * bar and Sign out are pinned to the top and bottom edges of the screen, and
+   * scrolling the whole panel would carry both of them away.
+   */
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.dad-root--open .dad-panel {
+  transform: translate3d(0, 0, 0);
+  transition-duration: var(--d-move);
+  transition-timing-function: var(--ease-enter);
+}
+
+/*
+ * Reduced motion removes the slide but NOT the drawer. The panel and scrim
+ * appear and disappear at their end states; a horizontal sweep of most of the
+ * viewport is exactly the motion this preference exists to stop.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .dad-panel,
+  .dad-scrim,
+  .dad-root {
+    transition-duration: 0s;
+    transition-delay: 0s;
+  }
+
+  /*
+   * PIN BOTH ENDS. Collapsing the duration alone is not enough: a panel
+   * interrupted mid-slide the instant the preference flips would keep whatever
+   * transform it had reached, because nothing would ever animate it the rest of
+   * the way. Declaring the two end transforms outright means the drawer can
+   * only ever be fully open or fully parked, never stuck at 43%.
+   */
+  .dad-panel {
+    transform: translate3d(100%, 0, 0);
+  }
+
+  .dad-root--open .dad-panel {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ── The bar: a back control and one word ────────────────────────────────── */
+
+.dad-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 56px;
+  flex: 0 0 auto;
+  padding-inline: var(--s2);
+  padding-top: env(safe-area-inset-top, 0px);
+  box-sizing: content-box;
+}
+
+.dad-back {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dad-title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── The menu ────────────────────────────────────────────────────────────── */
+
+.dad-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--s2);
+}
+
+.dad-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dad-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--s3) var(--s4);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dad-row:active {
+  background: var(--ink-dim-4);
+}
+
+.dad-row__icon {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.dad-row__label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dad-row__chevron {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+/* ── Sign out ────────────────────────────────────────────────────────────── */
+
+.dad-signout {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 52px;
+  flex: 0 0 auto;
+  padding: var(--s3) var(--s4);
+  padding-bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  border: 0;
+  border-top: 1px solid var(--divider);
+  background: none;
+  color: var(--primary);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}

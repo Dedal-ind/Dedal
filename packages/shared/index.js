@@ -1,0 +1,10 @@
+import shared from "./index.cjs";
+
+export const {
+  EMAIL_ADDRESS_PATTERN,
+  PROMOTER_KINDS,
+  PLACEMENT_KEYS,
+  CAMPAIGN_STATUSES,
+  CAMPAIGN_PRIORITY_TIERS,
+  CREATIVE_MEDIA_TYPES,
+} = shared;

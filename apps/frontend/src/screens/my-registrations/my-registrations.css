@@ -1,0 +1,1113 @@
+/*
+ * my-registrations.css — the participant hub, grouped by fest. `dmr-` prefix.
+ * Dedal tokens only: the six colours plus --divider, --ink-dim-2/4 and --scrim.
+ * No literal colour appears in this file. (--haze is not a token and is not
+ * used; if you came here looking for it, the answer is --ink-dim-4.)
+ *
+ * THE SHAPE OF THE SCREEN. A fest is a heading with rows under it, not a card
+ * containing cards. The old version drew a bordered, shadowed box around every
+ * single registration and the page became eleven identical objects with no
+ * hierarchy between them; the eye had nothing to skip. Here the only borders are
+ * the fest header's hairline and the row separators, so what stands out is the
+ * one fest that is live and the one row that needs paying.
+ *
+ * WHERE --primary IS ALLOWED. The live dot, the payment-due badge, and the one
+ * primary button inside a block that has an action. That is the whole list. Fest
+ * names, dates, counts and every other badge are ink or muted, because the
+ * moment the signature colour is on twenty things it is on nothing.
+ */
+
+.dmr-screen {
+  min-height: 100vh;
+  background: var(--surface);
+  font-family: var(--font);
+  padding-bottom: var(--feed-end);
+}
+
+.dmr-page {
+  /* Fluid to the cap, fixed above it. 1440 is --ddp-max from detail-page.css,
+     restated locally rather than imported because that token is declared on
+     .ddp-screen and this screen is not one. */
+  --dmr-max: 1440px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--s5) var(--page-pad) 0;
+}
+
+/*
+ * DESKTOP: the same twelve-column 8/4 split the detail pages use, capped at
+ * 1440px and centred.
+ *
+ * WHAT CHANGED AND WHY. This was `3fr 2fr` inside --feed-max (1200px), and
+ * measured at 1440px that gave a 1200px page with 120px of gutter a side and a
+ * 624px list column — a list of registrations no wider than it is on a small
+ * laptop, with a quarter of the window unused. --feed-max is the FEED's number
+ * and it is right there: the feed is an auto-filling wall of cards where more
+ * width buys another column. This screen is a reading column beside a panel,
+ * the same shape the event and fest pages are, so it takes the same 1440 cap
+ * they take and the same twelve tracks.
+ *
+ * Twelve rather than 3fr/2fr because 3/2 is a ratio with no shared origin: the
+ * card grids nested inside .dmr-main are expressed in columns, and two systems
+ * that do not divide into each other drift. 8/4 makes the list two thirds and
+ * the panel one third — a genuine minority, where 3fr/2fr's 60/40 read as
+ * near-half.
+ *
+ * `minmax(0, 1fr)` on every track, not `1fr`: a 1fr track has an `auto`
+ * minimum, so a long unbroken event name would push the list track past its
+ * share and shove the panel toward the edge. That asymmetry is the reported
+ * symptom, not a hypothetical.
+ */
+@media (min-width: 1024px) {
+  .dmr-page--split {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--s7);
+    max-width: var(--dmr-max);
+    align-items: start;
+  }
+
+  .dmr-page--split > .dmr-main {
+    grid-column: 1 / span 8;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .dmr-page--split > .dmr-panel {
+    grid-column: 9 / span 4;
+    grid-row: 1;
+  }
+}
+
+.dmr-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.dmr-title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* Larger headings on desktop, where the column is wider and the same 24px reads
+   as a caption rather than a page title. */
+@media (min-width: 1024px) {
+  .dmr-title {
+    font-size: var(--display-l-size);
+    line-height: var(--display-l-line);
+  }
+}
+
+.dmr-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Banners from the flows that route here ─────────────────────────────── */
+
+.dmr-banner {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── Search and filters ─────────────────────────────────────────────────── */
+
+.dmr-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.dmr-search {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  /* 16px, so focusing it does not zoom the page on iOS. */
+  font-size: var(--body-m-size);
+}
+
+.dmr-search::placeholder {
+  color: var(--muted);
+}
+
+.dmr-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.dmr-chip {
+  min-height: 44px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dmr-chip:hover {
+  background: var(--ink-dim-2);
+}
+
+/* The selected chip inverts to ink rather than filling with --primary. A row of
+   filter chips is exactly the "decorative wash" the signature colour must not
+   become. */
+.dmr-chip[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--surface-card);
+}
+
+/* ── The fest sections ──────────────────────────────────────────────────── */
+
+.dmr-fests {
+  display: flex;
+  flex-direction: column;
+}
+
+.dmr-fest {
+  border-bottom: 1px solid var(--divider);
+}
+
+/* Header row: the toggle takes the space, the pass shortcut sits at the end. */
+/*
+ * THE HEADING AND "View pass" SHARE A ROW ONLY WHEN THERE IS A ROW TO SHARE.
+ *
+ * Side by side, the button takes a fixed ~100px off the front of a 320px
+ * screen, and what is left has to hold a 48px thumbnail, a caret, and the fest
+ * name. "Live Now Fest" came out on three lines with the dates in a ribbon
+ * beneath it — the whole header read as a pile rather than a row.
+ *
+ * So the bar wraps, and below the breakpoint the heading claims the full width
+ * outright (flex-basis: 100%) rather than merely being allowed to wrap. That is
+ * the difference between "the button drops when it must" — which still leaves
+ * the name squeezed at 340px — and "the name always gets the width, the button
+ * always gets its own line".
+ */
+.dmr-fest__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+}
+
+@media (max-width: 600px) {
+  .dmr-fest__bar {
+    /* No gap between the heading and the pass link. The two lines are one
+       header, and 8px of it was reading as a break between two things. The
+       link brings its own breathing room below. */
+    gap: 0;
+    padding-block-end: var(--s2);
+  }
+
+  .dmr-fest__heading {
+    flex: 1 1 100%;
+  }
+
+  /* Right-aligned on its own line rather than stretched full width: it is a
+     secondary action next to a list of events, and a full-bleed bar would
+     outrank the rows it sits above. Outlined, because on its own line with
+     nothing beside it a bare label reads as a stray caption rather than as
+     something you can press. */
+  .dmr-fest__pass {
+    margin-left: auto;
+    border: 1px solid var(--divider);
+  }
+
+  /*
+   * THE HEADER, GIVEN ROOM.
+   *
+   * Everything below is one idea: the fest name is the only thing in this bar
+   * anybody is looking for, so it gets the size, the first line and the width,
+   * and the mark beside it gets smaller to pay for that. At 320px the usable
+   * width is 288px; a 40px thumb, a 12px gap, a 20px caret and 8px of padding
+   * leave the name 208px, which holds "Alliance ONE 2026" on one line and
+   * breaks a longer name cleanly in two instead of into a ribbon.
+   */
+  .dmr-fest__toggle {
+    align-items: flex-start;
+    gap: var(--s3);
+    padding-block: var(--s4);
+  }
+
+  .dmr-thumb {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dmr-thumb--mark {
+    font-size: 15px;
+  }
+
+  .dmr-fest__name {
+    /* One step up from body, and it is the only thing in the header that is
+       not --muted. That is the whole hierarchy. */
+    font-size: 17px;
+    line-height: 24px;
+  }
+
+  /* The two quiet lines sit tighter to each other than to the name above them,
+     so they read as one block of meta rather than as three equal rows. */
+  .dmr-fest__college,
+  .dmr-fest__when {
+    margin-top: 2px;
+  }
+
+  .dmr-fest__college {
+    /* One line, clipped. A long host-college name is the least important thing
+       in the header and it is not allowed to spend three lines saying so. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* The caret is aligned to the name, not to the middle of a three-line block,
+     which is where it drifted to once the meta wrapped. */
+  .dmr-fest__caret {
+    margin-top: var(--s1);
+  }
+}
+
+.dmr-fest__heading {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font: inherit;
+}
+
+.dmr-fest__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--s3) var(--s2) var(--s3) 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--r-card);
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dmr-fest__toggle:hover {
+  background: var(--ink-dim-2);
+}
+
+.dmr-thumb {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+
+.dmr-thumb--image {
+  object-fit: cover;
+}
+
+/*
+ * THE DERIVED THUMBNAIL. bannerImageUrl is null for every fest in this data, so
+ * this is the state everyone sees rather than an edge case. Initials over the
+ * --primary → --accent wash — the same mark the fest and event cards already
+ * use, so the hub does not introduce a second idea of what a missing image looks
+ * like. Deliberately not a grey box: a grey box says the product has nothing.
+ */
+.dmr-thumb--mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-image:
+    radial-gradient(
+      120% 100% at 85% 10%,
+      color-mix(in srgb, var(--accent) 90%, transparent) 0%,
+      transparent 62%
+    ),
+    linear-gradient(145deg, var(--primary), var(--accent));
+  color: var(--surface-card);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  user-select: none;
+}
+
+.dmr-fest__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dmr-fest__name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1024px) {
+  .dmr-fest__name {
+    font-size: 18px;
+    line-height: 26px;
+  }
+}
+
+/* College and dates on their own lines. 14px is the floor for --muted on
+   --surface (~3.5:1); neither of these drops below it. */
+.dmr-fest__college,
+.dmr-fest__when {
+  display: block;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dmr-fest__when {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--s1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The separator between the dates and the event count. Drawn only while the
+   two are on one line; once they stack it would be a lone dot at the end of a
+   line, which is how a header starts looking like debris. */
+.dmr-fest__dot {
+  color: var(--divider);
+}
+
+@media (max-width: 600px) {
+  .dmr-fest__when {
+    /* Stacked outright rather than left to wrap: at 320px the dates alone fill
+       the line, so "4 events" was landing on a second line anyway, half the
+       time with the dot in front of it. Deciding it in CSS is steadier than
+       letting the width decide it differently on every phone. */
+    display: block;
+  }
+
+  .dmr-fest__dot {
+    display: none;
+  }
+}
+
+.dmr-fest__caret {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--muted);
+  transition: transform var(--d-move) var(--ease-enter);
+}
+
+.dmr-fest__caret--up {
+  transform: rotate(180deg);
+}
+
+/* The pass shortcut. A real link — it is a navigation, so it is right-clickable,
+   middle-clickable and readable as a link by a screen reader. */
+.dmr-fest__pass {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border-radius: var(--r-pill);
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dmr-fest__pass:hover {
+  background: var(--ink-dim-2);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dmr-fest__pass svg {
+  color: var(--muted);
+}
+
+/* The collapsing panel. Height is written by GSAP; the only thing CSS owns here
+   is that a mid-tween panel does not spill. */
+.dmr-fest__panel {
+  overflow: hidden;
+}
+
+/*
+ * LIVE NOW. The one pulsing thing on the screen, and --primary's main job here.
+ * The dot animates only where motion is welcome; the WORDS are always there, so
+ * with the animation off the state is still stated rather than merely implied by
+ * something that is no longer moving.
+ */
+.dmr-live {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.dmr-live__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dmr-live__dot {
+    animation: dmr-pulse 1.8s var(--ease-enter) infinite;
+  }
+}
+
+@keyframes dmr-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+/* The Past divider. A heading, so it is in the outline and a screen reader can
+   jump to it; it just does not look like one. */
+.dmr-divider {
+  margin: var(--s6) 0 var(--s2);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* ── Event rows ─────────────────────────────────────────────────────────── */
+
+.dmr-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dmr-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 56px;
+  /* The 60px left indent used to hold nothing — it was there to line the rows
+     up under the fest thumbnail above them. The date rail lives in it now, so
+     the indent carries information instead of being empty space. */
+  padding: var(--s3) var(--s2);
+  border: 0;
+  border-radius: var(--r-card);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+/* The rows sit under the fest's thumbnail, indented past it, so the section
+   reads as one object without needing a box drawn around it. At 360px that
+   indent costs too much of the line, so it goes. */
+@media (max-width: 400px) {
+  .dmr-row {
+    padding-left: var(--s2);
+  }
+}
+
+.dmr-row:hover {
+  background: var(--ink-dim-2);
+}
+
+.dmr-row:active {
+  background: var(--ink-dim-4);
+}
+
+/* Desktop only: which row is filling the panel. A --primary hairline on the
+   leading edge — one row, never a list of them, so the signature colour stays
+   scarce. */
+.dmr-row--selected {
+  background: var(--ink-dim-4);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.dmr-row__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dmr-row__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+
+.dmr-row__name {
+  min-width: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Cancelled. Struck through and dropped to --muted, per the design: the row is
+   a record, not an appointment. This is the ONE place --muted carries meaning
+   below its usual weight, and it does not carry it alone — the strike-through
+   and the badge beside it both say the same thing, so nobody is depending on a
+   contrast ratio to work out that their entry is gone. */
+.dmr-row__name--off {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.dmr-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--s3);
+  margin-top: 2px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dmr-row__when {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.dmr-row__via {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.dmr-row__chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform var(--d-quick) var(--ease-enter);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dmr-row:hover .dmr-row__chevron {
+    transform: translateX(2px);
+  }
+}
+
+/* ── The desktop panel ──────────────────────────────────────────────────── */
+
+.dmr-panel {
+  position: sticky;
+  /* Clears the app's sticky header so the panel is never underneath it. */
+  top: calc(var(--header-h) + var(--s4));
+  min-width: 0;
+  max-height: calc(100vh - var(--header-h) - var(--s7));
+  overflow: hidden;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dmr-panel__inner {
+  max-height: inherit;
+  overflow-y: auto;
+  padding: var(--s5);
+}
+
+/* ── Supporting blocks: claims, purchases, certificates ─────────────────── */
+
+.dmr-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.dmr-block__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* Errors are --primary. That is what the token is for; there is no separate
+   error colour in this system and inventing one would be a seventh. */
+.dmr-block__error {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.dmr-claim,
+.dmr-purchase {
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dmr-claim + .dmr-claim,
+.dmr-purchase + .dmr-purchase {
+  margin-top: var(--card-gap);
+}
+
+.dmr-claim__event,
+.dmr-purchase__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dmr-claim__who,
+.dmr-claim__warning,
+.dmr-purchase__confirmText {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dmr-claim__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+
+.dmr-purchase__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.dmr-purchase__total {
+  margin: 0;
+  flex: 0 0 auto;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A refund in flight is money, so it stays in ink and gets weight rather than
+   being a grey caption somebody scrolls past. */
+.dmr-purchase__flag {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dmr-seats {
+  margin: var(--s3) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--divider);
+}
+
+.dmr-seats__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dmr-seats__row:last-child {
+  border-bottom: 0;
+}
+
+.dmr-seats__who {
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dmr-seats__state {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.dmr-purchase__confirm {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--divider);
+}
+
+/* ── Buttons, states, skeletons ─────────────────────────────────────────── */
+
+.dmr-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dmr-button:hover {
+  background: var(--ink-dim-2);
+}
+
+/* ONE per block, never more. */
+.dmr-button--primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--surface-card);
+}
+
+.dmr-button--primary:hover {
+  background: color-mix(in srgb, var(--primary) 88%, var(--ink));
+}
+
+.dmr-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dmr-button:active,
+  .dmr-chip:active {
+    transform: scale(0.98);
+    transition: transform var(--d-instant) var(--ease-exit);
+  }
+}
+
+.dmr-linkish {
+  align-self: flex-start;
+  min-height: 44px;
+  margin: var(--s2) 0 0 calc(var(--s3) * -1);
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.dmr-linkish:hover {
+  background: var(--ink-dim-2);
+}
+
+.dmr-state {
+  padding: var(--s7) var(--s4);
+  text-align: center;
+}
+
+.dmr-state__icon {
+  color: var(--muted);
+}
+
+.dmr-state__title {
+  margin: var(--s3) 0 var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dmr-state__text {
+  margin: 0 auto var(--s5);
+  max-width: 320px;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dmr-skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.dmr-skel {
+  height: 64px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  opacity: 0.5;
+}
+
+.dmr-skel--head {
+  height: 44px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dmr-skel {
+    animation: dmr-skel-pulse 1s linear infinite alternate;
+  }
+}
+
+@keyframes dmr-skel-pulse {
+  from {
+    opacity: 0.5;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* ── Contingent join codes ──────────────────────────────────────────────────
+   The rules for components/contingent-vertical-codes. They live here, in the
+   stylesheet of its only caller, rather than in a stylesheet of their own —
+   see the note at the top of ContingentVerticalCodes.jsx. If a second caller
+   ever appears, lift this section out; until then a whole extra CSS file for
+   nine rules is a file somebody has to remember exists. */
+
+.dmr-codes {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--divider);
+}
+
+.dmr-codes__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.dmr-codes__title {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dmr-codes__help,
+.dmr-codes__hint {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dmr-codes__list {
+  margin: var(--s3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dmr-codes__item {
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.dmr-codes__item:last-child {
+  border-bottom: 0;
+}
+
+.dmr-codes__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.dmr-codes__row + .dmr-codes__row {
+  margin-top: var(--s2);
+}
+
+.dmr-codes__event {
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.dmr-codes__slots {
+  flex: 0 0 auto;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Exhausted. The one line in this block that changes what the buyer does next. */
+.dmr-codes__slots--none {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.dmr-codes__code {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  /* Somebody the copy button fails can still select the whole code in one go. */
+  user-select: all;
+}
+
+/* Holds its width with or without the tick in it, so the button does not jump
+   sideways under the finger that just pressed it. */
+.dmr-codes__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dmr-codes__glyph > svg {
+    animation: dmr-pop var(--d-move) var(--ease-enter);
+  }
+}
+
+@keyframes dmr-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dmr-button--done {
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.dmr-codes__failed {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The date rail
+
+   A fixed-width leading column, so the day numbers stack in a straight line
+   down the list and every name starts at the same x. This is the one change
+   that turns these rows from a pile into something you can read down — see the
+   note in MyRegistrationsScreen.jsx for why the date and not something else.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dmr-row__date {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Wide enough for a two-digit day and a four-letter month ("Sept") without
+     either of them ever reflowing the column. */
+  width: 44px;
+  padding-block: var(--s1);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dmr-row__day {
+  font-size: 17px;
+  line-height: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.dmr-row__month {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* A cancelled registration keeps its place in the sequence but stops claiming
+   the eye: the rail goes flat and the numbers go muted with the name. */
+.dmr-row--cancelled .dmr-row__date {
+  background: none;
+}
+
+.dmr-row--cancelled .dmr-row__day {
+  color: var(--muted);
+}

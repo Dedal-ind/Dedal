@@ -1,0 +1,472 @@
+/*
+ * saved-events.css — the /saved grid.
+ *
+ * Prefixed `dse-` for the same reason every other sheet here is: this loads
+ * alongside the Tailwind @theme belonging to the older design system, and an
+ * unprefixed `.card` or `.grid` would sooner or later be won or lost by a
+ * utility class nobody was thinking about.
+ *
+ * Tokens only, from dedal-tokens.css. Neither of the two colours outside the
+ * six appears here: --gold and --verified are the certificate surface's, and a
+ * bookmark list is not an achievement.
+ *
+ * MEDIA QUERIES, NOT CONTAINER QUERIES, matching certificates-list.css. This
+ * screen has no sidebar and no second pane — the grid is always the viewport
+ * minus the page padding, so the viewport is the honest thing to measure.
+ */
+
+.dse-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: calc(var(--feed-end) + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * FLUID TO 1440, THEN FIXED — the standard stop, and the same one the
+ * certificate archive settled on. Below it every extra pixel buys part of
+ * another column, which is content; above it the grid stops looking generous
+ * and starts looking stretched.
+ *
+ * NO padding-top: var(--header-h). ScreenHeader carries the screen's title now
+ * and stands the app header down, so there is nothing above this content to
+ * reserve space for. A clearance here would be 56px of empty page.
+ */
+.dse-col {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+  padding-top: var(--s2);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The offline note
+   ─────────────────────────────────────────────────────────────────────────
+
+   Shown ONLY when there are already cards on screen. Offline with an empty
+   list is a full state, not a caveat, and the two must never both appear.
+*/
+
+.dse-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin-bottom: var(--s4);
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dse-notice svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.dse-notice__retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The grid
+   ─────────────────────────────────────────────────────────────────────────
+
+   A list, semantically — `list-style: none` plus an explicit role in the JSX,
+   because Safari drops list semantics from a <ul> whose markers are removed.
+
+   Mobile is one column: a poster card is a picture, and two 150px-wide
+   pictures side by side on a phone are two thumbnails nobody can read the
+   event name off.
+
+   From 640 up, INTRINSIC COLUMNS rather than a count per breakpoint. A 260px
+   floor gives two columns on a small tablet, three by ~900, four by 1200 and
+   five at the cap, following the window instead of a hand-picked number. 260 is
+   the floor because the overlay has to hold an event name of real length on two
+   lines above a fest name and a date, and below that the text starts wrapping
+   into the poster.
+*/
+
+/*
+ * TWO COLUMNS ON A PHONE, the same as the certificates grid.
+ *
+ * This was one full-width card per row, so saving a single event produced one
+ * enormous poster and nothing else — a card the size of a hero for a list item.
+ * A saved list is a set of things you are comparing and returning to, not a
+ * feed you read one at a time, and two columns is what every other collection
+ * in this app already does at this width.
+ *
+ * Above 640px it goes intrinsic and fluid, so the count follows the window
+ * instead of a hand-picked number per breakpoint.
+ */
+.dse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--grid-gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .dse-grid {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+.dse-grid__cell {
+  display: flex;
+  min-width: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The card
+   ─────────────────────────────────────────────────────────────────────────
+
+   TWO BUTTONS, NOT ONE. The whole poster opens the event; the unsave control
+   is a sibling in the corner, never a nested button — a button inside a button
+   is invalid HTML and browsers resolve it by dropping one of them, which is how
+   an unsave tap ends up opening the event instead.
+
+   An <article> rather than a bare div because each card is a self-contained,
+   individually-labelled thing, and the poster button carries the accessible
+   name.
+*/
+
+.dse-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e0);
+  transition:
+    transform var(--d-instant) var(--ease-exit),
+    box-shadow var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dse-card:hover {
+    box-shadow: var(--e1);
+  }
+}
+
+.dse-card:active {
+  transform: scale(0.985);
+}
+
+/*
+ * The open target. `aspect-ratio` rather than a fixed height so the card keeps
+ * its proportions as the column width changes — a 320px-tall card is right at
+ * one column per row on a phone and far too tall at five columns on a desktop,
+ * which is exactly the "narrow column, needless scrolling" shape this screen
+ * was rebuilt to stop.
+ */
+.dse-card__open {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  padding: 0;
+  border: 0;
+  background: var(--ink-dim-4);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (min-width: 640px) {
+  /* Wider than it is tall once there is more than one per row: a landscape
+     poster packs more events into a screenful, which is the whole point of the
+     grid. */
+  .dse-card__open {
+    aspect-ratio: 1 / 1;
+  }
+}
+
+.dse-card__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* No poster. A centred mark on the flat dim, not a stand-in illustration. */
+.dse-card__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+/*
+ * The scrim. --scrim is the token for exactly this — "over media, so white text
+ * survives" — ramped from the bottom because that is where the text sits and a
+ * flat wash over the whole poster would dull the artwork for nothing.
+ */
+.dse-card__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    var(--scrim) 0%,
+    rgb(15 23 41 / 32%) 42%,
+    transparent 72%
+  );
+}
+
+.dse-card__body {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--s3);
+}
+
+.dse-card__name {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  /* --surface, not #fff: the one white in the system, so this matches the pass
+     and the scanner rather than being a second near-white. */
+  color: var(--surface);
+  /* Two lines, then ellipsis. Event names run long and a third line would push
+     the fest and the date off the bottom of the poster. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.dse-card__meta {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: rgb(250 250 250 / 78%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── The unsave control ───────────────────────────────────────────────────
+ *
+ * 44px, the minimum comfortable touch target, on its own translucent surface
+ * with a blur — the same treatment ScreenHeader gives a control that may land
+ * over a photograph, because this one always does.
+ */
+
+.dse-card__unsave {
+  position: absolute;
+  top: var(--s2);
+  right: var(--s2);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: rgb(15 23 41 / 45%);
+  backdrop-filter: blur(8px);
+  color: var(--surface);
+  cursor: pointer;
+  transition:
+    background var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+@media (hover: hover) {
+  .dse-card__unsave:hover {
+    background: var(--primary);
+  }
+}
+
+.dse-card__unsave:active {
+  transform: scale(0.92);
+}
+
+/*
+ * OFFLINE. Removing a save is a write to the server, so it cannot work without
+ * a connection. Disabled and dimmed, with the reason on the button itself
+ * rather than hidden in a toast that appears after the failed tap.
+ */
+.dse-card__unsave:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The skeleton
+   ─────────────────────────────────────────────────────────────────────────
+
+   THE SHAPE OF WHAT IS COMING, not a stack of generic bars: the same cells, at
+   the same aspect ratio, in the same grid, so the layout does not jump when the
+   real cards land.
+*/
+
+.dse-skeleton {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  animation: dse-pulse 1.2s var(--ease-enter) infinite;
+}
+
+@media (min-width: 640px) {
+  .dse-skeleton {
+    aspect-ratio: 1 / 1;
+  }
+}
+
+@keyframes dse-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dse-skeleton {
+    animation: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Empty, error and offline
+   ─────────────────────────────────────────────────────────────────────────
+
+   Left-aligned, not centred. A centred composition asks to be read as an event;
+   "you have not saved anything yet" is a fact about an empty list, and it
+   belongs on the same left margin the list would have started on.
+
+   One sentence, one action. For an empty saved list the action is browsing —
+   there is nothing to retry and nothing to fix, only somewhere else to be.
+*/
+
+.dse-state {
+  max-width: 42ch;
+  margin-top: var(--s6);
+}
+
+.dse-state__title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dse-state__body {
+  margin: var(--s2) 0 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dse-state__action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 44px;
+  margin-top: var(--s5);
+  padding: 0 var(--s5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dse-state__action:active {
+  transform: scale(0.97);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The removal toast
+   ─────────────────────────────────────────────────────────────────────────
+
+   Announced through role="status" in the JSX, so the removal is reported to a
+   screen reader as well as drawn — a card silently vanishing from a grid is
+   otherwise the only feedback there is.
+*/
+
+.dse-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--s6) + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  transform: translateX(-50%);
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  box-shadow: var(--e2);
+  /*
+   * BOTH WAYS. This was `animation: dse-toast-in ... both` on a node rendered
+   * only while `toastMessage` was set — so the toast rose into place over
+   * 240ms and then, when the message cleared, simply stopped existing in
+   * mid-air. A confirmation that vanishes is indistinguishable from one you
+   * imagined.
+   *
+   * The resting state is now the closed one and --in is the override, so the
+   * exit is the default rather than an afterthought: it sinks back down the
+   * same 8px it came up, 180ms and accelerating against 240ms decelerating.
+   * SavedEventsScreen holds it mounted for that window.
+   *
+   * The -50% is carried in every transform here; it is the horizontal centring
+   * and dropping it from one state would throw the toast half its width to the
+   * right for the duration of the transition.
+   */
+  opacity: 0;
+  transform: translate(-50%, 8px);
+  transition:
+    opacity var(--d-exit) var(--ease-exit),
+    transform var(--d-exit) var(--ease-exit);
+}
+
+.dse-toast--in {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition:
+    opacity var(--d-move) var(--ease-enter),
+    transform var(--d-move) var(--ease-enter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dse-toast,
+  .dse-toast--in {
+    transform: translate(-50%, 0);
+  }
+}

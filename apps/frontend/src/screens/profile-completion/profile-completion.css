@@ -1,0 +1,682 @@
+/*
+ * profile-completion.css — the mandatory first-run form.
+ *
+ * NO SPLIT HERE. The sign-in screen earns a decorative half because it is a
+ * doorway with one field on it; this is a fourteen-field form with a legal
+ * consent at the bottom, and a photographic half-screen beside it would be a
+ * permanent distraction from the one thing the person has to get through. One
+ * centred 520px column, top to bottom, on every width.
+ *
+ * Tokens only. --primary appears in exactly four places: the progress fill, the
+ * required marker, the submit button once it is actually submittable, and
+ * errors. Not on section headings, not on the consent card, not on hover.
+ *
+ * WHAT THIS FILE DELIBERATELY DOES NOT STYLE: the college picker, the course
+ * picker and the inline error block are shared components with their own
+ * stylesheets, owned elsewhere. `.dpc-embed` reserves their row and sets nothing
+ * inside it — reaching into another component's markup from a screen stylesheet
+ * is how a shared control ends up looking correct on one screen and broken on
+ * the four others that use it.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The column
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dpc-screen {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+/*
+ * The header is sticky because the progress bar is in it. A progress indicator
+ * that scrolls away is a progress indicator nobody sees move, and this form is
+ * long enough that the fill moving is the main feedback that it is being filled.
+ */
+.dpc-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dpc-header__inner,
+.dpc-main,
+.dpc-footer__inner {
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.dpc-header__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-block: var(--s3) var(--s4);
+}
+
+.dpc-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.dpc-title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpc-intro {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/*
+ * THE ONE EXIT. Browser back is deliberately blocked on this screen, so this
+ * link is the only way off the page: without it, anyone who cannot finish the
+ * form — wrong account, a college not on the list, a number they cannot receive
+ * — is trapped with no route forward and no route out. It is quiet, but it is
+ * a 44px target and it is never conditionally rendered.
+ */
+.dpc-exit {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: var(--s2);
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.dpc-exit:hover {
+  color: var(--ink);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Progress
+   ─────────────────────────────────────────────────────────────────────────
+
+   4px, --primary, over completed / total of the SAME answers that gate the
+   submit button — the list is built once in the component and read by the bar,
+   the button and the missing-field line, so the three can never tell different
+   stories. 300ms on width only; animating anything else here would make a bar
+   that grows by a sixth look like a bar that is loading.
+*/
+.dpc-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.dpc-progress__track {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+}
+
+.dpc-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+  transition: width 300ms var(--ease-enter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpc-progress__fill {
+    transition: none;
+  }
+}
+
+.dpc-progress__count {
+  flex: 0 0 auto;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Sections and cards
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* pb clears the fixed footer. Sized against the footer at its TALLEST — button
+   plus the missing-field line plus a submit error — because the consent
+   checkboxes are the one thing on this page that cannot be scrolled past
+   unread, and they are the last thing above it. */
+.dpc-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s7);
+  padding-block: var(--s6) 200px;
+}
+
+.dpc-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+/*
+ * Section headings sit on the canvas, above the card. Sentence case, --ink, no
+ * tracked caps and no numbered step chips: the steps are not steps — nothing
+ * here is sequenced, and a "1 / 2 / 3" beside three headings on one scrolling
+ * page invents a wizard that does not exist.
+ */
+.dpc-section__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+
+.dpc-section__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpc-section__note {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dpc-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  padding: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Fields
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dpc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.dpc-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+@media (min-width: 480px) {
+  .dpc-row {
+    flex-direction: row;
+    gap: var(--s3);
+  }
+
+  .dpc-row > .dpc-field {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.dpc-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* The required marker. --primary, because this is the one thing on the row that
+   can stop the form being submitted — the same job the colour does everywhere
+   else on the surface. */
+.dpc-label__required {
+  color: var(--primary);
+}
+
+.dpc-label__optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/*
+ * 16px minimum, on every control including the selects. Below it, mobile Safari
+ * zooms the viewport on focus and does not zoom back — which on a form this long
+ * means the person finishes it on a page 1.3× too wide, with the submit button
+ * off the right edge.
+ */
+.dpc-input {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dpc-input::placeholder {
+  color: var(--muted);
+}
+
+.dpc-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-color: var(--ink);
+}
+
+.dpc-input[aria-invalid='true'] {
+  border-color: var(--primary);
+}
+
+/* A select needs the same box as an input but must not inherit the OS chrome's
+   own font. appearance:none plus a drawn chevron keeps the two matched. */
+.dpc-input--select {
+  appearance: none;
+  padding-inline-end: var(--s7);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(50% + 2px),
+    calc(100% - 14px) calc(50% + 2px);
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.dpc-help {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dpc-fielderror {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}
+
+/* The slot a shared picker renders into. Nothing inside it is styled here. */
+.dpc-embed {
+  min-height: 48px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Consent
+   ─────────────────────────────────────────────────────────────────────────
+
+   Presentation only. Which boxes exist, what they mean, what version each tick
+   is recorded against and what happens when a document changes mid-session is
+   phase-1 behaviour and is untouched by this file.
+*/
+
+.dpc-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  cursor: pointer;
+}
+
+.dpc-consent--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/*
+ * A real <input type="checkbox"> with `appearance: none`, NOT a hidden input
+ * with a drawn square beside it. The visually-hidden-input pattern is what put
+ * the focus ring on a box nobody can see; this keeps one element, so the
+ * keyboard, the screen reader and the ring are all native and all on the thing
+ * that is actually on screen.
+ *
+ * 24px is under the 44px target rule on its own — the LABEL is the target, and
+ * it wraps both the box and the sentence, so the whole line is tappable and
+ * clears 44px on every width.
+ */
+.dpc-consent__box {
+  flex: 0 0 auto;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  border: 1.5px solid var(--muted);
+  border-radius: 6px;
+  background: var(--surface-card);
+  cursor: inherit;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    border-color var(--d-quick) var(--ease-enter);
+}
+
+.dpc-consent__box:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+  /* The tick, drawn rather than fonted: an icon-font glyph here would be the
+     words "check" until the webfont arrives, inside a consent control. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  background-size: 16px 16px;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.dpc-consent__box:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.dpc-consent__text {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+/* The version label beside each tick. Micro, muted, and on its own line on a
+   narrow screen — it is a receipt, not part of the sentence being agreed to. */
+.dpc-consent__version {
+  display: block;
+  margin-top: var(--s1);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dpc-consent__link {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dpc-consent__link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-card);
+}
+
+/*
+ * The policy-changed notice. NOT an error and not red: the text moved, which is
+ * an ordinary thing for a legal document to do, and the ask is "read this and
+ * tick again". It is a bordered note in --accent, the token this system reserves
+ * for secondary emphasis, so it is visibly not the same class of event as a
+ * rejected submission.
+ */
+.dpc-stale {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-card);
+  background: rgb(123 97 255 / 6%);
+}
+
+.dpc-stale__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.dpc-stale__title {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dpc-stale__note {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dpc-stale__dismiss {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding-inline: var(--s2);
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dpc-status {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The "your consent is recorded against a version, with a timestamp" note. */
+.dpc-note {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The footer
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dpc-footer {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  border-top: 1px solid var(--divider);
+  background: var(--surface-card);
+  box-shadow: 0 -1px 3px rgb(15 23 41 / 8%);
+}
+
+.dpc-footer__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding-block: var(--s4);
+  padding-bottom: calc(var(--s4) + env(safe-area-inset-bottom));
+}
+
+/*
+ * What is still missing, on the button's own row rather than only in a toast the
+ * button raises. A dimmed button does not read as tappable, so a toast behind a
+ * tap is advice the person who most needs it is least likely to reach.
+ */
+.dpc-missing {
+  margin: 0;
+  text-align: center;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dpc-missing__count {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.dpc-submiterror {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  text-align: center;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}
+
+/*
+ * ONE BUTTON, TWO STRENGTHS. Ready is solid --primary; not-ready is the same
+ * button at reduced opacity with the same geometry. The retired version changed
+ * HUE between the two states, which made the control read as a different button
+ * appearing rather than as this button becoming available.
+ *
+ * It is never `disabled` in the DOM while the form is incomplete — a disabled
+ * button cannot be focused, so a keyboard user tabbing to the end of the form
+ * would find nothing there and no explanation. It stays reachable, carries
+ * aria-disabled, and its own label says which condition is unmet.
+ */
+.dpc-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--s3) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--e1);
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-enter);
+}
+
+.dpc-submit:active {
+  transform: scale(0.99);
+}
+
+.dpc-submit:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.dpc-submit[aria-disabled='true'],
+.dpc-submit:disabled {
+  opacity: 0.4;
+  box-shadow: var(--e0);
+  cursor: not-allowed;
+}
+
+.dpc-spin {
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentcolor;
+  border-top-color: transparent;
+  border-radius: var(--r-pill);
+  opacity: 0.85;
+  animation: dpc-spin 700ms linear infinite;
+}
+
+@keyframes dpc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The toast
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dpc-toast {
+  position: fixed;
+  top: var(--s4);
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  width: min(440px, calc(100% - var(--s7)));
+  transform: translateX(-50%);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--primary);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e2);
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dpc-toast {
+    animation: dpc-toast-in var(--d-move) var(--ease-enter) both;
+  }
+}
+
+@keyframes dpc-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.dpc-toast__icon {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.dpc-toast__text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.dpc-toast__dismiss {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: calc(var(--s3) * -1) calc(var(--s2) * -1) 0 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}

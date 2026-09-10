@@ -1,0 +1,140 @@
+/*
+ * focus.css — the focus policy for the participant app. One file, one rule.
+ *
+ * THE POLICY IS: NOTHING. No ring, no glow, no border change, on click or on
+ * Tab. Clicking or tabbing into a control leaves it looking exactly as it did.
+ * The only thing that moves is the text caret inside a field.
+ *
+ * This replaced six near-identical `:focus-visible` blocks scattered across
+ * discover.css, app-header.css, search.css and search-screen.css, each with a
+ * hand-maintained selector list, plus an olive `box-shadow` glow on every input
+ * in index.css and a handful of one-off olive outlines in individual
+ * components. Every new control had to remember to opt into one of them, and
+ * whichever forgot behaved differently from the rest — the inconsistency this
+ * file exists to end. Nothing opts in now; the rule finds controls by what they
+ * ARE, and gives all of them the same treatment.
+ *
+ * WHAT THIS COSTS, stated plainly rather than buried:
+ *
+ * A visible focus indicator is what tells somebody navigating by keyboard where
+ * they currently are. Without one, pressing Tab moves an invisible cursor and
+ * the only way to find it is to press Enter and see what happens. It is a real
+ * accessibility regression and it is what WCAG 2.4.7 (Focus Visible, level AA)
+ * asks for. This is a deliberate product decision, taken with that understood;
+ * it is not an oversight, and it is reversible in exactly one place — restore
+ * the block at the bottom of this file and every control gets its ring back at
+ * once, which is the whole reason the policy lives here instead of in six.
+ *
+ * SCOPE: participant surfaces only. The /admin console is a separate design
+ * system with its own audience and its own blue focus states, and this file
+ * deliberately does not reach it.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The design-system surfaces
+   ───────────────────────────────────────────────────────────────────────── */
+
+/*
+ * THE ROOT LIST, AND WHY IT KEEPS GROWING.
+ *
+ * This started as five class names, and every screen redesigned since then
+ * landed OUTSIDE them — which did not restore the ring this file removed, it
+ * restored the BROWSER DEFAULT one. So the app ended up with the policy applied
+ * on five surfaces and a stock Chrome outline on a dozen others: the exact
+ * per-screen divergence the file was written to end, arrived at from the other
+ * direction. Every design-system root is now listed.
+ *
+ * A new screen root must be added here. That is a real maintenance cost and the
+ * honest alternative is a bare `:where(button, a[href], ...)` with no ancestor
+ * at all — rejected only because this file is deliberately scoped to the
+ * participant app and the /admin console keeps its own blue focus states.
+ */
+:is(
+    .dsc-shell,
+    .dhd-header,
+    .dsm-root,
+    .dsh-root,
+    .dss-screen,
+    .dcd-screen,
+    .dac-screen,
+    .dce-screen,
+    .dbk-screen,
+    .dcl-screen,
+    .dop-screen,
+    .dvl-screen,
+    .ddr-screen,
+    .dpj-screen,
+    .dpp-screen,
+    .dsk-screen,
+    .dse-screen,
+    .dtm-screen,
+    .dco-screen,
+    .dfc-screen,
+    .dfc-hdr,
+    .ddp-screen,
+    .dmp-page,
+    .dmp-screen,
+    .dmr-screen,
+    .dnt-screen,
+    .dpc-screen,
+    .dpd-screen,
+    .dqp-screen,
+    .drd-page,
+    .drd-screen,
+    .drg-screen,
+    .dsi-screen,
+    .dst-screen,
+    .dvs-screen
+  )
+  :where(button, a[href], summary, input, textarea, select, [role='dialog'], [tabindex]):is(
+    :focus,
+    :focus-visible
+  ) {
+  outline: none;
+  box-shadow: none;
+}
+
+/*
+ * The composite search field keeps its resting border on focus. It used to
+ * darken to --ink on :focus-within, which is the same coloured-box-on-click
+ * this policy removes — moved one element outwards rather than removed.
+ */
+.dsr-field:focus-within {
+  border-color: var(--divider);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The older Heritage screens
+   ─────────────────────────────────────────────────────────────────────────
+
+   index.css put a soft olive glow under every input and textarea, and five
+   participant components painted their own olive rings through Tailwind
+   utilities. Those were DELETED at source — 42 utility classes and one CSS
+   rule — rather than overridden from here, because an override needs
+   !important to beat a utility class and an !important in a base stylesheet is
+   a trap for whoever writes the next rule.
+
+   What remains below is a floor, not an override: it stops the browser's own
+   default ring, which no amount of deleting our own rules would have removed.
+*/
+
+input:is(:focus, :focus-visible),
+textarea:is(:focus, :focus-visible),
+select:is(:focus, :focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TO RESTORE FOCUS INDICATORS
+   ─────────────────────────────────────────────────────────────────────────
+
+   Delete everything above and uncomment this. It is the whole policy.
+
+   :is(.dsc-shell, .dhd-header, .dsm-root, .dsh-root, .dss-screen)
+     :where(button, a[href], summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+     outline: 2px solid var(--focus-ring);
+     outline-offset: 2px;
+   }
+   .dsr-field:focus-within { border-color: var(--ink); }
+*/

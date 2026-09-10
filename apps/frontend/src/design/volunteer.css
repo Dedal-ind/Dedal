@@ -1,0 +1,490 @@
+/*
+ * volunteer.css — the volunteer's working screens, on the dedal design system.
+ *
+ * Covers /backstage/volunteer-dashboard, /backstage/volunteer-event and the
+ * My hours panel they share. One sheet, because the dashboard IS the event
+ * screen with more than one checkpoint on it: the same checkpoint header, the
+ * same scan button, the same counts, the same downloads. Two sheets would have
+ * been two copies of one design.
+ *
+ * WHAT CHANGED IN SUBSTANCE, not just in colour:
+ *
+ * · THE PROGRESS RINGS ARE GONE. Both screens drew an SVG arc to say "62% of
+ *   the roster is in". An arc has to be measured against its own track to be
+ *   read, in sunlight, at arm's length; the number it encodes was already
+ *   printed in the middle of it. What is left is the number, large, with the
+ *   two figures it is made of stated in words underneath.
+ *
+ * · NOTHING IS SAID IN COLOUR ALONE. The retired screens used olive for
+ *   "checked in", a red --error for "yet to check in" and a secondary tint for
+ *   "checked out", with only an all-caps label to disambiguate. This system has
+ *   six colours and no amber or green, so every count here is labelled in
+ *   plain words and the counts all read in --ink. --primary appears on exactly
+ *   one thing per screen: the scan button, which is the action.
+ *
+ * · THE SCAN BUTTON IS 64px. It is pressed once per person in the queue, which
+ *   makes it the most-tapped control in the product. The 52px it used to be was
+ *   sized for a participant screen.
+ *
+ * FOCUS: design/focus.css owns the no-ring policy for the participant surface.
+ * `.dvl-screen` is registered there and nothing in this file adds a ring back.
+ */
+
+.dvl-screen {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.dvl-col {
+  max-width: var(--col-max);
+  margin: 0 auto;
+  padding: var(--s2) var(--page-pad) var(--feed-end);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+}
+
+/*
+ * ONE CHECKPOINT = ONE BLOCK. On the dashboard a volunteer may hold two or
+ * three; they sit in an intrinsic grid so a wide window fills with checkpoints
+ * side by side instead of stranding 900px of nothing beside a single column.
+ * min(100%, 360px) keeps the phone at one column and never lets a child's
+ * intrinsic width push the grid past the viewport.
+ */
+.dvl-posts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: var(--grid-gap);
+  align-items: start;
+}
+
+.dvl-post {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  min-width: 0;
+  padding: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dvl-post__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+
+/*
+ * The state line above the checkpoint name: "On duty now" or "Not on duty".
+ * Words first. --primary only ever appears on the first of the two.
+ */
+.dvl-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dvl-eyebrow--now {
+  color: var(--primary);
+}
+
+.dvl-eyebrow__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: currentColor;
+}
+
+.dvl-post__name {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.dvl-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dvl-meta__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* ── The scan button ────────────────────────────────────────────────────── */
+
+/*
+ * The single --primary action on the screen, and the only one sized past 56px.
+ * No gloss, no gradient, no shine overlay: a red block with a word on it, which
+ * is findable without looking.
+ */
+.dvl-scan {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--s4) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: #fff;
+  font-family: var(--font);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform var(--d-instant) var(--ease-exit);
+}
+
+.dvl-scan:active {
+  transform: scale(0.99);
+}
+
+/* ── Counts ─────────────────────────────────────────────────────────────── */
+
+/*
+ * The headline pair, e.g. "18 checked in of 40 expected". Printed as text, not
+ * as an arc: it is read across a courtyard, and a number survives that.
+ */
+.dvl-headline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-2);
+}
+
+.dvl-headline__value {
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dvl-headline__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dvl-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+  gap: var(--card-gap);
+}
+
+.dvl-stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dvl-stat__value {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dvl-stat__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Secondary actions: the CSV downloads and the contact button ────────── */
+
+.dvl-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: var(--card-gap);
+}
+
+.dvl-button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-width: 0;
+  /* 56px, not 44px. Tapped with one thumb while holding a phone and a list. */
+  min-height: 56px;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dvl-button:hover {
+  background: var(--ink-dim-2);
+}
+
+.dvl-button:active {
+  background: var(--ink-dim-4);
+}
+
+.dvl-button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+/*
+ * An icon control in the ScreenHeader's action slot. 44px, matching the back
+ * control opposite it.
+ */
+.dvl-iconbtn {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.dvl-iconbtn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* ── The recent-entries and recent-scans lists ──────────────────────────── */
+
+.dvl-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.dvl-list__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-width: 0;
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dvl-list__row:last-child {
+  border-bottom: 0;
+}
+
+.dvl-list__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.dvl-list__id {
+  margin-left: var(--s2);
+  color: var(--muted);
+}
+
+.dvl-list__time {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dvl-subhead {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dvl-note {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── My hours ───────────────────────────────────────────────────────────── */
+
+.dvl-hours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  padding: var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dvl-hours__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+}
+
+.dvl-hours__total {
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The per-shift table scrolls sideways rather than wrapping. A four-column
+ * table that reflows on a phone stops being a table.
+ */
+.dvl-scroll {
+  overflow-x: auto;
+}
+
+.dvl-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dvl-table th {
+  padding: var(--s2) var(--s3) var(--s2) 0;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dvl-table td {
+  padding: var(--s3) var(--s3) var(--s3) 0;
+  border-bottom: 1px solid var(--divider);
+  vertical-align: top;
+  color: var(--ink);
+}
+
+.dvl-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.dvl-table__sub {
+  display: block;
+  color: var(--muted);
+}
+
+/* ── Loading, error, offline ────────────────────────────────────────────── */
+
+/* Static, like the scanner's. Nothing on a gate tool pulses. */
+.dvl-skel {
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dvl-skel--post {
+  height: 260px;
+}
+
+.dvl-skel--panel {
+  height: 140px;
+}
+
+.dvl-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dvl-error__message {
+  margin: 0;
+  min-width: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dvl-error__retry {
+  appearance: none;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: var(--s2) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: var(--font);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/*
+ * A failure that does not take the screen with it — a download that would not
+ * build. --primary text on the plain card, plus the sentence saying what
+ * failed; the colour is not carrying the meaning by itself.
+ */
+.dvl-alert {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}
+
+.dvl-offline {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}

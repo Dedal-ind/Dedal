@@ -1,0 +1,192 @@
+/*
+ * contingent-purchase.css — what is genuinely OWN to the bundle purchase.
+ *
+ * Everything structural (screen, column, sections, fields, action bar, states,
+ * skeletons) comes from registration.css so this screen reads as the same flow
+ * as a solo or team registration. What is left here is the handful of things
+ * only a BULK BUY ON BEHALF OF OTHERS needs:
+ *
+ *   - the running total, which has to answer two questions at once ("what will
+ *     I pay" and "how much is left to do") because this buyer is filling three
+ *     or more attendee rows rather than one form about themselves;
+ *   - the attendee row card, which groups three fields under the name of the
+ *     event they belong to — without that grouping nine identical inputs in a
+ *     column are unreadable at 360px;
+ *   - the two plain-language notices (DPDP, buyer terms) which are unique to
+ *     entering somebody else's contact details.
+ *
+ * Tokens only. --primary is spent on the one action and on errors, nowhere
+ * else — so the saving line, which is good news and wants to shout, gets
+ * weight and --ink instead of a colour it is not entitled to.
+ */
+
+.dcp-lede {
+  margin: 0;
+  padding-block: var(--s4) 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Notices ───────────────────────────────────────────────────────────────
+   Quiet by design. The DPDP notice is a legal statement the buyer must be able
+   to read, not a warning — an alert-coloured panel here would compete with the
+   one action and train people to ignore the colour that means "error". */
+
+.dcp-notice {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dcp-notice svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--muted);
+}
+
+.dcp-notice--fine {
+  background: none;
+  padding-inline: 0;
+  color: var(--muted);
+}
+
+/* ── Attendee rows ─────────────────────────────────────────────────────── */
+
+.dcp-row {
+  padding: var(--s4);
+  margin-top: var(--s3);
+  background: var(--surface-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+}
+
+.dcp-row__title {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* "Attendee for" is the label; the EVENT is the thing being scanned for, so the
+   two are not the same size. No 01/02 markers — the event name is the index. */
+.dcp-row__for {
+  font-size: var(--body-s-size);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* The first field in a card does not need the shared top padding: the card's
+   own padding already provides it, and doubling it pushes the third row's
+   inputs off a 360px screen. */
+.dcp-row .drg-field:first-of-type {
+  padding-top: var(--s2);
+}
+
+.dcp-row__self {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── The running total ─────────────────────────────────────────────────────
+   Always on screen above the action bar, and it carries the progress line
+   beside the price rather than in a separate widget: "how much is left to do"
+   is only meaningful next to "what it costs". */
+
+.dcp-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4);
+  background: var(--surface-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  box-shadow: var(--e1);
+}
+
+.dcp-total__label {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcp-total__progress {
+  margin: var(--s1) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dcp-total__amount {
+  display: block;
+  text-align: right;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The saving is the whole argument for a bundle, so it stays visible — struck
+   individual total above, saving under it. Rendered only when the backend has
+   a real individualTotalPaise to compare against. */
+.dcp-total__struck {
+  display: block;
+  text-align: right;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  text-decoration: line-through;
+  font-variant-numeric: tabular-nums;
+}
+
+.dcp-total__saving {
+  display: block;
+  text-align: right;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Loading skeleton ──────────────────────────────────────────────────────
+   Shaped like the real layout — a context strip, a notice, then attendee
+   cards — so nothing jumps when the data lands. */
+
+.dcp-skel-context {
+  height: 72px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.dcp-skel-line {
+  height: 16px;
+  margin-top: var(--s3);
+}
+
+.dcp-skel-row {
+  height: 260px;
+  margin-top: var(--s3);
+}
+
+.dcp-skel-total {
+  height: 88px;
+  margin-top: var(--s5);
+}

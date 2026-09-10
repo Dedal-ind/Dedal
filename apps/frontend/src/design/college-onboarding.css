@@ -1,0 +1,1254 @@
+/*
+ * college-onboarding.css — the public college-onboarding surface on dedal.
+ *
+ * Three screens, one experience: the application form (/register-college), the
+ * confirmation (/register-college/success) and the public status page
+ * (/register-college/status/:id). `dco-` prefixed, tokens only.
+ *
+ * WHO THIS IS FOR, because it changes every decision below. A college
+ * representative arrives COLD: no account, no app, usually from an email or a
+ * link somebody forwarded them, often on a phone, and with no reason to trust
+ * us yet. Jakob's Law says what they expect is the onboarding they have already
+ * done a dozen times — Stripe, Typeform, a bank's KYC flow — which is one thing
+ * at a time, a bar that fills, and a button that is always where they left it.
+ * Not a government portal with forty fields on one page.
+ *
+ * The idioms here are deliberately those of registration.css (`drg-`): the same
+ * field states, the same fixed action bar, the same 2px --primary error rule
+ * down the left edge of a broken field. A participant registering for an event
+ * and a principal registering a college are different people, but they are
+ * looking at the same product and it should not change shape between them.
+ *
+ * FOCUS: nothing in this file paints a focus ring. That is design/focus.css's
+ * single job and this sheet deliberately does not second-guess it. `.dco-screen`
+ * is NOT yet in that file's root list — see the note at the end of this file.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The screen
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dco-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * The measure. 560px for the form, 480px for the two short screens — the
+ * brief's numbers, and right for both: a form field wider than ~560px stops
+ * reading as a field and starts reading as a stripe, and a confirmation that is
+ * four lines and two buttons has nothing to fill 900px with.
+ *
+ * Set as a custom property on the root so the column, the fixed action bar's
+ * inner and the review grid all agree without any of them repeating the number.
+ */
+.dco-col {
+  width: 100%;
+  max-width: var(--dco-col-max, 560px);
+  margin-inline: auto;
+  padding-inline: var(--page-pad);
+}
+
+.dco-screen--narrow {
+  --dco-col-max: 480px;
+}
+
+/* Text carried to assistive technology only — the section name on an otherwise
+   identical row of "Edit" buttons, the live confirmation that an id was
+   copied. Never used to hide anything a sighted person needs. */
+.dco-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE PROGRESS BAR — the only progress indicator on the form
+   ─────────────────────────────────────────────────────────────────────────
+
+   4px of --primary across the whole window, filling proportionally. Not dots,
+   not numbered circles, and no "step 2 of 5" line anywhere.
+
+   Hick's Law, applied to the decision the applicant is actually making. A COUNT
+   invites arithmetic — "three more, each of those looked like six fields, is
+   this worth twenty minutes?" — and that arithmetic is where a cold visitor
+   with no account and no sunk cost decides to do it later. A bar that is 40%
+   full answers a different question: not "how much is left" but "am I getting
+   anywhere", and the answer is yes. Same information, and only one of the two
+   framings makes people quit.
+
+   Sticky rather than fixed, and placed BEFORE the wordmark header in the
+   markup, so at rest it is the top edge of the page and once you scroll it is
+   the top edge of the window. Fixed would have laid it permanently over the
+   header's own top 4px, which reads as a rendering accident rather than a bar.
+*/
+
+.dco-progress {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 4px;
+  background: var(--ink-dim-4);
+  /* The fill is scaled from the left, so its own width never changes and the
+     browser animates a transform rather than a layout. */
+  overflow: hidden;
+}
+
+.dco-progress__fill {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: var(--primary);
+  transition: transform var(--d-move) var(--ease-enter);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Steps and their transition
+   ─────────────────────────────────────────────────────────────────────────
+
+   ALL STEPS ARE ONE ROUTE. Advancing is a state change and a 200ms transform,
+   not a navigation: the router never sees it, the back button never lands
+   somebody in the middle of a half-filled form, and a refresh cannot strip four
+   steps of typing out from under them.
+
+   Both the outgoing and the incoming step are mounted for those 200ms, stacked
+   in the same grid cell so the container takes the taller of the two and
+   nothing under it jumps. The outgoing one is inert (pointer-events, aria-
+   hidden) — it is a picture of where you were, not a form you can still type
+   into.
+*/
+
+.dco-steps {
+  flex: 1 1 auto;
+  display: grid;
+  /* One cell. Both children are placed into it, so they overlap rather than
+     stack, which is what makes the cross-slide possible without absolute
+     positioning and its collapsed height. */
+  grid-template-areas: 'step';
+  align-items: start;
+  /* The steps slide the full width of themselves; without this the outgoing
+     one paints a horizontal scrollbar on its way off. `clip` rather than
+     `hidden` so no scroll container is created and `position: sticky` above
+     still resolves against the viewport. */
+  overflow-x: clip;
+  padding-block: var(--s6) var(--s7);
+}
+
+.dco-step {
+  grid-area: step;
+  min-width: 0;
+}
+
+.dco-step--leaving {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dco-step--enter-forward {
+    animation: dco-in-right 200ms var(--ease-enter) both;
+  }
+
+  .dco-step--enter-back {
+    animation: dco-in-left 200ms var(--ease-enter) both;
+  }
+
+  .dco-step--leave-forward {
+    animation: dco-out-left 200ms var(--ease-enter) both;
+  }
+
+  .dco-step--leave-back {
+    animation: dco-out-right 200ms var(--ease-enter) both;
+  }
+}
+
+@keyframes dco-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dco-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes dco-out-left {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes dco-out-right {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+/*
+ * A real <fieldset> per step, with the step title as its <legend>. The default
+ * fieldset chrome is removed but the ELEMENT is kept, because that is what
+ * tells a screen reader that these six fields are one group called "About your
+ * college" — information a <div> with an <h2> beside it does not carry.
+ */
+.dco-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.dco-legend {
+  /* `display: block` + padding: 0 — a legend's default inline placement inside
+     the border is meaningless once the border is gone, and Safari lays it out
+     differently from everyone else until it is overridden. */
+  display: block;
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 var(--s2);
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.dco-legend + * {
+  clear: both;
+}
+
+.dco-substep {
+  margin: 0 0 var(--s6);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   FIELDS — the floating label
+   ─────────────────────────────────────────────────────────────────────────
+
+   24px between fields, --r-card corners, and the label lives INSIDE the box:
+   at rest it sits where the text will go, and it rises to a small line at the
+   top once the field is focused or has anything in it.
+
+   Why floating rather than the stacked label the auth screen uses: those forms
+   are two fields, this one is nineteen. A stacked label costs 20px of vertical
+   space per field, which over four steps is most of a phone screen; and once a
+   field is filled, a floating label keeps the question visible above the answer
+   instead of making the applicant scroll back up to remember what "Format" was
+   asking for.
+
+   The raised state is driven by a CLASS from React (`--filled`) rather than by
+   `:placeholder-shown`, because a <select> has no placeholder to shine through
+   and half the fields on step 1 and 2 are selects. One mechanism for all three
+   control types beats two that disagree at the edges.
+*/
+
+.dco-fields {
+  display: grid;
+  gap: var(--s6);
+}
+
+.dco-field {
+  display: block;
+  position: relative;
+}
+
+.dco-field__box {
+  position: relative;
+  display: block;
+}
+
+.dco-field__label {
+  position: absolute;
+  left: var(--s4);
+  top: 50%;
+  transform: translateY(-50%);
+  transform-origin: left center;
+  pointer-events: none;
+  color: var(--muted);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  transition:
+    transform var(--d-quick) var(--ease-enter),
+    font-size var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter);
+}
+
+.dco-field--filled .dco-field__label,
+.dco-field:focus-within .dco-field__label {
+  transform: translateY(-22px);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* A textarea's label cannot centre against a 108px box — it pins to the first
+   line of text instead, which is where the label's own baseline belongs. The
+   vertical-centring transform has to be cancelled explicitly: `transform`
+   replaces rather than composes, so leaving translateY(-50%) in place would
+   lift the resting label half its own height above where it belongs. */
+.dco-field--area .dco-field__label {
+  top: 22px;
+  transform: none;
+}
+
+.dco-field--area.dco-field--filled .dco-field__label,
+.dco-field--area:focus-within .dco-field__label {
+  transform: translateY(-14px);
+}
+
+/*
+ * 16px is a floor, not a preference: mobile Safari zooms the whole viewport
+ * when a focused input's text is under 16px and does not zoom back out, which
+ * would leave somebody mid-application on a page 1.3x too wide with the
+ * Continue button off the right edge.
+ *
+ * The top padding is asymmetric — 24 over 8 — to leave room for the label to
+ * rise into without the text moving.
+ */
+.dco-control {
+  width: 100%;
+  min-height: 56px;
+  padding: 24px var(--s4) 8px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  appearance: none;
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+/* An unfilled, unfocused field has its label sitting where the text goes, so
+   any placeholder underneath it would collide. The placeholder is revealed only
+   once the label has moved out of the way. */
+.dco-control::placeholder {
+  color: transparent;
+  transition: color var(--d-quick) var(--ease-enter);
+}
+
+.dco-field:focus-within .dco-control::placeholder {
+  color: var(--muted);
+}
+
+.dco-control--area {
+  min-height: 108px;
+  padding-top: 28px;
+  resize: vertical;
+}
+
+.dco-control--select {
+  /* Room for the chevron, which is decorative and must never sit on the text. */
+  padding-right: var(--s8);
+  cursor: pointer;
+}
+
+.dco-field__chevron {
+  position: absolute;
+  right: var(--s4);
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+  display: flex;
+}
+
+/*
+ * ERROR. The same treatment registration.css uses, deliberately: a 2px
+ * --primary rule down the LEFT edge plus a message underneath. The rule is what
+ * makes one broken field findable among six; the message is always rendered and
+ * tied by aria-describedby, because colour on a border is the one signal that
+ * conveys nothing at all to somebody who cannot see it.
+ */
+.dco-field--error .dco-control {
+  border-color: var(--divider);
+  border-left: 2px solid var(--primary);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+}
+
+.dco-field__error {
+  display: block;
+  margin-top: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.dco-field__hint {
+  display: block;
+  margin-top: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dco-field__optional {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* The choice group (expected fest size). Real radios under the skin, so the
+   arrow keys, the group semantics and the screen-reader announcement are the
+   browser's rather than something re-implemented on buttons. */
+.dco-choicegroup {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.dco-choicegroup__legend {
+  display: block;
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin: 0 0 var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dco-choices {
+  clear: both;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+
+.dco-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  cursor: pointer;
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dco-choice:has(input:checked) {
+  border-color: var(--ink);
+}
+
+.dco-choice input {
+  accent-color: var(--primary);
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Documents
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dco-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  width: 100%;
+  padding: var(--s7) var(--s5);
+  border: 1px dashed var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dco-drop:hover {
+    border-color: var(--ink);
+  }
+}
+
+.dco-drop__icon {
+  color: var(--muted);
+}
+
+.dco-drop__title {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+}
+
+.dco-drop__hint {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dco-docs {
+  list-style: none;
+  margin: var(--s3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s2);
+}
+
+.dco-doc {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dco-doc__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dco-doc__remove {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .dco-doc__remove:hover {
+    background: var(--ink-dim-4);
+    color: var(--ink);
+  }
+}
+
+.dco-note {
+  margin: var(--s3) 0 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dco-note--alert {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* A non-blocking informational note — the directory match on step 1. --ink-dim-4
+   because there is no such thing as an amber in this palette and inventing one
+   for a nicety would be the worst possible reason to add a seventh colour. */
+.dco-hintbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dco-hintbox__icon {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE CONFLICT BANNER — the two 409s
+   ─────────────────────────────────────────────────────────────────────────
+
+   An application already pending, or the college already registered. Neither is
+   an error the applicant can fix by trying again, and both mean the thing they
+   came to do is already done — so this is PERSISTENT, at the top of the review
+   step, with the server's own wording and a link to the status page.
+
+   Not a toast: a toast times out, and this is the answer to the question they
+   came with. Not a modal: a modal has to be dismissed, and dismissing it would
+   return them to a Submit button that cannot ever work.
+
+   --primary down the left edge and --ink for the text. There is no warning
+   colour in this palette and this does not need one: the red rule is the
+   attention, the black text is the sentence.
+*/
+
+.dco-conflict {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  margin-bottom: var(--s6);
+  padding: var(--s4);
+  background: var(--surface-card);
+  border-radius: 0 var(--r-card) var(--r-card) 0;
+  border-left: 2px solid var(--primary);
+  box-shadow: var(--e1);
+}
+
+.dco-conflict__icon {
+  flex: 0 0 auto;
+  color: var(--primary);
+  margin-top: 2px;
+}
+
+.dco-conflict__body {
+  min-width: 0;
+}
+
+.dco-conflict__text {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.dco-conflict__link {
+  display: inline-block;
+  margin-top: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE REVIEW STEP
+   ─────────────────────────────────────────────────────────────────────────
+
+   Everything collected, compact, with an Edit per section that jumps straight
+   back to the step that owns those fields. Key-value rows on hairline dividers
+   — the same shape as a bank's confirm-payment screen, because that is the
+   comparison a person is unconsciously making when asked to check something
+   before committing it.
+*/
+
+.dco-review {
+  display: grid;
+  gap: var(--s6);
+  /* Sections start at the top of their column rather than stretching, so a
+     four-row section next to a one-row one does not grow hairlines to fill. */
+  align-content: start;
+}
+
+.dco-review__section {
+  min-width: 0;
+  break-inside: avoid;
+}
+
+.dco-review__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dco-review__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dco-review__edit {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .dco-review__edit:hover {
+    color: var(--ink);
+  }
+}
+
+.dco-review__rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  column-gap: var(--s4);
+}
+
+.dco-review__key,
+.dco-review__value {
+  padding-block: var(--s3);
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dco-review__key {
+  margin: 0;
+  color: var(--muted);
+}
+
+.dco-review__value {
+  margin: 0;
+  color: var(--ink);
+  text-align: right;
+  /* An address or a long institution name wraps rather than being truncated —
+     this is the screen whose entire job is letting somebody CHECK the value,
+     and a truncated value cannot be checked. */
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE ACTION BAR
+   ─────────────────────────────────────────────────────────────────────────
+
+   Fixed, 72px, a hairline on top, always on screen while the step scrolls
+   behind it. On a phone the alternative is a Continue button that lives at an
+   unknown scroll depth which changes with every step; a control that moves is a
+   control people hunt for.
+
+   Back is a --muted TEXT button on the left and Continue is a --primary fill on
+   the right, and the asymmetry is the point: they are not two equal options.
+*/
+
+.dco-actions {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  background: var(--surface-card);
+  border-top: 1px solid var(--divider);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.dco-actions__inner {
+  width: 100%;
+  max-width: var(--dco-col-max, 560px);
+  margin-inline: auto;
+  min-height: 72px;
+  padding-inline: var(--page-pad);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+/* The screen's own bottom padding clears the bar. Generous: the review step's
+   submit is full width and the bar is the last thing between the applicant and
+   the end of the form, so content hidden under it is worse than dead space. */
+.dco-screen--form {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}
+
+.dco-back {
+  padding: var(--s3) 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .dco-back:hover {
+    color: var(--ink);
+  }
+}
+
+.dco-next {
+  min-height: 48px;
+  padding: var(--s3) var(--s6);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    transform var(--d-instant) var(--ease-exit);
+}
+
+.dco-next:active {
+  transform: scale(0.98);
+}
+
+/*
+ * The submit takes the whole row — it is the only thing left to do. `flex: 1`
+ * rather than `width: 100%`, because Back is still in the row beside it and a
+ * literal 100% would either overflow the bar or squash the two into a fight
+ * for the same space. What it means in practice is identical: the button runs
+ * from Back to the right edge of the column.
+ */
+.dco-next--wide {
+  flex: 1 1 auto;
+}
+
+.dco-actions__inner:has(.dco-next--wide) .dco-back {
+  flex: 0 0 auto;
+}
+
+/*
+ * THE INERT STATE. `aria-disabled` and a no-op handler, never the `disabled`
+ * attribute — the same pattern the auth screen uses and for the same reason: a
+ * `disabled` button cannot be focused, cannot be tapped, and therefore can
+ * never tell anybody WHY it is dead. This one stays reachable, announces itself
+ * as disabled, and on activation reveals the inline errors that explain it.
+ *
+ * 0.4 opacity, the brief's number and the same one registration.css uses for
+ * every other dead control in the product.
+ */
+.dco-next--inert {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dco-next:disabled {
+  opacity: 0.4;
+  cursor: progress;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   SUCCESS
+   ───────────────────────────────────────────────────────────────────────── */
+
+.dco-celebrate {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: var(--s4);
+  padding-block: var(--s8) var(--s6);
+}
+
+/* The drawn mark. Same geometry and same two subpaths as the participant
+   registration success screen — one confirmation gesture across the product. */
+.dco-check__circle,
+.dco-check__tick {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dco-headline {
+  margin: 0;
+  font-size: var(--display-l-size);
+  line-height: var(--display-l-line);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/*
+ * ONE sentence. Somebody who has just submitted a form wants to know it landed
+ * and what they now hold; a paragraph of instructions at this moment is read by
+ * nobody and dilutes the two things that matter — the id and the status link.
+ */
+.dco-prose {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+.dco-timeline {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The id and its copy control, one bordered row: the id is the only thing on
+   this screen the applicant has to keep, so it gets the object treatment. */
+.dco-idrow {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  overflow: hidden;
+}
+
+.dco-idrow__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--s3) var(--s4);
+  text-align: left;
+}
+
+.dco-idrow__label {
+  display: block;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.dco-idrow__value {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.dco-copy {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  padding: 0;
+  border: 0;
+  border-left: 1px solid var(--divider);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+@media (hover: hover) {
+  .dco-copy:hover {
+    background: var(--ink-dim-4);
+    color: var(--ink);
+  }
+}
+
+.dco-stack {
+  display: grid;
+  gap: var(--s3);
+  width: 100%;
+  margin-top: var(--s6);
+}
+
+.dco-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: var(--s3) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--primary);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* The ghost: same box, no fill. Secondary in weight as well as colour, so the
+   two never read as a choice between equals. */
+.dco-cta--ghost {
+  background: transparent;
+  border: 1px solid var(--divider);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   STATUS
+   ─────────────────────────────────────────────────────────────────────────
+
+   Four states, each visually distinct, and the distinction is carried by the
+   MARK rather than by a coloured card: --muted circle for the two waiting
+   states, --primary for the decision that went well, --muted with an X for the
+   one that did not.
+
+   Rejected is deliberately NOT --primary. Red here would be the product
+   shouting at somebody for something they did not do wrong, and --primary is
+   also the colour of the "Apply again" button directly beneath it — the same
+   red for the bad news and for the way out of it flattens both.
+*/
+
+.dco-status {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: var(--s4);
+  padding-block: var(--s8) var(--s6);
+}
+
+.dco-status__mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--r-pill);
+  background: var(--muted);
+  color: var(--surface-card);
+}
+
+.dco-status__mark--primary {
+  background: var(--primary);
+}
+
+/*
+ * UNDER REVIEW pulses. Not a spinner — nothing is loading, a person is reading
+ * it — but "under review" is the one of the four states that describes work
+ * happening right now, and a mark that breathes says that in a way a static
+ * circle cannot. Opacity only, 2s, CSS only, no JS timer.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .dco-status__mark--pulse {
+    animation: dco-pulse 2s var(--ease-enter) infinite;
+  }
+}
+
+@keyframes dco-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.dco-status__title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.dco-status__body {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+/* The reviewer's own words, when there are any. --muted and body 14: it is an
+   explanation, not a second headline. */
+.dco-status__reason {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* The read-only facts. Same key-value shape as the review step, because it is
+   the same information doing the same job — with no edit affordance anywhere,
+   since a submitted application is not a thing the applicant can change. */
+.dco-details {
+  width: 100%;
+  margin-top: var(--s6);
+}
+
+.dco-details__heading {
+  margin: 0 0 var(--s2);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.dco-details__rows {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  column-gap: var(--s4);
+}
+
+.dco-details__key,
+.dco-details__value {
+  padding-block: var(--s3);
+  border-bottom: 1px solid var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dco-details__key {
+  margin: 0;
+  color: var(--muted);
+}
+
+.dco-details__value {
+  margin: 0;
+  color: var(--ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* Shared empty / error state for the two screens that can fail to find an
+   application at all. */
+.dco-empty {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: var(--s4);
+  padding-block: var(--s8);
+}
+
+.dco-skel {
+  width: 100%;
+  height: 220px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dco-skel {
+    animation: dco-skel 1s linear infinite alternate;
+  }
+}
+
+@keyframes dco-skel {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dco-footer {
+  margin-top: auto;
+  padding: var(--s6) var(--page-pad);
+  border-top: 1px solid var(--divider);
+  text-align: center;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+/* The support address in the footer. Underlined rather than coloured: --primary
+   is the one action per screen and the one action here is above the fold. */
+.dco-footer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DESKTOP DENSITY
+   ─────────────────────────────────────────────────────────────────────────
+
+   The 560/480 caps are right for a form and a status card and they stay. What
+   is NOT right is stranding a 560px ribbon of key-value rows in the middle of a
+   1400px window and asking somebody to scroll four screens through it.
+
+   So the REVIEW step and the STATUS details — the two places where the content
+   is a list rather than a sequence — go to two columns once there is genuinely
+   room for two readable ones, and the review step widens its column to suit.
+   Everywhere else the measure is unchanged: a form is answered one field at a
+   time and a second column of fields would just be two places to look.
+*/
+
+@media (min-width: 900px) {
+  .dco-screen--review {
+    --dco-col-max: 880px;
+  }
+
+  .dco-review {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--s7);
+  }
+
+  /* The banner is about the whole application, not about one section of it. */
+  .dco-conflict {
+    grid-column: 1 / -1;
+  }
+
+  .dco-details__rows {
+    /* Two key-value pairs per row: four facts become two lines instead of
+       four, which is the difference between a card and a scroll. */
+    grid-template-columns: repeat(2, minmax(0, auto) minmax(0, 1fr));
+    column-gap: var(--s6);
+  }
+}
+
+/*
+ * ── A NOTE FOR WHOEVER OWNS design/focus.css ────────────────────────────────
+ *
+ * `.dco-screen` is not in that file's root list. Nothing in THIS sheet paints a
+ * focus ring — deliberately, the policy is that file's and this one does not
+ * second-guess it — but the consequence of being outside the list is not "no
+ * ring", it is the browser's OWN default outline on every button and link here,
+ * which is precisely the per-screen divergence that file exists to end. Adding
+ * `.dco-screen` to the `:is(...)` list is the one-line fix; it is not made here
+ * because that file is deliberately the single place the policy lives.
+ */
