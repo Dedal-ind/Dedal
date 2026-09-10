@@ -12,6 +12,7 @@ import AdminCollapsibleSection from '../admin-collapsible-section/AdminCollapsib
 import AdminTokenInput from '../admin-token-input/AdminTokenInput.jsx';
 import AdminScreenState from '../admin-screen-state/AdminScreenState.jsx';
 import { targetingApi } from '../../helpers/admin-promotions-api.js';
+import { DIMENSION_ORDER, normaliseTargeting, isTargetingEmpty } from './targeting-helpers.js';
 
 const DIMENSION_META = {
   collegeIds: { label: 'Colleges', includeHelp: 'Only these colleges', excludeHelp: 'Never these colleges' },
@@ -20,30 +21,6 @@ const DIMENSION_META = {
   yearsOfStudy: { label: 'Years of study', includeHelp: 'Only these years', excludeHelp: 'Never these years' },
   festIds: { label: 'Fests', includeHelp: 'Registered for these fests', excludeHelp: 'Not registered for these' },
 };
-
-const DIMENSION_ORDER = ['collegeIds', 'cities', 'departments', 'yearsOfStudy', 'festIds'];
-
-const EMPTY_TARGETING = {
-  include: { collegeIds: [], cities: [], departments: [], yearsOfStudy: [], festIds: [] },
-  exclude: { collegeIds: [], cities: [], departments: [], yearsOfStudy: [], festIds: [] },
-};
-
-function normaliseTargeting(raw) {
-  const t = { include: {}, exclude: {} };
-  for (const dim of DIMENSION_ORDER) {
-    t.include[dim] = raw?.include?.[dim] ?? [];
-    t.exclude[dim] = raw?.exclude?.[dim] ?? [];
-  }
-  return t;
-}
-
-function isTargetingEmpty(targeting) {
-  for (const dim of DIMENSION_ORDER) {
-    if ((targeting.include[dim]?.length ?? 0) > 0) return false;
-    if ((targeting.exclude[dim]?.length ?? 0) > 0) return false;
-  }
-  return true;
-}
 
 function dimensionCount(targeting, dim) {
   return (targeting.include[dim]?.length ?? 0) + (targeting.exclude[dim]?.length ?? 0);
@@ -119,16 +96,6 @@ function AdminTargetingEditor({ targeting, onChange, isLive }) {
     loadOptions();
   }, [loadOptions]);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      fetchEstimate(normalised);
-      runValidation(normalised);
-    }, 500);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [targeting]);
-
   async function fetchEstimate(pred) {
     setEstimateStatus('loading');
     setEstimateError('');
@@ -155,6 +122,16 @@ function AdminTargetingEditor({ targeting, onChange, isLive }) {
       setValidation(null);
     }
   }
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchEstimate(normalised);
+      runValidation(normalised);
+    }, 500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targeting]);
 
   function findingsForDimension(dim) {
     if (!validation) return { errors: [], warnings: [] };
@@ -353,5 +330,4 @@ function ReachFigure({ value, label, explanation, highlight, muted }) {
   );
 }
 
-export { normaliseTargeting, isTargetingEmpty, EMPTY_TARGETING };
 export default AdminTargetingEditor;

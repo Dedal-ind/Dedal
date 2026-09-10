@@ -415,7 +415,6 @@ function AdminCreateEventScreen() {
       try {
         const event = await apiClient.get(`/fests/${editFestId}/events/${editEventId}`);
         if (isStale) return;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm(eventToForm(event, editFestId));
         setCreationMode('fest');
         setStep(0);
@@ -425,7 +424,6 @@ function AdminCreateEventScreen() {
       }
     })();
     return () => { isStale = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditMode, editFestId, editEventId]);
 
   async function handleSubmit(shouldPublish) {

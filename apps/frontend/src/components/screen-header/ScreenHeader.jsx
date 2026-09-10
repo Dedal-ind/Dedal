@@ -28,7 +28,7 @@
 import { useEffect } from 'react';
 import { BackIcon } from '../detail-icons/DetailIcons.jsx';
 import { useNavigate } from 'react-router-dom';
-import { useScreenTitleRegistration } from './screen-title-context.jsx';
+import { useScreenTitleRegistration } from './screen-title-hooks.js';
 import './screen-header.css';
 
 const FLOATING_BUTTON_CLASS = [

@@ -1,9 +1,19 @@
 # Production deploy: test, then ship backend and frontend to the live box.
 #
-# Same shape as deploy-staging.yml. Everything that differs is a path, a name or
-# a URL, and each difference is marked below so the two files can be diffed:
+# MANUAL ONLY, AND `main` ONLY. This used to run on every push to `main`. It no
+# longer runs on any push: shipping to production is a button somebody presses
+# after deciding to, not a side effect of a merge.
 #
-#   trigger        main            (staging: dev)
+#   Actions → Deploy production → Run workflow → Run
+#
+# There is deliberately NO branch input, which is the one place this file
+# differs in shape from deploy-staging.yml. Staging is for looking at a change
+# before it is merged; production is for what has been merged and reviewed, and
+# an input box is an invitation to ship something else on a bad day. `main` is
+# hard-coded in both the checkout and the remote reset.
+#
+# Everything else that differs from staging is a path, a name or a URL:
+#
 #   checkout dir   /home/ubuntu/dedal
 #   git ref        origin/main
 #   pm2 process    festpass-backend
@@ -21,9 +31,7 @@
 name: Deploy production
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 concurrency:
   group: deploy-production
@@ -34,8 +42,13 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      # `ref: main` rather than the default checkout: this workflow can be
+      # dispatched from any branch's copy of the file, and the code tested must
+      # be the code deployed.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -70,6 +83,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -e
             cd /home/ubuntu/dedal
             git fetch origin main
             git reset --hard origin/main
@@ -81,6 +95,8 @@ jobs:
       # ── STEP B — frontend ───────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

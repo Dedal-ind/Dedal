@@ -31,9 +31,9 @@ import {
   BackIcon,
   DownloadIcon,
   ShareIcon,
-  LinkedInIcon,
   RetryIcon,
 } from '../../components/detail-icons/DetailIcons.jsx';
+import LinkedInIcon from '../../components/detail-icons/LinkedInIcon.jsx';
 import '../../design/certificate-page.css';
 
 /*

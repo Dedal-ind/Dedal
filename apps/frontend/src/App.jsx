@@ -14,10 +14,8 @@ import RouteTransition from './components/route-transition/RouteTransition.jsx';
 import PublicOnlyRoute from './components/public-only-route/PublicOnlyRoute.jsx';
 import AppHeader from './components/app-header/AppHeader.jsx';
 import ScrollToTop from './components/route-transition/ScrollToTop.jsx';
-import {
-  ScreenTitleProvider,
-  useHasScreenTitle,
-} from './components/screen-header/screen-title-context.jsx';
+import { ScreenTitleProvider } from './components/screen-header/screen-title-context.jsx';
+import { useHasScreenTitle } from './components/screen-header/screen-title-hooks.js';
 import { HeaderSearchProvider } from './contexts/header-search-context/HeaderSearchProvider.jsx';
 import {
   AuthenticationProvider,

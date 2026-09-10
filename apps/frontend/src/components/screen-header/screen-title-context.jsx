@@ -23,9 +23,9 @@
 // forget, because passing a title to ScreenHeader IS the registration. Nothing
 // else has to be kept in step.
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
-const ScreenTitleContext = createContext(null);
+import { ScreenTitleContext } from './screen-title-store.js';
 
 export function ScreenTitleProvider({ children }) {
   /*
@@ -48,17 +48,4 @@ export function ScreenTitleProvider({ children }) {
   );
 
   return <ScreenTitleContext.Provider value={value}>{children}</ScreenTitleContext.Provider>;
-}
-
-/*
- * Both hooks tolerate being called outside the provider. ScreenHeader is used
- * by backstage and admin screens too, which are not inside ParticipantLayout;
- * there the registration is simply a no-op rather than a crash.
- */
-export function useScreenTitleRegistration() {
-  return useContext(ScreenTitleContext)?.registerScreenTitle ?? null;
-}
-
-export function useHasScreenTitle() {
-  return useContext(ScreenTitleContext)?.hasScreenTitle ?? false;
 }

@@ -1,5 +1,18 @@
 # Staging deploy: test, then ship backend and frontend to the staging box.
 #
+# MANUAL ONLY. This used to run on every push to `dev`; it no longer runs on any
+# push at all. Pushing is now validated by ci.yml and deploying is a button
+# somebody presses, so a commit reaching `dev` and a commit reaching the staging
+# box are two separate decisions.
+#
+#   Actions → Deploy staging → Run workflow → pick a branch → Run
+#
+# WHY THERE IS A BRANCH INPUT.
+#
+# Staging exists to look at a change before it is merged. Restricting it to
+# `dev` would mean merging first and inspecting second, which is the wrong way
+# round. The default is `dev`, so the common case is still one click.
+#
 # WHY THE DEPLOY JOB CHECKS OUT AND INSTALLS AGAIN.
 #
 # Jobs run on separate runners with separate filesystems, so nothing the `test`
@@ -17,14 +30,18 @@
 name: Deploy staging
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy to staging'
+        required: true
+        default: dev
+        type: string
 
-# Two pushes to dev in quick succession would otherwise run two deploys against
-# the same box at the same time, and `git reset --hard` in one can land in the
-# middle of the other's build. Queued rather than cancelled: a half-finished
-# deploy is worse than a slow one.
+# Two runs launched in quick succession would otherwise deploy against the same
+# box at the same time, and `git reset --hard` in one can land in the middle of
+# the other's build. Queued rather than cancelled: a half-finished deploy is
+# worse than a slow one.
 concurrency:
   group: deploy-staging
   cancel-in-progress: false
@@ -34,8 +51,13 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      # The branch being deployed is the branch being tested. Without `ref` this
+      # would check out the workflow's default branch and green-light a deploy
+      # of code it never ran.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -67,24 +89,35 @@ jobs:
       # ── STEP A — backend ────────────────────────────────────────────────────
       # First, and deliberately: this runs `git reset --hard`, which would throw
       # away a freshly copied dist if it ran after the frontend step.
+      #
+      # The branch travels through `envs:` rather than being interpolated into
+      # the script text. A `${{ }}` substitution would paste the input straight
+      # into a shell running on the box; as a named variable it is a value the
+      # shell reads, not source it executes.
       - name: Deploy backend over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          envs: DEPLOY_BRANCH
           script: |
+            set -e
             cd /home/ubuntu/dedal-staging
-            git fetch origin dev
-            git reset --hard origin/dev
+            git fetch origin "$DEPLOY_BRANCH"
+            git reset --hard "origin/$DEPLOY_BRANCH"
             pnpm install --filter fest-app-backend... --frozen-lockfile
             cd apps/backend
             node scripts/deploy-migrate.js
             pm2 restart dedal-staging
+        env:
+          DEPLOY_BRANCH: ${{ inputs.branch }}
 
       # ── STEP B — frontend ───────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

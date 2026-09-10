@@ -32,7 +32,7 @@ import DedalWordmark from '../dedal-wordmark/DedalWordmark.jsx';
 import SearchModal from '../search/SearchModal.jsx';
 import NotificationsPanel from '../notifications-panel/NotificationsPanel.jsx';
 import AccountDrawer from '../account-drawer/AccountDrawer.jsx';
-import { useIsDesktopLayout } from '../../screens/account/AccountScreen.jsx';
+import { useIsDesktopLayout } from '../../screens/account/use-desktop-layout.js';
 import PassSheet from '../pass-sheet/PassSheet.jsx';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { normalizeGooglePhotoUrl } from '../../helpers/google-photo-url.js';

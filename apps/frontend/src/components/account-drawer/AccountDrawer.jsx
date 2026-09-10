@@ -30,7 +30,7 @@
 import { useEffect, useRef } from 'react';
 import { useTransitionNavigate } from '../route-transition/use-transition-navigate.js';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
-import { SECTIONS } from '../../screens/account/AccountScreen.jsx';
+import { SECTIONS } from '../../screens/account/account-sections.js';
 import { BackIcon, ChevronIcon, SignOutIcon } from '../detail-icons/DetailIcons.jsx';
 import './account-drawer.css';
 

@@ -1,6 +1,6 @@
 // Placement breakdown — figures per surface, per day, and per campaign.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { Eye, Monitor, MousePointerClick, Server } from 'lucide-react';
@@ -30,16 +30,37 @@ function AdminDeliveryPlacementScreen() {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const load = useCallback(() => {
-    if (validateRange(range.from, range.to)) return;
+  const [reloadToken, setReloadToken] = useState(0);
+
+  /*
+   * The fetch runs in the effect and touches state only from the promise
+   * callbacks. The two resets that used to open `load` — status back to
+   * loading, error cleared — now happen in the handlers that CAUSE a reload,
+   * which is where a state update belongs; a setState reached synchronously
+   * from an effect body is a cascading render (react-hooks/set-state-in-effect).
+   * `active` replaces the identity-stable useCallback as the staleness guard:
+   * a response that arrives after the range moved on is dropped.
+   */
+  useEffect(() => {
+    if (validateRange(range.from, range.to)) return undefined;
+    let active = true;
+    deliveryApi.placement(placementKey, { from: range.from, to: range.to })
+      .then((result) => { if (active && mountedRef.current) { setData(result); setError(null); setStatus('ready'); } })
+      .catch((err) => { if (active && mountedRef.current) { setError(err?.message || 'Failed to load placement report.'); setStatus('error'); } });
+    return () => { active = false; };
+  }, [placementKey, range.from, range.to, reloadToken]);
+
+  const reloadReport = () => {
     setStatus('loading');
     setError(null);
-    deliveryApi.placement(placementKey, { from: range.from, to: range.to })
-      .then((result) => { if (mountedRef.current) { setData(result); setStatus('ready'); } })
-      .catch((err) => { if (mountedRef.current) { setError(err?.message || 'Failed to load placement report.'); setStatus('error'); } });
-  }, [placementKey, range.from, range.to]);
+    setReloadToken((token) => token + 1);
+  };
 
-  useEffect(() => { load(); }, [load]);
+  const changeRange = (next) => {
+    setStatus('loading');
+    setError(null);
+    setRange(next);
+  };
 
   const rangeError = validateRange(range.from, range.to);
 
@@ -55,7 +76,7 @@ function AdminDeliveryPlacementScreen() {
     return (
       <div className="mx-auto max-w-lg py-20 text-center">
         <AdminErrorBanner message={error} />
-        <button type="button" onClick={load} className="mt-4 inline-flex items-center gap-2 rounded-md bg-admin-primary-blue px-4 py-2 font-admin-body text-[14px] font-medium text-white transition-colors hover:bg-admin-primary-blue-dark">
+        <button type="button" onClick={reloadReport} className="mt-4 inline-flex items-center gap-2 rounded-md bg-admin-primary-blue px-4 py-2 font-admin-body text-[14px] font-medium text-white transition-colors hover:bg-admin-primary-blue-dark">
           <RefreshCw size={16} /> Retry
         </button>
       </div>
@@ -89,7 +110,7 @@ function AdminDeliveryPlacementScreen() {
           <h1 className="font-admin-display text-[28px] font-bold leading-9 text-admin-neutral-ink">{placement.label || placementKey}</h1>
           {placement.isActive !== undefined ? <p className="font-admin-body text-[13px] text-admin-slate-600">{placement.isActive ? 'Active' : 'Inactive'}</p> : null}
         </div>
-        <AdminDateRange from={range.from} to={range.to} onChange={setRange} />
+        <AdminDateRange from={range.from} to={range.to} onChange={changeRange} />
       </div>
 
       {rangeError ? null : <AdminCoverageBanner coverage={data?.coverage} />}

@@ -1,0 +1,70 @@
+# Continuous integration: validate, and nothing else.
+#
+# This workflow NEVER touches a server. It has no SSH key, no SCP step and no
+# health check — it runs the same two commands a developer runs locally and
+# reports whether the branch is sound. Deploying is a separate, deliberate act:
+# see deploy-staging.yml and deploy-production.yml, both of which are manual.
+#
+# WHY IT RUNS ON EVERY BRANCH.
+#
+# A branch that has never been tested is a branch nobody can review honestly. On
+# `branches: ['**']` every push gets a verdict, including work-in-progress
+# branches that will never open a pull request.
+#
+# WHY BOTH `push` AND `pull_request`.
+#
+# They answer different questions. `push` tests the branch as written;
+# `pull_request` tests the branch MERGED INTO ITS BASE, which is the code that
+# will actually land. A branch can be green on its own and red once merged, and
+# only the second trigger catches that. The overlap costs one duplicate run per
+# push to an open PR, which is the accepted price of the second answer.
+
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+# Superseded runs on the same ref are pointless — nobody reads a verdict on a
+# commit that has already been replaced. Cancelled rather than queued, which is
+# the opposite of the deploy workflows: no server state is involved here, so an
+# interrupted run leaves nothing half-done.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # pnpm/action-setup v4 reads `packageManager` from package.json and errors
+      # out when it is absent and no `version` is given. This repo has no
+      # `packageManager` field, so the version is pinned. 11 matches the pnpm
+      # that produced pnpm-lock.yaml (lockfileVersion 9.0).
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      # After pnpm, not before: `cache: pnpm` asks setup-node to locate the pnpm
+      # store, which needs pnpm already on PATH.
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Backend tests
+        run: pnpm test:backend
+
+      - name: Frontend lint
+        run: pnpm lint:frontend

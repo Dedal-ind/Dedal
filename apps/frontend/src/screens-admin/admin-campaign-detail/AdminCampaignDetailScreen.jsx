@@ -21,7 +21,8 @@ import AdminSegmentedToggle from '../../components-admin/admin-segmented-toggle/
 import AdminErrorBanner from '../../components-admin/admin-error-banner/AdminErrorBanner.jsx';
 import AdminModal from '../../components-admin/admin-modal/AdminModal.jsx';
 import AdminScreenState from '../../components-admin/admin-screen-state/AdminScreenState.jsx';
-import AdminTargetingEditor, { normaliseTargeting, EMPTY_TARGETING } from '../../components-admin/admin-targeting-editor/AdminTargetingEditor.jsx';
+import AdminTargetingEditor from '../../components-admin/admin-targeting-editor/AdminTargetingEditor.jsx';
+import { normaliseTargeting, EMPTY_TARGETING } from '../../components-admin/admin-targeting-editor/targeting-helpers.js';
 import { ADMIN_CAMPAIGNS_COPY as COPY } from '../../brand-admin/brand-copy.js';
 import { CampaignStatusChip } from '../admin-campaigns/AdminCampaignsScreen.jsx';
 import {
