@@ -127,14 +127,20 @@ describe("POST /api/v1/fests", () => {
 });
 
 describe("GET /api/v1/fests/mine", () => {
-  it("returns only the caller's fests", async () => {
+  /*
+   * "Mine" means the administrator's SCOPE, not their authorship: the route
+   * calls fetchFestsForAdministrator, which returns the caller's college's fests
+   * as well as the ones they created. Both fixtures here are hosted at the same
+   * college, so both come back — see the unit test on that service for why.
+   */
+  it("returns the fests in the caller's administrator scope", async () => {
     await createTestFest(college, admin.user);
     await createTestFest(college, outsider.user, { festSlug: "someone-else" });
 
     const response = await asAdmin(request(application).get(`${FESTS_PATH}/mine`));
 
     expect(response.status).toBe(200);
-    expect(response.body.data).toHaveLength(1);
+    expect(response.body.data).toHaveLength(2);
   });
 
   it("refuses an unauthenticated caller", async () => {

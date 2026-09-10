@@ -46,7 +46,14 @@ describe("winner certificates", () => {
   });
 
   it("titles the in-app notification with the event", () => {
-    expect(render("winner1st").notificationTitle).toBe("Congratulations! You've won Robowars!");
+    /*
+     * Notification copy is not email copy, and the helper keeps the two apart.
+     * A row is scanned in a column and clipped by the platform at roughly 50
+     * characters, so the title front-loads the fact and drops the exclamation
+     * and the "Congratulations!" preamble. The EMAIL subject below still
+     * congratulates; only the notification was shortened.
+     */
+    expect(render("winner1st").notificationTitle).toBe("You won Robowars");
   });
 });
 
@@ -57,7 +64,9 @@ describe("participation certificates", () => {
     expect(subject).toBe("Thank you for participating in Robowars at Techfest");
     expect(body).toContain("Thank you for participating in Robowars at Techfest, RV College.");
     expect(body).not.toContain("won");
-    expect(notificationTitle).toBe("Your participation certificate is ready");
+    /* "participation" dropped for length, per the note on the winner title. The
+       body still says what it was for, so the type is not lost. */
+    expect(notificationTitle).toBe("Your certificate is ready");
   });
 });
 

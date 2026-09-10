@@ -78,16 +78,36 @@ describe("createFest", () => {
 });
 
 describe("fetchFestsForAdministrator", () => {
-  it("returns only the fests the user created, newest first", async () => {
+  /*
+   * SCOPE IS COLLEGE OR AUTHORSHIP, not authorship alone.
+   *
+   * A college administrator now sees their college's fests however they were
+   * created, PLUS anything they authored themselves — the service's own comment
+   * explains the second half, which covers a fest created before the assignment
+   * existed. So the outsider's fest counts: createTestFest is given `college`,
+   * the same college this admin administers, so it is hosted there whoever
+   * pressed create.
+   *
+   * The old assertion — every row authored by the caller — was asserting the
+   * narrower behaviour this replaced, and it would now fail on the outsider's
+   * row even with the length corrected.
+   */
+  it("returns every fest at the administrator's college, however it was created", async () => {
     await createTestFest(college, admin.user, { festSlug: "older" });
     await createTestFest(college, admin.user, { festSlug: "newer", festName: "Newer" });
     await createTestFest(college, outsider.user, { festSlug: "someone-else" });
 
     const fests = await festService.fetchFestsForAdministrator(admin.user._id);
 
-    expect(fests).toHaveLength(2);
-    expect(fests.every((fest) => fest.createdByUserId.toString() === admin.user._id.toString()))
-      .toBe(true);
+    expect(fests).toHaveLength(3);
+    expect(
+      fests.every((fest) => fest.hostCollegeId.toString() === college._id.toString())
+    ).toBe(true);
+    /* And the authored-by-someone-else row really is in there, which is the
+       whole point of the college half of the filter. */
+    expect(
+      fests.some((fest) => fest.createdByUserId.toString() === outsider.user._id.toString())
+    ).toBe(true);
   });
 
   it("returns an empty list for a user who created nothing", async () => {

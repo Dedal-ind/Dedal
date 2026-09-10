@@ -49,8 +49,16 @@ describe("EventModel schema", () => {
   });
 
   it("rejects each enum field outside its range", async () => {
+    /*
+     * `category` is deliberately absent. It used to be an enum and is now free
+     * text with only a length cap: the model's own comment records why, that
+     * colleges run categories nobody can enumerate in advance ("Robotics",
+     * "Fintech", "Culinary Arts") and the enum rejected every one of them.
+     * EVENT_CATEGORIES is a suggestion list the UI offers, not a constraint the
+     * model enforces, so "underwater" is now a valid category and asserting it
+     * rejects was asserting the bug the change fixed.
+     */
     const badValues = {
-      category: "underwater",
       eventType: "duo",
       scoringFormat: "vibes",
       status: "paused",
@@ -108,7 +116,7 @@ describe("EventModel invariant 2: registration closes after it opens", () => {
   });
 });
 
-describe("EventModel invariant 3: registration closes before the event begins", () => {
+describe("EventModel invariant 3: registration closes before the event ends", () => {
   it("accepts a close at the exact moment the event starts", async () => {
     const startsAt = new Date("2027-03-01T10:00:00.000Z");
     await expect(
@@ -116,10 +124,15 @@ describe("EventModel invariant 3: registration closes before the event begins", 
     ).resolves.toBeDefined();
   });
 
-  it("invalidates a close after the event starts", async () => {
+  /*
+   * The invariant is measured against endsAt, not startsAt, and the message says
+   * so. A multi-day event can legitimately keep registration open after day one
+   * has begun; what it cannot do is take entries after the whole thing is over.
+   */
+  it("invalidates a close after the event ends", async () => {
     await expect(
       EventModel.create(buildEvent({ registrationClosesAt: new Date("2027-03-02T00:00:00.000Z") }))
-    ).rejects.toThrow(/Registration must close before the event begins/);
+    ).rejects.toThrow(/Registration must close before the event ends/);
   });
 });
 

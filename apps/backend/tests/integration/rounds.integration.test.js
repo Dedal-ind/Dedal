@@ -138,6 +138,22 @@ describe("round lifecycle", () => {
     });
     expect(await RoundScoreModel.countDocuments({ roundId: roundOne.id })).toBe(3);
 
+    /*
+     * ROUND 2 HAS TO EXIST FIRST. Advancing used to auto-create the next round,
+     * and no longer does: the service's own comment records why, that "Push all
+     * to next round" on the final round manufactured round N+1 for ever, an
+     * endless ladder no coordinator planned, with phantom draft rounds showing
+     * on the scoreboard before anyone had started them. Rounds are now planned
+     * deliberately and advancing only moves people into one that exists, so an
+     * advance with no round 2 is a 400 rather than a silent creation.
+     */
+    const roundTwoCreated = await withToken(
+      request(application).post(roundsPath()),
+      admin.authenticationToken
+    ).send({});
+    expect(roundTwoCreated.status).toBe(201);
+    expect(roundTwoCreated.body.data.roundNumber).toBe(2);
+
     // (a) advance five
     const advancingIds = participants.slice(0, 5).map((participant) => String(participant.user._id));
     const advanced = await withToken(
@@ -340,7 +356,23 @@ describe("round lifecycle", () => {
     expect(clash.status).toBe(400);
   });
 
-  it("refuses to change a COMPLETED round", async () => {
+  /*
+   * A COMPLETED ROUND LOCKS WHO COMPETED, NOT WHAT THEY SCORED.
+   *
+   * This test used to assert that a late score was refused with 409. That is no
+   * longer true, and deliberately so: saveRoundScores documents the exemption,
+   * because a transcription error found an hour later is a normal thing and
+   * locking the sheet the moment the round closes turns a two-second correction
+   * into a support request. Every write is audited, so a late edit is traceable
+   * rather than invisible.
+   *
+   * The lock itself still exists — retract and document upload keep it, since
+   * those change who competed rather than what they scored — so the test keeps
+   * its original intent and points at the operation that is still refused.
+   * Asserting only the score succeeds would have left ROUND_ALREADY_COMPLETED
+   * with no coverage anywhere in the suite.
+   */
+  it("locks the roster of a COMPLETED round but still accepts score corrections", async () => {
     const roundOne = (
       await withToken(request(application).post(roundsPath()), admin.authenticationToken).send({})
     ).body.data;
@@ -353,8 +385,14 @@ describe("round lifecycle", () => {
       request(application).post(`${roundsPath()}/${roundOne.id}/scores`),
       admin.authenticationToken
     ).send({ scores: [{ participantUserId: String(participants[0].user._id), score: 50 }] });
-    expect(lateScore.status).toBe(409);
-    expect(lateScore.body.error.code).toBe("ROUND_ALREADY_COMPLETED");
+    expect(lateScore.status).toBe(200);
+
+    const lateRetract = await withToken(
+      request(application).post(`${roundsPath()}/${roundOne.id}/retract`),
+      admin.authenticationToken
+    ).send({ participantUserIds: [String(participants[0].user._id)] });
+    expect(lateRetract.status).toBe(409);
+    expect(lateRetract.body.error.code).toBe("ROUND_ALREADY_COMPLETED");
   });
 
   it("returns the round detail with each participant's score", async () => {

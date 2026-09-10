@@ -180,7 +180,23 @@ describe("listPublicEvents", () => {
 
     const events = await eventService.listPublicEvents(publishedFest.id);
 
-    expect(events.map((event) => event.status)).toEqual(["published", "ongoing", "completed"]);
+    /*
+     * CANCELLED is publicly visible, by design. PUBLICLY_VISIBLE_EVENT_STATUSES
+     * includes it so an event called off after people registered still renders,
+     * carrying its cancelled badge, instead of leaving the participant who
+     * signed up with a dead link and no explanation. Registration is blocked
+     * separately by REGISTERABLE_EVENT_STATUSES, so being listed here does not
+     * make it registerable. DRAFT and DELETED remain excluded.
+     *
+     * Sorted by startsAt, and the fixture dates ascend with the status list, so
+     * cancelled is last.
+     */
+    expect(events.map((event) => event.status)).toEqual([
+      "published",
+      "ongoing",
+      "completed",
+      "cancelled",
+    ]);
   });
 
   it("needs no administrator and returns an empty list for a fest with no events", async () => {
