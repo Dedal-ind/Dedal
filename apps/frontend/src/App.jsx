@@ -187,10 +187,10 @@ function PlatformAdminRoute() {
 // "/" is the participant home AND the role router. The canonical sign-in lives at
 // /auth/email (a shared utility route that stays reachable and centered on every
 // viewport), so a signed-out visitor is sent there. A signed-in visitor is routed
-// by role: an administrator to the console, a staff member to backstage, and
-// everyone else falls through to the feed, which is RENDERED here rather than
-// redirected to — the participant home lives at "/" (it used to live at
-// "/discover", which is now a redirect back to "/").
+// by role: an administrator to the console, and everyone else — including
+// coordinators and volunteers — falls through to the feed, which is RENDERED
+// here rather than redirected to — the participant home lives at "/" (it used
+// to live at "/discover", which is now a redirect back to "/").
 // Authority resolves asynchronously, so while it is still 'unknown' this holds on
 // a spinner rather than flashing an admin to the feed and leaving them there.
 //
@@ -200,9 +200,12 @@ function PlatformAdminRoute() {
 // incomplete — gating on that flag before authority is known is what sent every
 // admin into the participant form.
 //
-// Order is load-bearing: admin, then profile, then staff, then participant.
+// Staff are NOT redirected to /backstage: the home page is the home page for
+// everyone, and backstage stays reachable from the navigation at its own route.
+//
+// Order is load-bearing: admin, then profile, then participant.
 function RootRoute() {
-  const { isAuthenticated, authorizationState, hasStaffAssignment, currentUser } =
+  const { isAuthenticated, authorizationState, currentUser } =
     useAuthentication();
   if (!isAuthenticated) {
     return <Navigate to="/auth/email" replace />;
@@ -224,14 +227,9 @@ function RootRoute() {
     return <Navigate to="/admin/overview" replace />;
   }
   // Coordinators and volunteers ARE participants underneath, so they finish the
-  // profile like anyone else before being sent to their duty screen.
+  // profile like anyone else before reaching the home page.
   if (currentUser?.isProfileComplete !== true) {
     return <Navigate to="/profile-completion" replace />;
-  }
-  // Any remaining assignment at this point is coordinator or volunteer — the admin
-  // roles were already routed above.
-  if (hasStaffAssignment) {
-    return <Navigate to="/backstage" replace />;
   }
   /*
    * The participant home. Rendered, not redirected — and wrapped in
