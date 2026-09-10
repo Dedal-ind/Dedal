@@ -1,0 +1,133 @@
+# Production deploy: test, then ship backend and frontend to the live box.
+#
+# Same shape as deploy-staging.yml. Everything that differs is a path, a name or
+# a URL, and each difference is marked below so the two files can be diffed:
+#
+#   trigger        main            (staging: dev)
+#   checkout dir   /home/ubuntu/dedal
+#   git ref        origin/main
+#   pm2 process    festpass-backend
+#   frontend build pnpm build      (default mode, no --mode flag)
+#   dist target    /home/ubuntu/festpass-frontend-git/dist/
+#   health URL     https://dedal.in/api/v1/health
+#
+# The frontend's dist target is NOT under the backend checkout here, unlike
+# staging. That is why the ordering note on Step A matters less on this box, but
+# the order is kept identical so the two files stay comparable.
+#
+# See deploy-staging.yml for why the deploy job checks out and installs again,
+# and why pnpm/action-setup is pinned to a version.
+
+name: Deploy production
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Backend tests
+        run: pnpm test:backend
+
+      - name: Frontend lint
+        run: pnpm lint:frontend
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # ── STEP A — backend ────────────────────────────────────────────────────
+      - name: Deploy backend over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/dedal
+            git fetch origin main
+            git reset --hard origin/main
+            pnpm install --filter fest-app-backend... --frozen-lockfile
+            cd apps/backend
+            node scripts/deploy-migrate.js
+            pm2 restart festpass-backend
+
+      # ── STEP B — frontend ───────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # No --mode flag: Vite's default production mode reads
+      # apps/frontend/.env.production, which is gitignored, so this build takes
+      # its API base URL from whatever that file contains on the runner. If the
+      # production build ever comes out pointing at the wrong API, this is the
+      # line to look at.
+      - name: Build frontend (production)
+        run: cd apps/frontend && pnpm build
+
+      - name: Clear remote dist
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: rm -rf /home/ubuntu/festpass-frontend-git/dist/*
+
+      - name: Copy dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: apps/frontend/dist/*
+          target: /home/ubuntu/festpass-frontend-git/dist/
+          strip_components: 3
+          overwrite: true
+
+      # ── STEP C — health check ───────────────────────────────────────────────
+      - name: Health check
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: curl -sf https://dedal.in/api/v1/health || exit 1

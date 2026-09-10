@@ -1,0 +1,144 @@
+# Staging deploy: test, then ship backend and frontend to the staging box.
+#
+# WHY THE DEPLOY JOB CHECKS OUT AND INSTALLS AGAIN.
+#
+# Jobs run on separate runners with separate filesystems, so nothing the `test`
+# job installed or built is available here. `needs: test` is a gate, not a
+# handoff. The frontend has to be built on this runner before it can be copied,
+# which is why the checkout, pnpm, Node and install steps appear twice.
+#
+# WHY pnpm/action-setup NEEDS AN EXPLICIT VERSION.
+#
+# v4 reads `packageManager` from package.json and errors out when it is absent
+# and no `version` is given. This repo has no `packageManager` field, so the
+# version is pinned here. 11 matches the pnpm that produced pnpm-lock.yaml
+# (lockfileVersion 9.0) and the version used locally.
+
+name: Deploy staging
+
+on:
+  push:
+    branches:
+      - dev
+
+# Two pushes to dev in quick succession would otherwise run two deploys against
+# the same box at the same time, and `git reset --hard` in one can land in the
+# middle of the other's build. Queued rather than cancelled: a half-finished
+# deploy is worse than a slow one.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      # After pnpm, not before: `cache: pnpm` asks setup-node to locate the
+      # pnpm store, which needs pnpm already on PATH.
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Backend tests
+        run: pnpm test:backend
+
+      - name: Frontend lint
+        run: pnpm lint:frontend
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # ── STEP A — backend ────────────────────────────────────────────────────
+      # First, and deliberately: this runs `git reset --hard`, which would throw
+      # away a freshly copied dist if it ran after the frontend step.
+      - name: Deploy backend over SSH
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/dedal-staging
+            git fetch origin dev
+            git reset --hard origin/dev
+            pnpm install --filter fest-app-backend... --frozen-lockfile
+            cd apps/backend
+            node scripts/deploy-migrate.js
+            pm2 restart dedal-staging
+
+      # ── STEP B — frontend ───────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # `--mode staging` makes Vite read apps/frontend/.env.staging. That file
+      # must be committed for this to produce a staging build rather than a
+      # build with no API base URL.
+      - name: Build frontend (staging)
+        run: cd apps/frontend && pnpm build:staging
+
+      # Vite emits content-hashed filenames, so an overwriting copy leaves every
+      # previous build's chunks behind for ever. Clearing first also means a file
+      # deleted from the build is deleted from the server.
+      - name: Clear remote dist
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: rm -rf /home/ubuntu/dedal-staging/apps/frontend/dist/*
+
+      # strip_components: 3 removes `apps/frontend/dist/` from each path, so the
+      # files land directly in the target rather than in a nested copy of the
+      # source tree.
+      - name: Copy dist to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: apps/frontend/dist/*
+          target: /home/ubuntu/dedal-staging/apps/frontend/dist/
+          strip_components: 3
+          overwrite: true
+
+      # ── STEP C — health check ───────────────────────────────────────────────
+      # -f makes curl exit non-zero on a 4xx/5xx, which a bare curl does not:
+      # without it a 502 from a crash-looping process still "succeeds" and the
+      # deploy reports green.
+      - name: Health check
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: curl -sf https://testing.dedal.in/api/v1/health || exit 1
