@@ -461,6 +461,212 @@ async function broadcastEventMessage(actorUserId, festId, eventId, payload, cont
   return { sent, failed, recipientCount: recipients.length, inAppDelivered };
 }
 
+/* ---------------------------------------------------------------------------
+ * FEST-WIDE BROADCAST
+ *
+ * WHY THIS EXISTS RATHER THAN "SELECT EVERY EVENT". The per-event broadcast
+ * above is the right tool for "Battle of Bands moved to Room 204". It is the
+ * wrong tool for "gates open at 9am" - an announcement that is about the fest,
+ * not about any event in it. Sending that one meant an admin walking the event
+ * list and firing the same message once per event, which is not merely tedious:
+ *
+ *   - A participant registered for four events received the SAME announcement
+ *     four times, each one titled after a different event. That is how a
+ *     platform teaches people to ignore its notifications.
+ *   - Every send is a separate audit row, so "did the 9am notice go out" could
+ *     not be answered without reconstructing the set by hand.
+ *   - Miss one event and part of the fest never hears it, with nothing in the
+ *     system that could tell you which part.
+ *
+ * So the audience is resolved ONCE, across the whole fest, and deduplicated by
+ * user before anything is sent. Dedup is the entire reason the fest-wide path
+ * cannot be implemented as a loop over the event-wide one.
+ *
+ * The title is the FEST's name, not an event's, because that is what the
+ * message is from. Titling a fest announcement after whichever event happened
+ * to be selected is part of the bug this replaces.
+ * ------------------------------------------------------------------------- */
+
+/* Every confirmed registrant of any event in the fest, each user once. */
+async function loadFestConfirmedRecipients(eventIds) {
+  if (eventIds.length === 0) {
+    return [];
+  }
+  const registrations = await RegistrationModel.find({
+    eventId: { $in: eventIds },
+    status: REGISTRATION_STATUSES.CONFIRMED,
+  })
+    .select("userId")
+    .lean();
+
+  const userIds = [...new Set(registrations.map((registration) => String(registration.userId)))];
+  if (userIds.length === 0) {
+    return [];
+  }
+  /* Same policy as the per-event loader: no email filter at resolve time, so a
+     participant without a mailbox still gets the in-app row. */
+  return UserModel.find({ _id: { $in: userIds } })
+    .select("fullName emailAddress")
+    .lean();
+}
+
+/*
+ * Staff of one role anywhere in the fest. No eventIds clause at all - unlike
+ * the per-event loader, which narrows to assignments covering one event. A
+ * fest-wide announcement goes to every coordinator of the fest, including ones
+ * scoped to events the sender never thinks about.
+ */
+async function loadFestStaffRecipients(festId, role) {
+  const assignments = await StaffAssignmentModel.find({
+    festId,
+    role,
+    status: STAFF_ASSIGNMENT_STATUSES.ACTIVE,
+  })
+    .select("userId")
+    .lean();
+
+  const userIds = [...new Set(assignments.map((assignment) => String(assignment.userId)))];
+  if (userIds.length === 0) {
+    return [];
+  }
+  return UserModel.find({ _id: { $in: userIds } })
+    .select("fullName emailAddress")
+    .lean();
+}
+
+async function resolveFestBroadcastRecipients(festId, eventIds, recipientType) {
+  const groups = [];
+  if (recipientType === "participants" || recipientType === "all") {
+    groups.push(await loadFestConfirmedRecipients(eventIds));
+  }
+  if (recipientType === "coordinators" || recipientType === "all") {
+    groups.push(await loadFestStaffRecipients(festId, STAFF_ROLES.COORDINATOR));
+  }
+  if (recipientType === "volunteers" || recipientType === "all") {
+    groups.push(await loadFestStaffRecipients(festId, STAFF_ROLES.VOLUNTEER));
+  }
+
+  /*
+   * Deduplicated by USER ID, not by email address.
+   *
+   * The per-event "all" branch dedups on email, which is safe there because it
+   * unions three small sets of staff and registrants. Here the participant set
+   * alone can contain the same person reached through several events, and a
+   * user with no email address would collapse every such user into a single
+   * entry under the key undefined - silently dropping most of the fest. The id
+   * is always present.
+   */
+  const byUserId = new Map();
+  for (const recipient of groups.flat()) {
+    const key = String(recipient._id);
+    if (!byUserId.has(key)) {
+      byUserId.set(key, recipient);
+    }
+  }
+  return [...byUserId.values()];
+}
+
+async function broadcastFestMessage(actorUserId, festId, payload, context = {}) {
+  const recipientType =
+    typeof payload?.recipientType === "string" ? payload.recipientType.trim() : "";
+  const message = typeof payload?.message === "string" ? payload.message.trim() : "";
+
+  const details = {};
+  if (!BROADCAST_RECIPIENT_TYPES.includes(recipientType)) {
+    details.recipientType = `must be one of: ${BROADCAST_RECIPIENT_TYPES.join(", ")}`;
+  }
+  if (!message) {
+    details.message = "is required";
+  } else if (message.length > MESSAGE_MAXIMUM_LENGTH) {
+    details.message = `must be at most ${MESSAGE_MAXIMUM_LENGTH} characters`;
+  }
+  if (Object.keys(details).length > 0) {
+    throw new ApplicationError(400, ERROR_CODES.VALIDATION_FAILED, "Check the broadcast.", details);
+  }
+
+  const fest = await FestModel.findById(festId).select("festName bannerImageUrl").lean();
+  if (!fest) {
+    throw new ApplicationError(404, ERROR_CODES.FEST_NOT_FOUND, "Fest not found.");
+  }
+
+  /*
+   * EVERY event, not just the registerable leaves. A container event carries no
+   * registrations of its own, so including it costs one id inside an $in and
+   * excluding it risks dropping a vertical that turns out to be registerable.
+   */
+  const events = await EventModel.find({ festId }).select("_id").lean();
+  const eventIds = events.map((event) => event._id);
+
+  const recipients = await resolveFestBroadcastRecipients(festId, eventIds, recipientType);
+
+  /* Email is best-effort and the in-app feed is guaranteed - the same split the
+     per-event broadcast documents, for the same reasons. */
+  const { sendEventParticipantNotificationEmail } = require("./email-service");
+
+  const mailableRecipients = recipients.filter((recipient) => Boolean(recipient.emailAddress));
+  const outcomes = await Promise.allSettled(
+    mailableRecipients.map((recipient) =>
+      sendEventParticipantNotificationEmail({
+        emailAddress: recipient.emailAddress,
+        fullName: recipient.fullName,
+        subject: fest.festName,
+        message,
+        eventName: fest.festName,
+        festName: fest.festName,
+        festBannerImageUrl: fest.bannerImageUrl ?? null,
+      })
+    )
+  );
+
+  let sent = 0;
+  let failed = 0;
+  outcomes.forEach((outcome, index) => {
+    if (outcome.status === "fulfilled" && outcome.value) {
+      sent += 1;
+    } else {
+      failed += 1;
+      const reason = outcome.status === "rejected" ? outcome.reason?.message : "transport refused";
+      console.error(
+        `Fest broadcast email to ${mailableRecipients[index].emailAddress} for fest ${festId} failed: ${reason}`
+      );
+    }
+  });
+
+  const { notifyUsers, NOTIFICATION_TYPES } = require("./notification-service");
+  const inAppDelivered = await notifyUsers({
+    userIds: recipients.map((recipient) => String(recipient._id)),
+    notificationType: NOTIFICATION_TYPES.BROADCAST,
+    title: `${fest.festName}: announcement`,
+    body: message,
+    linkPath: null,
+    festId: String(festId),
+    /* No eventId: this notification is not about an event, and stamping one on
+       would deep-link the reader into whichever event happened to be first. */
+    eventId: null,
+    actorUserId,
+  });
+
+  await recordAuditLog({
+    actorUserId,
+    festId,
+    action: AUDIT_ACTIONS.BULK_EMAIL_SENT,
+    entityType: AUDIT_ENTITY_TYPES.FEST,
+    entityId: festId,
+    afterState: {
+      scope: "fest",
+      recipientType,
+      deliveryChannel: "in-app",
+      eventCount: eventIds.length,
+      recipientCount: recipients.length,
+      sentCount: sent,
+      failedCount: failed,
+    },
+    ...context,
+  });
+
+  return { sent, failed, recipientCount: recipients.length, inAppDelivered };
+}
+
 /*
  * The COORDINATOR's broadcast: in-app only, directory-scoped.
  *
@@ -590,6 +796,7 @@ async function broadcastInAppMessage(actorUserId, festId, eventId, payload, cont
 
 module.exports = {
   broadcastInAppMessage,
+  broadcastFestMessage,
   notifyEventParticipants,
   broadcastEventMessage,
   getNotificationPreview,

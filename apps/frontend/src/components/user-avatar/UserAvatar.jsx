@@ -4,13 +4,17 @@
 // falls back to an initials monogram when it does not — email-OTP users, Google
 // accounts with no photo, and any photo that fails to load.
 //
-// One shape: the Heritage Institutional soft circle — an olive fill with a white
+// One shape: a soft circle with the person's initials. On the dedal tokens
+// (user-avatar.css) — it was a Heritage olive fill with a Playfair letter, which
+// dragged the retired palette onto every screen that renders a person.
+// Previously described as: an olive fill with a white
 // monogram and no border, as the top bar draws it. There used to be a second,
 // hard-bordered square shape for the brutalist screens, selected by a `variant`
 // prop; the brutalist system is gone, every call site had already moved to
 // heritage, and the prop and its branch went with it.
 
 import { useState } from 'react';
+import './user-avatar.css';
 import { normalizeGooglePhotoUrl } from '../../helpers/google-photo-url.js';
 
 // Rendered size in CSS pixels, with the type scale that fits inside each one.
@@ -64,7 +68,7 @@ function UserAvatar({ user, size = 'medium', className = '' }) {
         height={pixels}
         style={frameStyle}
         onError={() => setFailedPhotoUrl(photoUrl)}
-        className={[frameClassName, 'bg-surface-gray-light object-cover'].join(' ')}
+        className={[frameClassName, 'dua-photo'].join(' ')}
       />
     );
   }
@@ -74,7 +78,7 @@ function UserAvatar({ user, size = 'medium', className = '' }) {
       style={frameStyle}
       className={[
         frameClassName,
-        'flex items-center justify-center bg-olive-accent font-display font-bold text-on-tertiary',
+        'dua-fallback',
         textClassName,
       ].join(' ')}
     >

@@ -14,7 +14,14 @@
  *   S3_BUCKET_NAME && S3_ACCESS_KEY_ID && S3_SECRET_ACCESS_KEY  → s3, else local.
  *
  * Driver interface:
- *   upload(fileBuffer, mimeType, originalFilename) → { url, key }
+ *   upload(fileBuffer, mimeType, options) → { url, key }
+ *     options.kind             "image" (default) | "video" | "document"
+ *     options.allowedMimeTypes narrows the document whitelist for a caller
+ *
+ *   The third argument is an OPTIONS OBJECT. It used to be documented here as
+ *   `originalFilename`, and every call site in upload-controller passed exactly
+ *   that — a string — so options.kind was always undefined and the document
+ *   branch below was unreachable from there. Corrected in both places.
  *   delete(key)                                    → for cleanup on failure
  *   getPresignedUrl(key, expirySeconds)            → time-limited URL (future use)
  *
@@ -48,6 +55,31 @@ const EXTENSION_BY_MIME = {
   "image/gif": ".gif",
   "image/avif": ".avif",
 };
+
+/*
+ * VIDEO. Three containers, and only three: MP4, WebM and QuickTime are what
+ * every current browser plays natively from a plain <video src>. Anything else
+ * would upload happily and then fail to play for the participant, which is the
+ * worst place to discover a codec problem.
+ *
+ * Kept as its own set rather than folded into ALLOWED_MIME_TYPES for the same
+ * reason documents have their own: a fest banner must never be allowed to be a
+ * video, and the image allowlist is what guards every other upload in the app.
+ */
+const ALLOWED_VIDEO_MIME_TYPES = new Set(["video/mp4", "video/webm", "video/quicktime"]);
+
+const VIDEO_EXTENSION_BY_MIME = {
+  "video/mp4": ".mp4",
+  "video/webm": ".webm",
+  "video/quicktime": ".mov",
+};
+
+/*
+ * A key prefix, so the bucket can be read by a human. Purely organisational —
+ * same bucket, same credentials, same public-read policy on uploads/*, which
+ * this stays inside so that policy still covers it.
+ */
+const VIDEO_KEY_PREFIX = "videos";
 
 /*
  * Round briefs and coordinator-uploaded certificates are DOCUMENTS, not images,
@@ -84,6 +116,17 @@ function assertDocument(mimeType, allowedMimeTypes = ALLOWED_DOCUMENT_MIME_TYPES
   }
 }
 
+function assertVideo(mimeType) {
+  if (!ALLOWED_VIDEO_MIME_TYPES.has(mimeType)) {
+    throw new ApplicationError(
+      400,
+      ERROR_CODES.VALIDATION_FAILED,
+      "Uploaded file must be an MP4, WebM or QuickTime video.",
+      { file: "unsupported video type" }
+    );
+  }
+}
+
 function assertImage(mimeType) {
   if (!ALLOWED_MIME_TYPES.has(mimeType)) {
     throw new ApplicationError(
@@ -98,7 +141,11 @@ function assertImage(mimeType) {
 // A collision-proof, unguessable object name: random bytes + the type's extension.
 function buildFileName(mimeType) {
   const token = crypto.randomBytes(16).toString("hex");
-  const extension = EXTENSION_BY_MIME[mimeType] || DOCUMENT_EXTENSION_BY_MIME[mimeType] || "";
+  const extension =
+    EXTENSION_BY_MIME[mimeType] ||
+    VIDEO_EXTENSION_BY_MIME[mimeType] ||
+    DOCUMENT_EXTENSION_BY_MIME[mimeType] ||
+    "";
   return `${token}${extension}`;
 }
 
@@ -133,9 +180,13 @@ function createLocalDriver() {
     // image one; everything else about the write is identical.
     if (options.kind === "document") {
       assertDocument(mimeType, options.allowedMimeTypes);
+    } else if (options.kind === "video") {
+      assertVideo(mimeType);
     } else {
       assertImage(mimeType);
     }
+    /* Local disk is flat — the prefix only means something in the bucket, and
+       inventing a subdirectory here would break the /uploads static mount. */
     const key = buildFileName(mimeType);
     await fs.mkdir(directory, { recursive: true });
     await fs.writeFile(path.join(directory, key), fileBuffer);
@@ -182,10 +233,24 @@ function createS3Driver() {
   async function upload(fileBuffer, mimeType, options = {}) {
     if (options.kind === "document") {
       assertDocument(mimeType, options.allowedMimeTypes);
+    } else if (options.kind === "video") {
+      assertVideo(mimeType);
     } else {
       assertImage(mimeType);
     }
-    const key = `${UPLOAD_PREFIX}/${buildFileName(mimeType)}`;
+    /*
+     * uploads/videos/<name> for video, uploads/<name> for everything else. It
+     * stays under UPLOAD_PREFIX deliberately: the documented bucket policy
+     * grants public read on uploads/*, and a sibling prefix would be private
+     * and fail to play with no error the admin could see.
+     *
+     * ContentType below is what makes the browser STREAM the object rather
+     * than download it, and it was already being set from the MIME type.
+     */
+    const key =
+      options.kind === "video"
+        ? `${UPLOAD_PREFIX}/${VIDEO_KEY_PREFIX}/${buildFileName(mimeType)}`
+        : `${UPLOAD_PREFIX}/${buildFileName(mimeType)}`;
     await client.send(
       new PutObjectCommand({
         Bucket: settings.bucket,
@@ -225,6 +290,9 @@ function logActiveUploadDriver() {
 
 module.exports = {
   assertDocument,
+  assertVideo,
+  ALLOWED_VIDEO_MIME_TYPES,
+  VIDEO_EXTENSION_BY_MIME,
   ALLOWED_DOCUMENT_MIME_TYPES,
   ALLOWED_CERTIFICATE_MIME_TYPES,
   getStorageDriver,

@@ -324,9 +324,33 @@ function EventDetailScreen() {
       .get('/registrations/mine')
       .then((payload) => {
         const rows = Array.isArray(payload) ? payload : (payload?.registrations ?? []);
-        // eventId arrives populated on some responses and as a bare id string on
-        // others; both mean the same thing.
-        const mine = rows.find((row) => (row?.eventId?.id ?? row?.eventId) === event.id);
+        /*
+         * A CANCELLED ROW IS NOT A REGISTRATION.
+         *
+         * This used to match on event id alone, so a registration the
+         * participant had cancelled still counted: the CTA offered "view" for a
+         * seat they no longer held, and the add-ons section below unlocked its
+         * actions against a dead registration id — the endpoint behind them
+         * only accepts a CONFIRMED one, so every tap would have ended in a
+         * refusal the screen could not explain.
+         *
+         * The live set mirrors the one TeamManagementScreen already uses when
+         * deciding which events a team may be created for; `attended` is
+         * included because a seat that was used is still a seat that was held.
+         *
+         * eventId arrives populated on some responses and as a bare id string
+         * on others; both mean the same thing.
+         */
+        const LIVE_STATUSES = new Set([
+          'confirmed',
+          'attended',
+          'waitlisted',
+          'pendingPayment',
+        ]);
+        const mine = rows.find(
+          (row) =>
+            (row?.eventId?.id ?? row?.eventId) === event.id && LIVE_STATUSES.has(row?.status),
+        );
         if (isCurrent) {
           setExistingRegistrationId(mine?.id ?? null);
         }
@@ -787,6 +811,30 @@ function EventDetailScreen() {
   const scoringLabel = readScoringLabel(event);
   const faqs = event?.faqs ?? [];
   const offers = Array.isArray(event?.offers) ? event.offers : [];
+
+  /*
+   * THE ADD-ONS A PARTICIPANT CAN ACTUALLY BUY.
+   *
+   * Two scopes, one list, mirroring listActiveOffers on the server: a fest-wide
+   * offer and an event-only one can share a key and be different things at
+   * different rates, so each row carries its scope and they are never merged.
+   *
+   * `food` and `accommodation` are dropped because the server drops them: they
+   * are RESERVED_OFFER_KEYS driving the dietary and stay sub-questions on the
+   * registration form, and add-on-service filters them out of the add-ons
+   * endpoint. Listing them here would offer a purchase the next screen does not
+   * have.
+   */
+  const purchasableAddOns = useMemo(() => {
+    const RESERVED = new Set(['food', 'accommodation']);
+    const fromFest = (fest?.offers ?? [])
+      .filter((offer) => offer.isActive !== false && !RESERVED.has(offer.offerKey))
+      .map((offer) => ({ offer, scope: 'fest' }));
+    const fromEvent = (event?.offers ?? [])
+      .filter((offer) => offer.isActive !== false && !RESERVED.has(offer.offerKey))
+      .map((offer) => ({ offer, scope: 'event' }));
+    return [...fromFest, ...fromEvent];
+  }, [fest?.offers, event?.offers]);
   const categoryChips = readCategoryChips(event);
   const googleCalendarUrl = event ? buildGoogleCalendarUrl(event) : null;
   const icsUrl = event ? buildIcsUrl(event.id) : null;
@@ -1261,6 +1309,60 @@ function EventDetailScreen() {
                         </div>
                       ) : null}
                     </div>
+                  </section>
+                ) : null}
+
+                {/* ── Add-ons ────────────────────────────────────────────── */}
+                {/*
+                  Add-ons existed on the backend — fest.offers, event.offers, an
+                  order model and both endpoints — and were reachable from
+                  exactly one place in the app: the screen you land on after
+                  joining a team by invite code. Register any other way and
+                  there was no route to them ever again. This is one of the two
+                  doors that were missing.
+
+                  The rows do not buy anything themselves. Purchasing is keyed
+                  to a REGISTRATION, not to an event, so the action hands off to
+                  the existing /registrations/:id/add-ons screen, which already
+                  owns the quantity steppers, the repricing and the checkout
+                  handoff. A second purchase flow would be a second thing to
+                  keep correct.
+                */}
+                {purchasableAddOns.length > 0 ? (
+                  <section className="ddp-section">
+                    <h2 className="ddp-section__title">Add-ons</h2>
+                    {!existingRegistrationId ? (
+                      <p className="ded-addons__gate">Register first to get add-ons</p>
+                    ) : null}
+                    <ul className="ded-addons" role="list">
+                      {purchasableAddOns.map(({ offer, scope }) => (
+                        <li className="ded-addon" key={`${scope}:${offer.offerKey}`}>
+                          <span className="ded-addon__body">
+                            <span className="ded-addon__name">{offer.offerName}</span>
+                            {offer.description ? (
+                              <span className="ded-addon__note">{offer.description}</span>
+                            ) : null}
+                          </span>
+                          <span className="ded-addon__end">
+                            <span className="ded-addon__price">
+                              {offer.isPaid === false || !offer.ratePaise
+                                ? 'Free'
+                                : formatPaiseAmount(offer.ratePaise)}
+                            </span>
+                            <button
+                              type="button"
+                              className="ded-addon__action"
+                              disabled={!existingRegistrationId}
+                              onClick={() =>
+                                navigate(`/registrations/${existingRegistrationId}/add-ons`)
+                              }
+                            >
+                              Get add-on
+                            </button>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </section>
                 ) : null}
 

@@ -1,6 +1,7 @@
 const rateLimit = require("express-rate-limit");
 
 const { ERROR_CODES } = require("../constants/error-codes");
+const { applicationConfig } = require("../config/application-config");
 
 /*
  * Rate limiting for the unauthenticated surface.
@@ -23,6 +24,28 @@ const { ERROR_CODES } = require("../constants/error-codes");
 const PUBLIC_WINDOW_MILLISECONDS = 15 * 60 * 1000;
 
 const PUBLIC_MAXIMUM_REQUESTS_PER_WINDOW = 100;
+
+/*
+ * OFF IN DEVELOPMENT, AND ONLY IN DEVELOPMENT.
+ *
+ * 100 requests per 15 minutes is the right budget for a signed-out stranger on
+ * the public browse surface. It is nowhere near enough for working on the app:
+ * one session of clicking through a fest, its events and a directory spends it,
+ * and the next page then fails with a 429 that looks exactly like a broken
+ * screen. That has already cost debugging time once here — a crew directory
+ * reported as "not loading" turned out to be a spent budget.
+ *
+ * The previous answer was to raise the constant by hand and remember to put it
+ * back before deploying. That is a footgun: the reminder lives outside the code,
+ * and the failure mode if it is forgotten is an un-rate-limited production API.
+ *
+ * So the environment decides, and the decision cannot be left half-done.
+ * `skip` is used rather than a large `limit` so development does no counting at
+ * all, and staging and production are untouched — they still get the same 100.
+ */
+function skipRateLimitInDevelopment() {
+  return applicationConfig.isDevelopment === true;
+}
 
 /*
  * Client error reports get their own, much tighter budget. A crash loop on one
@@ -52,6 +75,7 @@ function buildRateLimitHandler(message) {
 const publicRateLimiterMiddleware = rateLimit({
   windowMs: PUBLIC_WINDOW_MILLISECONDS,
   limit: PUBLIC_MAXIMUM_REQUESTS_PER_WINDOW,
+  skip: skipRateLimitInDevelopment,
   // Draft-8 headers carry Retry-After alongside RateLimit-*; the legacy
   // X-RateLimit-* set is off because nothing here reads it.
   standardHeaders: "draft-8",
@@ -64,6 +88,7 @@ const publicRateLimiterMiddleware = rateLimit({
 const clientErrorRateLimiterMiddleware = rateLimit({
   windowMs: CLIENT_ERROR_WINDOW_MILLISECONDS,
   limit: CLIENT_ERROR_MAXIMUM_REPORTS_PER_WINDOW,
+  skip: skipRateLimitInDevelopment,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   handler: buildRateLimitHandler("Too many error reports. Slow down."),

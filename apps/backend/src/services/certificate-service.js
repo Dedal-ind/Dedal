@@ -211,7 +211,7 @@ async function previewCertificatePdf(adminUserId, festId) {
       role: null,
     },
     verificationCode: sampleCode,
-    verifyUrl: `${applicationConfig.frontendBaseUrl}/verify/${sampleCode}`,
+    verifyUrl: `${applicationConfig.frontendBaseUrl}/verify-certificate/${sampleCode}`,
     template: fest.certificateTemplate ?? null,
   });
 }
@@ -271,7 +271,7 @@ async function generateCertificatePdf(certificateId, userId) {
       // Cached file is gone; fall through and regenerate it.
     }
   }
-  const verifyUrl = `${applicationConfig.frontendBaseUrl}/verify/${certificate.verificationCode}`;
+  const verifyUrl = `${applicationConfig.frontendBaseUrl}/verify-certificate/${certificate.verificationCode}`;
   // The fest's template rides along. A template edited AFTER a certificate was
   // cached does not regenerate the cached file — the preview endpoint exists so
   // alignment is settled before release, not after.

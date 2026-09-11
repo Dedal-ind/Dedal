@@ -4,7 +4,7 @@ const { FestModel } = require("../models/fest-model");
 const { StaffAssignmentModel } = require("../models/staff-assignment-model");
 const { ApplicationError } = require("../helpers/application-error");
 const { ERROR_CODES } = require("../constants/error-codes");
-const { findActiveAdministratorAssignment } = require("../helpers/administrator-helpers");
+const { findAdministratorAuthority } = require("../helpers/administrator-helpers");
 const { STAFF_ROLES, STAFF_ASSIGNMENT_STATUSES } = require("../constants/staff-constants");
 const {
   isWithinAssignmentWindow,
@@ -62,9 +62,12 @@ async function requireCoordinatorOrAdminMiddleware(request, response, next) {
 
     const fest = await FestModel.findById(festId).select("hostCollegeId").lean();
     if (fest) {
-      const administratorAssignment = await findActiveAdministratorAssignment(userId, fest.hostCollegeId);
-      if (administratorAssignment) {
-        request.staffAssignment = administratorAssignment;
+      /* Authority, not a row lookup — this is the branch the platform owner
+         was falling through, which 403'd them on analytics, exports and every
+         other coordinator-or-admin read. See findAdministratorAuthority. */
+      const administratorAuthority = await findAdministratorAuthority(userId, fest.hostCollegeId);
+      if (administratorAuthority) {
+        request.staffAssignment = administratorAuthority;
         request.isAdministrator = true;
         return next();
       }

@@ -1,0 +1,29 @@
+/*
+ * user-avatar.css — the initials fallback, on the dedal design system.
+ *
+ * It was `bg-olive-accent font-display text-on-tertiary`: the retired Heritage
+ * olive disc with a Playfair letter in it. Olive is not in the six-colour
+ * palette, so wherever an avatar appeared it dragged the old system onto an
+ * otherwise redesigned screen — most visibly on the crew directory, where every
+ * row carries one.
+ *
+ * --accent, because the tokens file already assigns it to staff roles, and the
+ * three screens that render this are a crew directory, a registration and a
+ * team roster — people, not calls to action. --primary would read as urgency on
+ * a list of names.
+ */
+.dua-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font);
+  font-weight: 700;
+}
+
+/* The frame a loaded photo sits in, while it is still loading. */
+.dua-photo {
+  background: var(--ink-dim-4);
+  object-fit: cover;
+}

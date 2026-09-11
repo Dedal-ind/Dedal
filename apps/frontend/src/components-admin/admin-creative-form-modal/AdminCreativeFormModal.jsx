@@ -14,6 +14,7 @@ import AdminExecutiveInput from '../admin-executive-input/AdminExecutiveInput.js
 import AdminExecutiveSelect from '../admin-executive-select/AdminExecutiveSelect.jsx';
 import AdminExecutiveTextarea from '../admin-executive-textarea/AdminExecutiveTextarea.jsx';
 import AdminPosterUpload from '../admin-poster-upload/AdminPosterUpload.jsx';
+import AdminVideoUpload from '../admin-video-upload/AdminVideoUpload.jsx';
 import AdminErrorBanner from '../admin-error-banner/AdminErrorBanner.jsx';
 import { ADMIN_CREATIVES_COPY as COPY } from '../../brand-admin/brand-copy.js';
 import { CREATIVE_MEDIA_TYPES, creativesApi } from '../../helpers/admin-promotions-api.js';
@@ -76,6 +77,18 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
     }
     if (form.mediaType === 'video' && !form.videoUrl.trim()) {
       return COPY.videoRequired;
+    }
+    /*
+     * The poster, required for a video and not optional the way it used to be.
+     * imageUrl doubles as a video's poster frame, and three places on the
+     * participant surface render it INSTEAD of the video: before playback, on a
+     * slow connection, and on the pass screen where video deliberately never
+     * autoplays. A video saved without one has nothing to show in any of them.
+     * The server enforces the same rule on create; this is the fast local copy
+     * so the admin is told before a round trip.
+     */
+    if (form.mediaType === 'video' && !form.imageUrl) {
+      return 'A video creative needs a poster image.';
     }
     return '';
   }
@@ -161,14 +174,32 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
             ) : null}
           </div>
 
+          {/*
+            THE VIDEO ITSELF, uploaded rather than pasted.
+            
+            This was an AdminExecutiveInput the admin typed a URL into, with a
+            placeholder offering "https://youtube.com/watch?v=… or
+            https://…/clip.mp4". Two problems with that. There was no way to get
+            a video INTO the platform at all — the file had to be hosted
+            somewhere else first — and a YouTube watch URL pasted here reaches
+            the participant feed as a <video src>, which cannot play it.
+            
+            Uploading gives a URL the app serves itself, in a container the
+            browser can play, with the size and progress an admin needs to
+            decide whether to start a 40 MB upload on venue wifi.
+          */}
           {form.mediaType === 'video' ? (
-            <AdminExecutiveInput
-              label={COPY.videoUrlLabel}
-              required
-              helperText={COPY.videoUrlHelp}
-              value={form.videoUrl}
-              onChange={set('videoUrl')}
-            />
+            <div className="flex flex-col gap-1">
+              <span className="font-admin-body text-[13px] font-medium leading-[18px] text-admin-neutral-ink">
+                {COPY.videoUrlLabel}
+              </span>
+              <AdminVideoUpload
+                value={form.videoUrl}
+                onChange={(nextUrl) =>
+                  setForm((previous) => ({ ...previous, videoUrl: nextUrl ?? '' }))
+                }
+              />
+            </div>
           ) : null}
 
           <AdminExecutiveInput label={COPY.titleLabel} required maxLength={120} value={form.title} onChange={set('title')} />

@@ -16,6 +16,17 @@ const { ApplicationError } = require("../helpers/application-error");
 const { ERROR_CODES } = require("../constants/error-codes");
 const { assignmentCoversEvent } = require("../helpers/assignment-coverage-helpers");
 const {
+  getAddOnAnalytics,
+  getContingentAnalytics,
+  getAttendanceAnalytics,
+  getCertificateAnalytics,
+  getRevenueByPurpose,
+  getEngagementVelocity,
+  getPlatformAddOnAnalytics,
+  getPlatformContingentAnalytics,
+  getPlatformCollegeLeaderboards,
+} = require("./analytics-extras-service");
+const {
   REGISTRATION_STATUSES,
   PAYMENT_STATUSES,
   PAYMENT_EXPIRY_MINUTES,
@@ -485,6 +496,18 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
     teamsLockedExactlyAtMinimum: lockedGroup?.lockedExactlyAtMinimum ?? 0,
   };
 
+  /* Parallel: none of the six depends on another's result. */
+  const [addOns, contingents, attendance, certificates, revenueByPurpose, velocity] =
+    await Promise.all([
+      getAddOnAnalytics(fest._id, eventIds, festFunnel.registrationsConfirmed),
+      getContingentAnalytics(fest._id),
+      getAttendanceAnalytics(fest._id, eventIds, festFunnel.registrationsConfirmed),
+      getCertificateAnalytics(fest._id, eventIds),
+      getRevenueByPurpose(fest._id),
+      getEngagementVelocity(fest._id, eventIds, fest),
+    ]);
+  const extras = { addOns, contingents, attendance, certificates, revenueByPurpose, velocity };
+
   return {
     fest: { festId: String(fest._id), festName: fest.festName, festSlug: fest.festSlug },
     scopedEventCount: events.length,
@@ -534,6 +557,19 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
     demographics,
     offers: offerStats,
     teams: teamStats,
+    /*
+     * THE SIX ADDITIONS, on the EXISTING endpoint rather than six new routes.
+     *
+     * The dashboard renders one screen from one request, and splitting these
+     * across routes would mean six loading states for one page. They run in
+     * parallel with each other and are computed from ids this function has
+     * already resolved, so the scoping (?eventId=, includeDescendants) applies
+     * to them exactly as it does to everything above.
+     *
+     * Each returns zeroes rather than throwing, so a fest with no add-ons and
+     * no certificates — which is most fests, most of the time — still renders.
+     */
+    ...extras,
   };
 }
 
@@ -834,6 +870,12 @@ async function getPlatformAnalytics() {
     ])
   );
 
+  const [platformAddOns, platformContingents, platformLeaderboards] = await Promise.all([
+    getPlatformAddOnAnalytics(confirmedGroups[0]?.confirmedCount ?? 0),
+    getPlatformContingentAnalytics(),
+    getPlatformCollegeLeaderboards(),
+  ]);
+
   return {
     totalColleges,
     totalFests: festsByStatus,
@@ -861,6 +903,15 @@ async function getPlatformAnalytics() {
       collegeName: group.collegeName ?? "Unknown",
       festCount: group.festCount,
     })),
+    /*
+     * The platform additions. topCollegesByAdministratorActivity above ranks by
+     * how many fests a college HOSTS, which measures activity rather than
+     * scale; these two rank by registrations and by money, which is what the
+     * super-admin comparison is actually asking.
+     */
+    addOns: platformAddOns,
+    contingents: platformContingents,
+    ...platformLeaderboards,
   };
 }
 

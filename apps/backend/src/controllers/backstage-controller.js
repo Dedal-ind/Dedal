@@ -3,6 +3,8 @@ const volunteerHoursService = require("../services/volunteer-hours-service");
 const exportService = require("../services/export-service");
 const { extractRequestContext } = require("../helpers/request-context");
 const { requireCoordinatorOrAdminMiddleware } = require("../middleware/require-coordinator-or-admin-middleware");
+const { ApplicationError } = require("../helpers/application-error");
+const { ERROR_CODES } = require("../constants/error-codes");
 
 async function getVolunteerSummary(request, response) {
   const { userId } = request.authenticatedUser;
@@ -90,8 +92,27 @@ async function pushCoordinatorCertificates(request, response) {
   const { eventId } = request.params;
   const templateFile = request.file;
 
+  /*
+   * THE PLATFORM ERROR ENVELOPE, not an ad-hoc shape.
+   *
+   * This answered `{ error: { template: "..." } }` — no `code`, no `message`.
+   * Every client in this app reads error.code and error.message, so the refusal
+   * arrived as an unreadable object and the screen fell back to its generic
+   * "Failed to push certificates" alert. The rule was already right; only the
+   * way it was said was wrong.
+   *
+   * There is no stored per-event template to fall back on: the template is
+   * uploaded with each push and held in the screen's own state, never persisted
+   * against the event. So "already uploaded" can only mean "attached to this
+   * request", which is exactly what this checks.
+   */
   if (!templateFile) {
-    return response.status(400).json({ error: { template: "Certificate template file is required." } });
+    throw new ApplicationError(
+      400,
+      ERROR_CODES.VALIDATION_FAILED,
+      "Upload a certificate template before pushing.",
+      { template: "is required" }
+    );
   }
 
   let winners = [];

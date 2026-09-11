@@ -59,6 +59,30 @@ export function ScreenHeaderAction({ iconName, label, onClick }) {
  *   control as the page's <h1>. Screens that pass it must not also render a
  *   heading of their own — that duplication is what this replaced.
  */
+
+/*
+ * BACK, WHEN THERE IS NOTHING BEHIND.
+ *
+ * The default used to be a bare navigate(-1). On a screen reached normally that
+ * is right — you go back where you came from. On a screen reached by a PASTED
+ * URL it is not: history holds the browser's new-tab page, so the back control
+ * walks the person out of the application entirely, which is what it appeared
+ * to do on /fests/:slug/crew-directory opened in a fresh tab.
+ *
+ * react-router 7 numbers its own history entries in window.history.state.idx,
+ * so `idx > 0` means there is an in-app entry behind this one. An entry the
+ * router did not create has no idx, which is read as no history — the
+ * conservative answer, because the fallback always lands somewhere real.
+ *
+ * The fallback is "/" and the navigation is a plain push, not a history delta,
+ * so it works with an empty stack. A screen with a truer parent than home
+ * passes its own `onBack` and overrides this entirely.
+ */
+function hasInAppHistory() {
+  const historyIndex = window.history.state?.idx;
+  return typeof historyIndex === 'number' && historyIndex > 0;
+}
+
 function ScreenHeader({ showBack = true, onBack, action = null, title = '' }) {
   const navigate = useNavigate();
 
@@ -108,7 +132,7 @@ function ScreenHeader({ showBack = true, onBack, action = null, title = '' }) {
         {showBack ? (
           <button
             type="button"
-            onClick={onBack ?? (() => navigate(-1))}
+            onClick={onBack ?? (() => (hasInAppHistory() ? navigate(-1) : navigate('/')))}
             aria-label="Go back"
             className={FLOATING_BUTTON_CLASS}
           >

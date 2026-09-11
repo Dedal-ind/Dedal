@@ -1,7 +1,7 @@
 const { ApplicationError } = require("./application-error");
 const { ERROR_CODES } = require("../constants/error-codes");
 const { StaffAssignmentModel } = require("../models/staff-assignment-model");
-const { findActiveAdministratorAssignment } = require("./administrator-helpers");
+const { hasAdministratorAuthority } = require("./administrator-helpers");
 const { assignmentCoversEvent, isWithinAssignmentWindow } = require("./assignment-coverage-helpers");
 const { STAFF_ROLES, STAFF_ASSIGNMENT_STATUSES } = require("../constants/staff-constants");
 const { AUDIT_ACTIONS } = require("../constants/audit-log-constants");
@@ -36,11 +36,7 @@ async function resolveCancellationPolicy({ registration, event, fest, actorUserI
     return CANCELLED_BY_ROLES.SELF;
   }
 
-  const administratorAssignment = await findActiveAdministratorAssignment(
-    actorUserId,
-    fest.hostCollegeId
-  );
-  if (administratorAssignment) {
+  if (await hasAdministratorAuthority(actorUserId, fest.hostCollegeId)) {
     return CANCELLED_BY_ROLES.ADMIN;
   }
 

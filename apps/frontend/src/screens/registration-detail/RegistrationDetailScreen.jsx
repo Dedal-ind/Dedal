@@ -31,6 +31,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import apiClient from '../../api-client/api-client.js';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
@@ -393,6 +394,10 @@ export function RegistrationDetail({
   // Captured once so the cancellation-window check is a pure computation for
   // this render pass and cannot answer differently twice for the same data.
   const [nowMs] = useState(() => Date.now());
+  /* Add-ons: what is still buyable, and a name lookup for what was already
+     bought. See the fetch below for why both are needed. */
+  const [buyableAddOns, setBuyableAddOns] = useState([]);
+  const [offerCatalog, setOfferCatalog] = useState({});
 
   /* Inside the sheet and the panel the section titles sit under a title the
      parent already rendered, so they are h3 there and h2 on the page. */
@@ -414,6 +419,50 @@ export function RegistrationDetail({
           .then((passPayload) => setPass(passPayload ?? null))
           .catch(() => setPass(null));
       }
+
+      /*
+       * ADD-ONS, IN TWO HALVES, AND WHY.
+       *
+       * GET /registrations/:id/add-ons answers "what can still be bought" — it
+       * deliberately FILTERS OUT anything already on the registration, so it
+       * can never tell us what was purchased.
+       *
+       * The purchases live on registration.offerSelections, but that stores
+       * only offerKey, scope and quantities — no name and no price, because the
+       * definitions live on the fest and the event. The registration's populate
+       * does not carry either one's `offers`.
+       *
+       * So the fest and the event are read for their offer definitions and
+       * keyed by `scope:offerKey` — the same composite the server uses, because
+       * a fest-wide "Shuttle" and an event-only one are different offers at
+       * different rates and the key alone cannot tell them apart.
+       *
+       * All three are best-effort: an add-on section that fails to load must
+       * never cost somebody the pass and cancel controls on this screen.
+       */
+      const festSlug = detail?.eventId?.festId?.festSlug;
+      const eventId = detail?.eventId?.id;
+
+      apiClient
+        .get(`/registrations/${registrationId}/add-ons`)
+        .then((payload) => setBuyableAddOns(Array.isArray(payload?.offers) ? payload.offers : []))
+        .catch(() => setBuyableAddOns([]));
+
+      Promise.all([
+        festSlug ? apiClient.get(`/public/fests/${festSlug}`).catch(() => null) : null,
+        eventId ? apiClient.get(`/public/events/${eventId}`).catch(() => null) : null,
+      ])
+        .then(([festPayload, eventPayload]) => {
+          const catalog = {};
+          for (const offer of festPayload?.offers ?? []) {
+            catalog[`fest:${offer.offerKey}`] = offer;
+          }
+          for (const offer of eventPayload?.offers ?? []) {
+            catalog[`event:${offer.offerKey}`] = offer;
+          }
+          setOfferCatalog(catalog);
+        })
+        .catch(() => setOfferCatalog({}));
     } catch {
       setLoadState('error');
     }
@@ -517,6 +566,25 @@ export function RegistrationDetail({
   const sponsor = festTitleSponsor(fest);
   const team = registration.teamId ?? null;
   const status = registration.status;
+
+  /*
+   * What was already bought, named. The selections carry the composite key and
+   * the quantities; the catalog supplies the words. An offer the admin has
+   * since deleted resolves to nothing, so the key is shown rather than an empty
+   * row — a purchase that exists must never render as a blank.
+   */
+  const purchasedAddOns = (registration.offerSelections ?? []).map((selection) => {
+    const compositeKey = `${selection.scope ?? 'fest'}:${selection.offerKey}`;
+    const definition = offerCatalog[compositeKey] ?? null;
+    return {
+      compositeKey,
+      name: definition?.offerName ?? selection.offerKey,
+      numberOfPeople: selection.numberOfPeople ?? 1,
+      numberOfDays: selection.numberOfDays ?? 1,
+      collectsNumberOfPeople: definition?.collectsNumberOfPeople === true,
+      collectsNumberOfDays: definition?.collectsNumberOfDays === true,
+    };
+  });
   const isPaid = (registration.totalFeePaise ?? 0) > 0;
 
   const eventStartsMs = event.startsAt ? new Date(event.startsAt).getTime() : 0;
@@ -775,6 +843,68 @@ export function RegistrationDetail({
               />
             ) : null}
           </dl>
+        </Section>
+      ) : null}
+
+      {/* ── Add-ons ───────────────────────────────────────────────────────── */}
+      {/*
+        The second of the two doors that were missing. The backend has had a
+        full offers system — fest.offers, event.offers, an order model and both
+        endpoints — reachable from exactly one screen: the one you land on after
+        joining a team by invite code. Somebody who registered through the form
+        and later wanted a shuttle seat had nowhere to go.
+
+        Bought and buyable are drawn as one list because that is how it is read:
+        "what have I got, and what else is there". Buying hands off to the
+        existing /registrations/:id/add-ons screen rather than repeating its
+        steppers, repricing and checkout handoff here.
+      */}
+      {purchasedAddOns.length > 0 || buyableAddOns.length > 0 ? (
+        <Section title="Add-ons" headingLevel={headingLevel}>
+          <ul className="drd-addons" role="list">
+            {purchasedAddOns.map((addOn) => (
+              <li className="drd-addon" key={addOn.compositeKey}>
+                <Check size={16} className="drd-addon__tick" aria-hidden="true" />
+                <span className="drd-addon__body">
+                  <span className="drd-addon__name">{addOn.name}</span>
+                  <span className="drd-addon__note">
+                    {[
+                      addOn.collectsNumberOfPeople ? `${addOn.numberOfPeople} people` : null,
+                      addOn.collectsNumberOfDays ? `${addOn.numberOfDays} days` : null,
+                      'Purchased',
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
+                </span>
+              </li>
+            ))}
+
+            {buyableAddOns.map((offer) => (
+              <li className="drd-addon" key={`${offer.scope}:${offer.offerKey}`}>
+                <span className="drd-addon__body">
+                  <span className="drd-addon__name">{offer.offerName}</span>
+                  {offer.description ? (
+                    <span className="drd-addon__note">{offer.description}</span>
+                  ) : null}
+                </span>
+                <span className="drd-addon__end">
+                  <span className="drd-addon__price">
+                    {offer.isPaid === false || !offer.ratePaise
+                      ? 'Free'
+                      : formatPaiseAmount(offer.ratePaise)}
+                  </span>
+                  <button
+                    type="button"
+                    className="drd-addon__action"
+                    onClick={() => navigate(`/registrations/${registrationId}/add-ons`)}
+                  >
+                    Buy
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
         </Section>
       ) : null}
 

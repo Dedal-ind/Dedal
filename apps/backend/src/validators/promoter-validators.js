@@ -186,6 +186,12 @@ function checkDeclaredMedia(mediaType, imageUrl, videoUrl, details) {
   if (mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !videoUrl) {
     details.videoUrl = "is required for a video creative";
   }
+  /* The poster. imageUrl doubles as a video's poster frame, and the feed, the
+     slow-connection path and the pass screen all render it instead of the
+     video — so a video without one has nothing to show in three places. */
+  if (mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !imageUrl) {
+    details.imageUrl = "a poster image is required for a video creative";
+  }
   if (mediaType === CREATIVE_MEDIA_TYPES.IMAGE && !imageUrl) {
     details.imageUrl = "is required for an image creative";
   }

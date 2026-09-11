@@ -10,19 +10,22 @@
 //
 // Where the backend does not (yet) return a metric, the corresponding piece
 // degrades honestly rather than inventing a number:
-//   · Registration Trends: there is no per-day time-series endpoint, so the chart
-//     shows a "coming soon" placeholder instead of drawn bars.
+//   · Registration Trends: WAS a "coming soon" placeholder on the grounds that no
+//     per-day endpoint existed. It does — timeSeries.registrationsPerDay and
+//     revenuePerDayPaise are both in the analytics summary, and were while the
+//     placeholder was on screen. Both are charted in AdminFestInsights now.
 //   · Week-over-week deltas: no historical snapshot exists, so KPI cards show the
 //     value alone with no "+12%" indicator.
 //   · Recent Activity: hidden entirely if no audit entries are available.
-//   · Revenue: no payment or revenue endpoint exists, so no revenue KPI is shown.
-//     TODO: add revenue endpoint post-demo
+//   · Revenue: WAS "no payment or revenue endpoint exists". Also untrue —
+//     revenue.grossRevenuePaise has been in the analytics summary all along, and
+//     the screen was already fetching it and discarding it. It is a headline KPI
+//     in AdminFestInsights now.
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Users,
-  BarChart3,
   LogIn,
   LogOut,
   UserMinus,
@@ -41,6 +44,7 @@ import AdminStatusPill from '../../components-admin/admin-status-pill/AdminStatu
 import AdminActionsMenu from '../../components-admin/admin-actions-menu/AdminActionsMenu.jsx';
 import AdminActivityFeed from '../../components-admin/admin-activity-feed/AdminActivityFeed.jsx';
 import AdminErrorBanner from '../../components-admin/admin-error-banner/AdminErrorBanner.jsx';
+import AdminFestInsights from './AdminFestInsights.jsx';
 import {
   ADMIN_OVERVIEW_COPY,
   ADMIN_ACTIVITY_COPY,
@@ -123,7 +127,6 @@ function AdminOverviewScreen() {
   const [festSummaries, setFestSummaries] = useState([]);
   const [activityItems, setActivityItems] = useState([]);
   const [activityAvailable, setActivityAvailable] = useState(false);
-  const [trendRange, setTrendRange] = useState('7D'); // 7D | 30D
   /*
    * The drill-down headline for the admin's first fest: total registrations /
    * check-ins / check-outs, from the analytics summary (one source of truth —
@@ -163,6 +166,10 @@ function AdminOverviewScreen() {
     };
   }, [scope.festId]);
   const [availableFests, setAvailableFests] = useState([]);
+  /* id → name for the SELECTED fest's events, so the insight charts can label
+     rows the analytics service returns keyed by id only. Built from the
+     /events/all payload the screen already fetches — no extra request. */
+  const [eventNameById, setEventNameById] = useState(() => new Map());
   const [drillDownFestId, setDrillDownFestId] = useState(null);
   const [transitionError, setTransitionError] = useState('');
   const [activePopup, setActivePopup] = useState(null); // 'registrations' | 'checkIns' | 'checkOuts' | 'yetToCheckIn' | 'confirmedRegistrations'
@@ -198,7 +205,17 @@ function AdminOverviewScreen() {
         setDrillDownFestId(scope.festId);
         apiClient
           .get(`/fests/${scope.festId}/analytics/summary${scopeQuery}`)
-          .then((summaryData) => setDrillDownSummary(summaryData?.headline ?? null))
+          /*
+           * THE WHOLE SUMMARY, not just `headline`.
+           *
+           * This kept `summaryData.headline` and dropped the rest — the funnel,
+           * the revenue, the time series, the demographics, and every one of the
+           * newer blocks — so the screen was paying for a payload it threw away
+           * and then reporting that the data did not exist. The KPI row reads
+           * the same headline fields off summary.headline; AdminFestInsights
+           * reads the rest. No extra request.
+           */
+          .then((summaryData) => setDrillDownSummary(summaryData ?? null))
           .catch(() => setDrillDownSummary(null));
       } else {
         setDrillDownFestId(null);
@@ -217,6 +234,17 @@ function AdminOverviewScreen() {
       );
 
       setFestSummaries(perFestResults.map(summariseFest));
+
+      const selectedFestResult = perFestResults.find((result) => result.fest.id === scope.festId);
+      setEventNameById(
+        new Map(
+          (Array.isArray(selectedFestResult?.events) ? selectedFestResult.events : []).map(
+            /* `id` is the model's virtual and `_id` is deleted in toJSON, so
+               there is exactly one key to read here. */
+            (event) => [String(event.id), event.eventName],
+          ),
+        ),
+      );
       const anyActivityEndpointResponded = perFestResults.some((result) => result.activity !== null);
       setActivityAvailable(anyActivityEndpointResponded);
       setActivityItems(mergeActivity(perFestResults));
@@ -478,15 +506,24 @@ function AdminOverviewScreen() {
   const hasFestSelection = Boolean(scope.festId);
 
   const yetToCheckInValue =
-    drillDownSummary && typeof drillDownSummary.totalRegistrationsCount === 'number'
+    drillDownSummary && typeof drillDownSummary.headline?.totalRegistrationsCount === 'number'
       ? Math.max(
           0,
-          drillDownSummary.totalRegistrationsCount - (drillDownSummary.totalCheckInsCount ?? 0),
+          drillDownSummary.headline.totalRegistrationsCount -
+            (drillDownSummary.headline.totalCheckInsCount ?? 0),
         ).toLocaleString('en-IN')
       : undefined;
 
   return (
-    <div className="flex flex-col gap-6">
+    /*
+     * Capped at 1200px and centred. The layout's <main> is unconstrained, which
+     * is right for a data table but not for this page: on a 2560px monitor the
+     * four KPI cards stretch to ~600px each to hold a five-digit number, and a
+     * bar chart row puts its label and its value a screen apart. The cap is on
+     * this screen rather than in AdminLayout so the wide tabular screens keep
+     * the full width they need.
+     */
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <AdminErrorBanner message={transitionError} />
 
       {/* The shared cascade. It scopes the headline KPI cards and their
@@ -510,19 +547,19 @@ function AdminOverviewScreen() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <AdminKpiCard
           label="Total Registration"
-          value={hasFestSelection ? drillDownSummary?.totalRegistrationsCount?.toLocaleString('en-IN') : '0'}
+          value={hasFestSelection ? drillDownSummary?.headline?.totalRegistrationsCount?.toLocaleString('en-IN') : '0'}
           icon={<Users size={18} strokeWidth={1.75} />}
           onSelect={hasFestSelection ? () => openPopup('registrations') : undefined}
         />
         <AdminKpiCard
           label="Total Check-in"
-          value={hasFestSelection ? drillDownSummary?.totalCheckInsCount?.toLocaleString('en-IN') : '0'}
+          value={hasFestSelection ? drillDownSummary?.headline?.totalCheckInsCount?.toLocaleString('en-IN') : '0'}
           icon={<LogIn size={18} strokeWidth={1.75} />}
           onSelect={hasFestSelection ? () => openPopup('checkIns') : undefined}
         />
         <AdminKpiCard
           label="Total Check-out"
-          value={hasFestSelection ? drillDownSummary?.totalCheckOutsCount?.toLocaleString('en-IN') : '0'}
+          value={hasFestSelection ? drillDownSummary?.headline?.totalCheckOutsCount?.toLocaleString('en-IN') : '0'}
           icon={<LogOut size={18} strokeWidth={1.75} />}
           onSelect={hasFestSelection ? () => openPopup('checkOuts') : undefined}
         />
@@ -539,6 +576,15 @@ function AdminOverviewScreen() {
         <p className="font-admin-body text-[13px] leading-[18px] text-admin-slate-600">
           {ADMIN_OVERVIEW_COPY.selectFestForStats}
         </p>
+      ) : null}
+
+      {/*
+        Everything the analytics summary carries, rendered only once a fest is
+        chosen — these blocks are fest-scoped and there is no meaningful
+        "all fests" version of a funnel or a check-in rate.
+      */}
+      {hasFestSelection && drillDownSummary ? (
+        <AdminFestInsights summary={drillDownSummary} eventNameById={eventNameById} />
       ) : null}
 
       {/* CAMPUS ACCESS. A separate row, below the registration/check-in KPIs,
@@ -685,53 +731,16 @@ function AdminOverviewScreen() {
       ) : null}
 
       {/*
-        A SINGLE COLUMN, not a 60/40 split. Both of these are wide-form reads — a
-        trend across days and a run of activity lines — and squeezing them into
-        two columns on a console that is already desktop-only wastes the width on
-        gutters while truncating the very thing each card is for.
+        A SINGLE COLUMN. The activity feed is a wide-form read — a run of
+        activity lines — and a narrow column truncates the very thing it is for.
+      */}
+      {/*
+        The registration-trend card that used to sit here is gone, not moved:
+        it was a placeholder reading "trends unavailable" over a per-day series
+        that the analytics summary was already returning. AdminFestInsights
+        draws it from timeSeries.registrationsPerDay.
       */}
       <div className="flex flex-col gap-6">
-        <div>
-          <AdminExecutiveCard
-            title={ADMIN_OVERVIEW_COPY.trendsTitle}
-            actions={
-              <div className="flex items-center gap-1 rounded-md border border-admin-slate-200 p-0.5">
-                {[ADMIN_OVERVIEW_COPY.trends7Day, ADMIN_OVERVIEW_COPY.trends30Day].map((rangeLabel) => (
-                  <button
-                    key={rangeLabel}
-                    type="button"
-                    onClick={() => setTrendRange(rangeLabel)}
-                    className={[
-                      'rounded px-2.5 py-1 font-admin-body text-[12px] font-semibold transition-colors',
-                      trendRange === rangeLabel
-                        ? 'bg-admin-primary-blue text-admin-surface-white'
-                        : 'text-admin-slate-600 hover:text-admin-neutral-ink',
-                    ].join(' ')}
-                  >
-                    {rangeLabel}
-                  </button>
-                ))}
-              </div>
-            }
-          >
-            {/* No per-day time-series endpoint exists yet — honest placeholder,
-                never fabricated bars. */}
-            <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 text-center">
-              <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-admin-primary-blue/10">
-                <BarChart3 size={22} strokeWidth={1.75} className="text-admin-primary-blue" />
-              </span>
-              <div>
-                <p className="font-admin-body text-[15px] font-medium text-admin-neutral-ink">
-                  {ADMIN_OVERVIEW_COPY.trendsUnavailableTitle}
-                </p>
-                <p className="mt-1 font-admin-body text-[13px] leading-[18px] text-admin-slate-600">
-                  {ADMIN_OVERVIEW_COPY.trendsUnavailableBody}
-                </p>
-              </div>
-            </div>
-          </AdminExecutiveCard>
-        </div>
-
         {showActivityCard ? (
           <div>
             <AdminExecutiveCard

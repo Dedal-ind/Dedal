@@ -35,6 +35,9 @@ const {
   postReopenFestRegistration,
 } = require("../controllers/event-controller");
 const {
+  postFestBroadcastMessage,
+} = require("../controllers/event-notification-controller");
+const {
   getFestGateStats,
   getFestGateActivity,
   getFestOffers,
@@ -117,6 +120,22 @@ festRouter.post(
   authenticationMiddleware,
   requireAdministratorMiddleware,
   asyncHandler(postCancelFest)
+);
+
+/*
+ * The fest-wide broadcast. administratorOnly, matching the per-event
+ * /events/:eventId/broadcast it sits beside - a coordinator's reach is their
+ * own events, and "every participant of the fest" is not that.
+ *
+ * It is mounted HERE rather than on the event router because it has no event:
+ * hanging it off an arbitrary :eventId would make the audit trail claim a
+ * fest-wide announcement belonged to one event.
+ */
+festRouter.post(
+  "/:festId/broadcast",
+  authenticationMiddleware,
+  requireAdministratorMiddleware,
+  asyncHandler(postFestBroadcastMessage)
 );
 
 festRouter.post(

@@ -1,0 +1,381 @@
+/*
+ * crew-directory.css (`dcw-`) — the fest crew directory, on the dedal design
+ * system.
+ *
+ * WHAT IT REPLACED. The screen was the last Heritage Institutional frame on the
+ * participant surface: a Playfair 32px page title, `text-brand-navy` on
+ * `bg-brand-beige` cards with a `brand-brown/15` hairline, a search field
+ * filled with a green gradient (`from-brand-secondary/20 to-brand-primary/15`)
+ * whose placeholder was centred until focus, ALL-CAPS tracked labels on the
+ * stat cards, and four `material-symbols-outlined` ligatures — mail, call,
+ * close and search — which render as the literal words until the webfont
+ * arrives and permanently where it is blocked.
+ *
+ * None of the data flow moved. This file is colour, type, shape and motion.
+ */
+
+.dcw-screen {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+/*
+ * 720px, matching the backstage hubs. A directory is a list of short rows, and
+ * a list of short rows has a reading measure like any other text — the old
+ * screen ran the full width of a laptop.
+ */
+.dcw-page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--s2) var(--page-pad) var(--feed-end);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+/* The fest this directory belongs to. Sentence case, not a tracked ALL-CAPS
+   eyebrow — it is a name, and names are not labels. */
+.dcw-fest {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Search ─────────────────────────────────────────────────────────────── */
+
+/*
+ * A plain field on the card surface. The magnifier sits on the LEFT, where
+ * every other search field in this app and every other one puts it, and the
+ * placeholder does not move when focused — a placeholder that re-aligns under
+ * the cursor reads as the field jumping.
+ */
+.dcw-search {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  height: 48px;
+  padding-inline: var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  transition: border-color var(--d-quick) var(--ease-enter);
+}
+
+.dcw-search:focus-within {
+  border-color: var(--ink);
+}
+
+.dcw-search__icon {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.dcw-search__input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  outline: none;
+}
+
+.dcw-search__input::placeholder {
+  color: var(--muted);
+}
+
+.dcw-search__clear {
+  display: flex;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-exit);
+}
+
+.dcw-search__clear:hover {
+  background: var(--ink-dim-4);
+}
+
+.dcw-search__clear:active {
+  transform: scale(0.97);
+}
+
+/* ── Stats ──────────────────────────────────────────────────────────────── */
+
+.dcw-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s2);
+}
+
+.dcw-stat {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dcw-stat__value {
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.dcw-stat__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+/* ── Role sections ──────────────────────────────────────────────────────── */
+
+.dcw-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  min-width: 0;
+}
+
+.dcw-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding-block-end: var(--s2);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dcw-section__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* A count, not a badge. "Core Team" and "On-Ground" were decoration beside a
+   heading that already said Coordinators and Volunteers. */
+.dcw-section__count {
+  flex-shrink: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── A person ───────────────────────────────────────────────────────────── */
+
+.dcw-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 64px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.dcw-card__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dcw-card__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The events this person covers. One line — a coordinator on forty events
+   would otherwise make one card as tall as the screen. */
+.dcw-card__events {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dcw-card__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--s1);
+}
+
+/*
+ * 44px, the minimum comfortable touch target. These are the point of the
+ * screen: the directory exists so somebody can reach the person running their
+ * event, and a name without a way to call it is a list of strangers.
+ */
+.dcw-action {
+  display: flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-pill);
+  color: var(--muted);
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-exit);
+}
+
+.dcw-action:hover {
+  background: var(--ink-dim-4);
+  color: var(--ink);
+}
+
+.dcw-action:active {
+  transform: scale(0.97);
+}
+
+/* ── States ─────────────────────────────────────────────────────────────── */
+
+.dcw-skel {
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+.dcw-skel--stat {
+  height: 76px;
+}
+
+.dcw-skel--card {
+  height: 64px;
+}
+
+/* Left-aligned. A centred sentence in the middle of an empty screen reads as a
+   page that failed to load rather than one with nothing in it. */
+.dcw-note {
+  margin: 0;
+  padding-block: var(--s4);
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--ink);
+}
+
+/*
+ * ONE ORCHESTRATED MOMENT. The list fades in once when it arrives, and that is
+ * the whole of the non-interactive motion on this screen — not an entrance per
+ * section, which is the generic default and reads as a page assembling itself.
+ *
+ * OPACITY ONLY, deliberately: a transform here would own the element's
+ * position, and an animation that does not advance (a background tab freezes
+ * them) would leave the content displaced. Opacity cannot move anything.
+ */
+@keyframes dcw-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.dcw-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  animation: dcw-fade var(--d-move, 260ms) var(--ease-enter);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcw-list {
+    animation: none;
+  }
+
+  .dcw-action:active,
+  .dcw-search__clear:active {
+    transform: none;
+  }
+}
+
+/*
+ * The empty state, CENTRED in the space the screen has left.
+ *
+ * It was left-aligned under the header, on the argument that a centred block on
+ * a blank page reads as a page that failed to load. On this screen it does not:
+ * there is no other content to align to, so the sentence and its action sat in
+ * the top-left corner of an otherwise empty viewport with the whole screen
+ * below them doing nothing.
+ *
+ * 100dvh minus the header and the page padding, so the block claims the room
+ * that is actually free rather than forcing a scrollbar onto a page with
+ * nothing to scroll. dvh, not vh, so a mobile browser's collapsing toolbar
+ * cannot push it off the bottom.
+ */
+.dcw-empty {
+  display: flex;
+  min-height: calc(100dvh - var(--header-h) - var(--s8));
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+  text-align: center;
+}
+
+.dcw-empty__action {
+  min-height: 44px;
+  padding: var(--s2) var(--s5);
+  border: 0;
+  border-radius: var(--r-card);
+  background: var(--ink);
+  color: var(--surface-card);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-exit);
+}
+
+.dcw-empty__action:hover {
+  opacity: 0.9;
+}
+
+.dcw-empty__action:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcw-empty__action:active {
+    transform: none;
+  }
+}

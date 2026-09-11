@@ -1,7 +1,7 @@
 const bracketService = require("../services/bracket-service");
 const { FestModel } = require("../models/fest-model");
 const { extractRequestContext } = require("../helpers/request-context");
-const { findActiveAdministratorAssignment } = require("../helpers/administrator-helpers");
+const { hasAdministratorAuthority } = require("../helpers/administrator-helpers");
 const { ApplicationError } = require("../helpers/application-error");
 const { ERROR_CODES } = require("../constants/error-codes");
 
@@ -53,11 +53,7 @@ async function isAdministratorOfFest(request, festId) {
   if (!fest) {
     return false;
   }
-  const assignment = await findActiveAdministratorAssignment(
-    request.authenticatedUser.userId,
-    fest.hostCollegeId
-  );
-  return Boolean(assignment);
+  return hasAdministratorAuthority(request.authenticatedUser.userId, fest.hostCollegeId);
 }
 
 /*

@@ -6,7 +6,7 @@ const { FestModel } = require("../models/fest-model");
 const { StaffAssignmentModel } = require("../models/staff-assignment-model");
 const { ApplicationError } = require("../helpers/application-error");
 const { ERROR_CODES } = require("../constants/error-codes");
-const { findActiveAdministratorAssignment } = require("../helpers/administrator-helpers");
+const { hasAdministratorAuthority } = require("../helpers/administrator-helpers");
 const { assignmentCoversEvent } = require("../helpers/assignment-coverage-helpers");
 const { STAFF_ROLES, STAFF_ASSIGNMENT_STATUSES } = require("../constants/staff-constants");
 
@@ -40,7 +40,7 @@ async function assertCanReadEventFeedback(userId, eventId) {
   }
 
   const fest = await FestModel.findById(event.festId).select("hostCollegeId").lean();
-  if (fest && (await findActiveAdministratorAssignment(userId, fest.hostCollegeId))) {
+  if (fest && (await hasAdministratorAuthority(userId, fest.hostCollegeId))) {
     return;
   }
 

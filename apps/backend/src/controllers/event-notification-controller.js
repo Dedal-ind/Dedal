@@ -39,6 +39,22 @@ async function postBroadcastMessage(request, response) {
 }
 
 /*
+ * Fest-wide admin broadcast: one message to a chosen audience across EVERY
+ * event of the fest, resolved and deduplicated once. Mounted on the fest router
+ * (no :eventId in the path) behind administratorOnly, same as the per-event
+ * verb. See broadcastFestMessage for why this is not a loop over that one.
+ */
+async function postFestBroadcastMessage(request, response) {
+  const result = await eventNotificationService.broadcastFestMessage(
+    request.authenticatedUser.userId,
+    request.params.festId,
+    request.body ?? {},
+    extractRequestContext(request)
+  );
+  return response.status(200).json({ data: result });
+}
+
+/*
  * The round sheet. The shared CSV spine writes the headers, streams the rows and
  * records the data.exported audit row; the filename is rewritten afterwards
  * because that spine names files "{type}-{festSlug}-{date}.csv" and the spec for
@@ -72,5 +88,6 @@ module.exports = {
   getNotifyParticipantsPreview,
   postNotifyParticipants,
   postBroadcastMessage,
+  postFestBroadcastMessage,
   getRoundParticipantsCsv,
 };

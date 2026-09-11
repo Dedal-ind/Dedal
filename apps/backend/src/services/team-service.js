@@ -289,6 +289,8 @@ async function joinTeamByInviteCode(userId, payload, context = {}) {
 
   // Filled by resolveCaptaincyOnJoin inside the try below; reported in the result.
   let captaincy = { isCaptain: false, captainAutoAssigned: false };
+  // See the compensator in the catch: the roster append has to be undone too.
+  let didAppendToRoster = false;
 
   const team = await TeamModel.findOne({ inviteCode });
   if (!team) {
@@ -386,6 +388,12 @@ async function joinTeamByInviteCode(userId, payload, context = {}) {
         maximumTeamSize: event.maximumTeamSize,
       });
     }
+    /*
+     * Recorded so the compensator below can undo it. A join writes THREE things
+     * — a claimed seat, a registration row and this roster append — and the
+     * catch only knew how to undo the first two.
+     */
+    didAppendToRoster = true;
     captaincy = await resolveCaptaincyOnJoin({
       team: appendedTeam,
       joinerUserId: joiner._id,
@@ -393,6 +401,34 @@ async function joinTeamByInviteCode(userId, payload, context = {}) {
       wantsCaptaincy,
     });
   } catch (error) {
+    /*
+     * THE COMPENSATOR HAS TO UNDO THE ROSTER APPEND TOO.
+     *
+     * A join writes three things: it claims a seat, it creates the registration
+     * row, and it appends the joiner to memberUserIds. This block used to give
+     * back the seat and delete the row but leave the append standing — so a
+     * failure AFTER the append (resolveCaptaincyOnJoin is the live example, and
+     * anything added between the two in future) left the person on the roster
+     * holding no seat and no registration.
+     *
+     * That ghost is not cosmetic. memberUserIds is what /teams/mine reads and
+     * what the size precondition on the append above counts, so a ghost shows
+     * on the roster, inflates memberCount, occupies one of maximumTeamSize
+     * against real joiners, and counts toward the minimum that lets a leader
+     * lock the team. Nothing anywhere else pulls a member — the only $pull in
+     * the codebase is the admin-data cleanup — so if this block does not undo
+     * it, nothing ever will.
+     *
+     * Pulled only when we know the append succeeded: an unconditional $pull
+     * would remove a member who was already legitimately on the roster when the
+     * failure came from somewhere earlier.
+     */
+    if (didAppendToRoster) {
+      await TeamModel.updateOne(
+        { _id: team._id },
+        { $pull: { memberUserIds: joiner._id } }
+      ).catch(() => {});
+    }
     await releaseTeamSeats(event, 1);
     if (registration) {
       await RegistrationModel.deleteOne({ _id: registration._id }).catch(() => {});

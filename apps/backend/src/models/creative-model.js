@@ -46,11 +46,29 @@ const creativeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-/* Same rule as the promotion model: the medium it claims must be there. */
+/*
+ * Same rule as the promotion model: the medium it claims must be there.
+ *
+ * A VIDEO ALSO NEEDS ITS POSTER, BUT ONLY WHEN NEW.
+ *
+ * imageUrl has always been documented above as the poster frame for a video,
+ * and the participant surface genuinely depends on it: it is what shows before
+ * playback, what a slow connection gets instead of autoplay, and what the pass
+ * screen shows in place of a video it deliberately will not play. A video
+ * creative without one has nothing to render in any of those three cases.
+ *
+ * `isNew` is what keeps this from being a breaking change. Requiring the poster
+ * unconditionally would make every video creative already saved without one
+ * fail its next save — including an admin merely renaming it — so the rule
+ * binds creation, where it costs nothing, and leaves existing rows editable.
+ */
 creativeSchema.pre("validate", function requireDeclaredMedia(next) {
   if (this.mediaType === CREATIVE_MEDIA_TYPES.VIDEO) {
     if (!this.videoUrl) {
       this.invalidate("videoUrl", "A video creative needs a videoUrl.");
+    }
+    if (this.isNew && !this.imageUrl) {
+      this.invalidate("imageUrl", "A video creative needs a poster image.");
     }
   } else if (!this.imageUrl) {
     this.invalidate("imageUrl", "An image creative needs an imageUrl.");

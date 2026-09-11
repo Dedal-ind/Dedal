@@ -646,14 +646,42 @@
    Contingent packages
    ───────────────────────────────────────────────────────────────────────── */
 
+/*
+ * ── Contingents ───────────────────────────────────────────────────────────
+ *
+ * NOT "squad packages". A squad is four; a contingent is whatever size the
+ * college chooses to sell, so the label must not carry a number.
+ *
+ * WHAT THE REFERENCES AGREE ON, and what is applied here:
+ *   · the IMAGE dominates and the price sits directly beneath it;
+ *   · a strikethrough original beside a bold price is how a saving is read;
+ *   · scarcity badges work, sparingly and honestly;
+ *   · no more than three pills on a card;
+ *   · show image, title, price, one or two badges, and one clear action.
+ *
+ * The old card had none of that: no image at all, a 232px text-only tile with
+ * the name, the price and a slot count in three identical grey lines, and the
+ * saving — the one number that makes a bundle a bundle — never rendered.
+ */
+
+.dfd-packages__lede {
+  margin: 0 0 var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
 .dfd-packages {
   display: flex;
   gap: var(--s3);
   overflow-x: auto;
   scrollbar-width: none;
+  /* Bleeds to the screen edge so the rail scrolls edge to edge while the first
+     card still lines up with the page gutter. */
   margin-inline: calc(var(--page-pad) * -1);
   padding-inline: var(--page-pad);
   padding-bottom: var(--s2);
+  scroll-snap-type: x mandatory;
 }
 
 .dfd-packages::-webkit-scrollbar {
@@ -662,21 +690,84 @@
 
 .dfd-package {
   flex: 0 0 auto;
-  width: 232px;
-  display: grid;
-  gap: var(--s1);
-  padding: var(--s3);
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
   border: 1px solid var(--divider);
   border-radius: var(--r-card);
   background: var(--surface-card);
   text-align: start;
   cursor: pointer;
   font-family: var(--font);
-  transition: transform var(--d-instant) var(--ease-exit);
+  scroll-snap-align: start;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-exit);
+}
+
+.dfd-package:hover {
+  border-color: var(--ink);
 }
 
 .dfd-package:active {
   transform: scale(0.97);
+}
+
+/* ── The image, which leads ──────────────────────────────────────────────── */
+
+.dfd-package__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  background: var(--ink-dim-4);
+}
+
+.dfd-package__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/*
+ * The fallback when neither the parent event nor the fest carries artwork. The
+ * one place --accent appears at size on this page: a quiet wash that is
+ * obviously a placeholder rather than a broken image.
+ */
+.dfd-package__wash {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, transparent), var(--ink-dim-4));
+}
+
+/*
+ * The saving, as a corner tag. --primary because this is the one number on the
+ * card that is an offer rather than a fact, and it is rendered ONLY when the
+ * bundle genuinely undercuts the sum of its parts — see the guard in the JSX.
+ */
+.dfd-package__save {
+  position: absolute;
+  inset-block-start: var(--s2);
+  inset-inline-start: var(--s2);
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  color: #fff;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dfd-package__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding: var(--s3);
 }
 
 .dfd-package__name {
@@ -684,6 +775,54 @@
   line-height: var(--body-s-line);
   font-weight: 700;
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Price and its strikethrough on one baseline, directly under the image. */
+.dfd-package__prices {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  min-width: 0;
+}
+
+.dfd-package__was {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  text-decoration-thickness: 1px;
+}
+
+.dfd-package__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  margin-top: 2px;
+}
+
+.dfd-package__tag {
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Scarcity earns colour; a plain count does not. */
+.dfd-package__tag--left {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+}
+
+.dfd-package__tag--gone {
+  background: var(--ink-dim-4);
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 .dfd-package__price {
@@ -696,13 +835,8 @@
 
 /* --body-s, not --micro: how many bundles are left is meaning, and --muted is
    only ~3.5:1 on --surface — below 14px that stops being readable text. */
-.dfd-package__slots {
-  font-size: var(--body-s-size);
-  line-height: var(--body-s-line);
-  font-weight: 500;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
+/* .dfd-package__slots is gone: the slot count is a pill in .dfd-package__tags
+   now, beside the event count, rather than a third grey line. */
 
 /* ─────────────────────────────────────────────────────────────────────────
    Schedule
@@ -971,8 +1105,22 @@
     order: 3;
   }
 
+  /*
+   * ABOVE THE EVENT GRID, not below everything.
+   *
+   * This was order: 4 — after `main`, which carries the whole event grid, the
+   * schedule, the about text and the organiser. Measured on a 412px phone: the
+   * section sat 11,786px down a 12,075px document, 98% of the way to the
+   * bottom, behind fifty event cards. Nobody scrolled that far to discover a
+   * cheaper way to buy what they had just finished browsing one at a time.
+   *
+   * order: 2 puts it directly under the fest facts and BEFORE the grid, which
+   * is also the right order for the argument it makes: a bundle only reads as a
+   * bundle while the individual prices are still ahead of you, not after you
+   * have already picked through them.
+   */
   .dfd-aside-packages {
-    order: 4;
+    order: 2;
   }
 }
 
@@ -1084,6 +1232,72 @@ a.dfd-organiser__contact .ddp-icon {
   .dfd-groups,
   .dfd-groups--out {
     opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * ── Crew & contacts ───────────────────────────────────────────────────────
+ *
+ * A row in the core info block, not a button at the foot of the page. Measured
+ * before the move, on a 412px phone: the old control sat 11,719px down a
+ * 12,075px document — 97% of the way to the bottom, behind fifty event cards,
+ * the schedule and the about text.
+ *
+ * It reads as a row rather than as a call to action on purpose. Registering is
+ * what this page is for; reaching a coordinator is a thing you need only when
+ * something has gone wrong, and a second filled button beside the entry CTA
+ * would compete with it.
+ */
+.dfd-crewlink {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: 48px;
+  margin-top: var(--s2);
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-exit);
+}
+
+.dfd-crewlink:hover {
+  background: var(--ink-dim-2);
+}
+
+.dfd-crewlink:active {
+  transform: scale(0.97);
+}
+
+.dfd-crewlink__icon {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.dfd-crewlink__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+}
+
+.dfd-crewlink__chevron {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dfd-crewlink:active {
     transform: none;
   }
 }

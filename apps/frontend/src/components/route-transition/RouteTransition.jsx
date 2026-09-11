@@ -25,11 +25,27 @@
 // stacked on one navigation is a 180ms opacity ramp fighting a 200ms slide, and
 // the result reads as a stutter. The dead rules in index.css now match nothing.
 //
-// The `key={pathname}` wrapper IS retained. It is not doing animation work any
-// more, but screens have always been remounted on a pathname change (a fest
-// page moving from one slug to another gets a fresh component, not a component
-// asked to re-fetch), and quietly changing that alongside an animation change
-// would be two unrelated behaviours in one commit.
+// The `key={pathname}` wrapper IS retained — but it no longer applies to the
+// admin console.
+//
+// The key remounts EVERYTHING below it on a pathname change, and "everything"
+// included the console's persistent chrome. The admin sidebar is a tall,
+// scrolling rail: scroll down to reach Data Controls, click it, and the rail
+// was destroyed and rebuilt at scrollTop 0, throwing the reader back to the top
+// of a list they had just scrolled through. Verified in the browser — a
+// data-attribute set on the <nav> did not survive a single navigation.
+//
+// That is not what the key was for. Its purpose is stated above: a SCREEN gets
+// a fresh component when the pathname changes, so a fest page moving from one
+// slug to another does not have to re-fetch into a stale component. Screens,
+// not chrome. The participant app has no persistent chrome below this point, so
+// there the two were indistinguishable and the key could stand in for both.
+//
+// So the admin subtree collapses to one stable key here, and AdminLayout keys
+// its own <Outlet /> on the pathname instead — admin screens keep the exact
+// remount-per-pathname behaviour they have always had, including when the same
+// screen serves a different :promoterId or :campaignId, and only the shell
+// survives.
 
 import { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -84,7 +100,14 @@ function RouteTransition({ children }) {
   /* Whatever else happens, the attribute must not survive a full unmount. */
   useEffect(() => () => clearNavigationDirection(), []);
 
-  return <div key={pathname}>{children}</div>;
+  /*
+   * One key for the whole console, so its shell is never remounted by a
+   * navigation inside it. Per-screen remounting moved into AdminLayout — see
+   * the note at the top of this file.
+   */
+  const subtreeKey = pathname.startsWith('/admin') ? '/admin' : pathname;
+
+  return <div key={subtreeKey}>{children}</div>;
 }
 
 export default RouteTransition;

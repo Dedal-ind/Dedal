@@ -1,6 +1,6 @@
 const { FestModel } = require("../models/fest-model");
 const { StaffAssignmentModel } = require("../models/staff-assignment-model");
-const { findActiveAdministratorAssignment } = require("./administrator-helpers");
+const { hasAdministratorAuthority } = require("./administrator-helpers");
 const { ApplicationError } = require("./application-error");
 const { ERROR_CODES } = require("../constants/error-codes");
 const { STAFF_ROLES, STAFF_ASSIGNMENT_STATUSES } = require("../constants/staff-constants");
@@ -62,7 +62,7 @@ async function isAdministratorOfCheckpoint(scannerUserId, checkpoint) {
   if (!fest) {
     return false;
   }
-  return Boolean(await findActiveAdministratorAssignment(scannerUserId, fest.hostCollegeId));
+  return hasAdministratorAuthority(scannerUserId, fest.hostCollegeId);
 }
 
 /*

@@ -1,6 +1,6 @@
 // Campaign delivery report — figures + pacing.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, Monitor, MousePointerClick, Server, RefreshCw, ArrowLeft } from 'lucide-react';
 import { deliveryApi } from '../../helpers/admin-promotions-api.js';
@@ -73,8 +73,28 @@ function AdminDeliveryCampaignScreen() {
   const [status, setStatus] = useState('loading');
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
-  const mountedRef = useRef(true);
-  useEffect(() => () => { mountedRef.current = false; }, []);
+  /*
+   * A `mountedRef` stood here, and it was why every screen in this section sat
+   * on its spinner forever in development. It was declared true, set to false
+   * by an unmount cleanup, and never set back to true by anything.
+   *
+   * A ref survives a remount of the same component instance, and StrictMode
+   * deliberately mounts, unmounts and remounts every component in development.
+   * So by the time the real mount ran, the flag was already false. Every
+   * response then failed the `active && mountedRef.current` guard and was
+   * discarded: the request returned 200, the data arrived, and status stayed
+   * 'loading'. Verified in the browser - two 200s on the platform report with
+   * the spinner still up and nothing in the console.
+   *
+   * Deleted rather than repaired, because the `active` flag inside each
+   * fetching effect already does this job and does it correctly: it is created
+   * per effect run, so it cannot leak state across runs the way a ref does, and
+   * it guards the thing actually worth guarding - a stale response landing
+   * after its inputs have changed. Setting state on an unmounted component is
+   * not an error in React 18; the warning that made refs like this look
+   * necessary was removed precisely because it caused this bug more often than
+   * it prevented a leak.
+   */
 
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -91,8 +111,8 @@ function AdminDeliveryCampaignScreen() {
     if (validateRange(range.from, range.to)) return undefined;
     let active = true;
     deliveryApi.campaign(campaignId, { from: range.from, to: range.to })
-      .then((result) => { if (active && mountedRef.current) { setData(result); setError(null); setStatus('ready'); } })
-      .catch((err) => { if (active && mountedRef.current) { setError(err?.message || 'Failed to load campaign report.'); setStatus('error'); } });
+      .then((result) => { if (active) { setData(result); setError(null); setStatus('ready'); } })
+      .catch((err) => { if (active) { setError(err?.message || 'Failed to load campaign report.'); setStatus('error'); } });
     return () => { active = false; };
   }, [campaignId, range.from, range.to, reloadToken]);
 

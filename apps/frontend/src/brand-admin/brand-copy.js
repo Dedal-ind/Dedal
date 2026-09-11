@@ -1445,16 +1445,13 @@ export const ADMIN_OVERVIEW_COPY = {
   activeFestsLabel: 'Active Fests',
   activeFestsSubtitle: 'Currently published',
 
-  // Registration Trends chart
-  trendsTitle: 'Registration Trends',
-  trends7Day: '7D',
-  trends30Day: '30D',
-  // Per-day registration history needs a backend time-series the API does not yet
-  // expose, so the chart shows this rather than inventing bars.
-  trendsUnavailableTitle: 'Registration trends coming soon',
-  trendsUnavailableBody:
-    'Per-day registration history will appear here once the reporting endpoint lands.',
-  trendsEmpty: 'No registrations yet',
+  /*
+   * The Registration Trends keys that used to sit here are gone. They backed a
+   * card that said per-day history "will appear here once the reporting
+   * endpoint lands" — the endpoint had already landed, and the screen was
+   * fetching the series while rendering that sentence over it. The trend is
+   * drawn in AdminFestInsights now and carries its own copy.
+   */
 
   // Fests table
   festsTitle: 'Your Fests',

@@ -4,7 +4,7 @@ const { UserModel } = require("../models/user-model");
 const { PassModel } = require("../models/pass-model");
 const { FestModel } = require("../models/fest-model");
 const { StaffAssignmentModel } = require("../models/staff-assignment-model");
-const { findActiveAdministratorAssignment } = require("../helpers/administrator-helpers");
+const { hasAdministratorAuthority } = require("../helpers/administrator-helpers");
 const { ApplicationError } = require("../helpers/application-error");
 const { ERROR_CODES } = require("../constants/error-codes");
 const { STAFF_ROLES, STAFF_ASSIGNMENT_STATUSES } = require("../constants/staff-constants");
@@ -27,8 +27,7 @@ async function loadFestOrThrow(festId) {
 
 /* Only staff of the fest — an administrator of its host college, or an active coordinator/volunteer — may search its participants. */
 async function assertStaffOfFest(userId, fest) {
-  const administrator = await findActiveAdministratorAssignment(userId, fest.hostCollegeId);
-  if (administrator) {
+  if (await hasAdministratorAuthority(userId, fest.hostCollegeId)) {
     return;
   }
   const staffAssignment = await StaffAssignmentModel.findOne({

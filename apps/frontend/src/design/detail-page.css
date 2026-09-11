@@ -1037,3 +1037,144 @@
     max-width: calc(var(--ddp-max) - var(--page-pad) * 2);
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Add-ons (`ded-addon*`) — the event page's offer rows.
+   
+   One row per offer, matching the row rhythm the redesigned screens use: the
+   name and its note on the left, price and action on the right, 64px floor.
+   Deliberately NOT cards — an add-on is a line item beside a decision the
+   participant has already made, not a destination competing with the events.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* The gate line, shown above the rows when there is no registration to attach
+   a purchase to. It explains the disabled actions rather than leaving somebody
+   tapping a dead button. */
+.ded-addons__gate {
+  margin: 0 0 var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.ded-addons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ded-addon {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 64px;
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+}
+
+.ded-addon__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ded-addon__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Two lines at most: a description long enough to need three is a description
+   that belongs on the add-on screen, not in a list someone is scanning. */
+.ded-addon__note {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ded-addon__end {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s1);
+}
+
+.ded-addon__price {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ded-addon__action {
+  min-height: 36px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--d-quick) var(--ease-enter),
+    transform 80ms var(--ease-exit);
+}
+
+.ded-addon__action:hover:not(:disabled) {
+  background: var(--ink-dim-2);
+}
+
+.ded-addon__action:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Disabled, with the reason said above the list rather than in a tooltip
+   nobody on a phone can open. */
+.ded-addon__action:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ded-addon__action:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/*
+ * CLEARANCE ONLY WHEN THERE IS A BAR TO CLEAR.
+ *
+ * .ddp-screen reserves 112px at the foot for the fixed bottom bar. The fest
+ * page now renders that bar only for somebody who holds a registration — the
+ * version everyone else saw carried a platform-wide "Entry / Free" and an
+ * "Explore events" button that scrolled to a section of the same page — so for
+ * every other visitor the reservation became 112px of empty canvas under the
+ * last row.
+ *
+ * :has() is already load-bearing in this file (see the desktop rule that drops
+ * the fest page's clearance), so this is the same mechanism rather than a new
+ * one: no bar in the tree, no space held for it.
+ */
+.ddp-screen:not(:has(.ddp-cta)) {
+  padding-bottom: var(--s8);
+}

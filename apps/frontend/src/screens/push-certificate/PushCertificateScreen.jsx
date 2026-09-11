@@ -170,6 +170,21 @@ function DrawnCheck() {
   );
 }
 
+/*
+ * The server answers { pushed, skipped, failed, skippedUserIds, failedUserIds }.
+ * Read defensively: a older deployment that has not been updated yet returns
+ * only the three counts, and a screen that reads undefined.length would break
+ * on the success path of a push that actually worked.
+ */
+function summariseOutcome(outcome) {
+  return {
+    pushed: outcome?.pushed ?? 0,
+    skipped: outcome?.skipped ?? 0,
+    failed: outcome?.failed ?? 0,
+    skippedUserIds: Array.isArray(outcome?.skippedUserIds) ? outcome.skippedUserIds : [],
+  };
+}
+
 function PushCertificateScreen() {
   const navigate = useTransitionNavigate();
   const { eventId } = useParams();
@@ -184,8 +199,15 @@ function PushCertificateScreen() {
   const [isPushingWinners, setIsPushingWinners] = useState(false);
   const [isPushingParticipation, setIsPushingParticipation] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
-  const [pushModal, setPushModal] = useState(null); // { type: 'winners'|'participation', count }
-  const [pushDone, setPushDone] = useState(null); // { count, type } after a successful push
+  const [pushModal, setPushModal] = useState(null);
+  const [pushError, setPushError] = useState('');
+  /*
+   * The SERVER's counts, not the selection size. This used to be
+   * { count: selected.length } — the number the coordinator ticked, regardless
+   * of what actually happened. With the PDF-upload bug live, a push of forty
+   * reported "40 pushed" when the true figure was zero.
+   */
+  const [pushDone, setPushDone] = useState(null); // { type, pushed, skipped, failed, skippedUserIds }
 
   // Separate templates
   const [winnerTemplate, setWinnerTemplate] = useState(null);
@@ -365,11 +387,15 @@ function PushCertificateScreen() {
         formData.append('template', winnerTemplate);
         formData.append('winners', JSON.stringify(selectedWinners.map((w) => ({ userId: w.participantId, place: w.place }))));
         formData.append('participants', JSON.stringify([]));
-        await apiClient.post(`/backstage/coordinator/events/${eventId}/push-certificates`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const outcome = await apiClient.post(
+          `/backstage/coordinator/events/${eventId}/push-certificates`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
         setSelectedWinnerIds(new Set());
-        setPushDone({ type, count: selectedWinners.length });
-      } catch {
-        window.alert('Failed to push winner certificates. Please try again.');
+        setPushDone({ type, ...summariseOutcome(outcome) });
+      } catch (failure) {
+        setPushError(failure?.message || 'Failed to push winner certificates. Please try again.');
       } finally {
         setIsPushingWinners(false);
       }
@@ -381,11 +407,17 @@ function PushCertificateScreen() {
         formData.append('template', participationTemplate);
         formData.append('winners', JSON.stringify([]));
         formData.append('participants', JSON.stringify(selectedParticipants.map((p) => p.id)));
-        await apiClient.post(`/backstage/coordinator/events/${eventId}/push-certificates`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const outcome = await apiClient.post(
+          `/backstage/coordinator/events/${eventId}/push-certificates`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } },
+        );
         setSelectedParticipationIds(new Set());
-        setPushDone({ type, count: selectedParticipants.length });
-      } catch {
-        window.alert('Failed to push participation certificates. Please try again.');
+        setPushDone({ type, ...summariseOutcome(outcome) });
+      } catch (failure) {
+        setPushError(
+          failure?.message || 'Failed to push participation certificates. Please try again.',
+        );
       } finally {
         setIsPushingParticipation(false);
       }
@@ -497,7 +529,9 @@ function PushCertificateScreen() {
                 <button
                   type="button"
                   onClick={handlePushWinners}
-                  disabled={isPushingWinners}
+                  /* Bug 3: the server refuses a push with no template, so the
+                     button says so instead of letting the tap fail. */
+                  disabled={isPushingWinners || !winnerTemplate}
                   className="dcd-action"
                   data-variant="primary"
                   style={{ width: '100%' }}
@@ -509,7 +543,9 @@ function PushCertificateScreen() {
                   )}
                   {isPushingWinners
                     ? 'Pushing…'
-                    : `Push winner certificates (${selectedWinnerIds.size} selected)`}
+                    : !winnerTemplate
+                      ? 'Upload a template first'
+                      : `Push winner certificates (${selectedWinnerIds.size} selected)`}
                 </button>
               </div>
 
@@ -564,7 +600,7 @@ function PushCertificateScreen() {
                 <button
                   type="button"
                   onClick={handlePushParticipation}
-                  disabled={isPushingParticipation}
+                  disabled={isPushingParticipation || !participationTemplate}
                   className="dcd-action"
                   data-variant="primary"
                   style={{ width: '100%' }}
@@ -576,7 +612,9 @@ function PushCertificateScreen() {
                   )}
                   {isPushingParticipation
                     ? 'Pushing…'
-                    : `Push participation certificates (${selectedParticipationIds.size} selected)`}
+                    : !participationTemplate
+                      ? 'Upload a template first'
+                      : `Push participation certificates (${selectedParticipationIds.size} selected)`}
                 </button>
               </div>
 
@@ -699,6 +737,30 @@ function PushCertificateScreen() {
         </div>
       ) : null}
 
+      {pushError ? (
+        <div className="dcd-scrim" onClick={() => setPushError('')}>
+          <div
+            className="dcd-sheet dcd-sheet--dialog"
+            role="alertdialog"
+            aria-label="Push failed"
+            onClick={(clickEvent) => clickEvent.stopPropagation()}
+          >
+            <h2 className="dcd-sheet__title">Could not push</h2>
+            <p className="dcd-sheet__text">{pushError}</p>
+            <div className="dcd-sheet__actions">
+              <button
+                type="button"
+                onClick={() => setPushError('')}
+                className="dcd-action"
+                data-variant="primary"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* The push landed. Dismissed by the coordinator rather than on a timer:
           it is the record that the batch went out, and it should not vanish
           while they are still counting. */}
@@ -710,15 +772,32 @@ function PushCertificateScreen() {
             aria-label="Certificates pushed"
             onClick={(clickEvent) => clickEvent.stopPropagation()}
           >
+            {/*
+              THE SERVER'S NUMBERS, and a warning rather than a tick when any of
+              them failed. A batch that half-worked used to render the same
+              green success as one that fully worked, because the count shown
+              was the number selected rather than the number that landed.
+            */}
             <div className="dcd-done">
-              <DrawnCheck />
+              {pushDone.failed > 0 ? null : <DrawnCheck />}
               <h2 className="dcd-done__title">
-                {pushDone.count} {pushDone.count === 1 ? 'certificate' : 'certificates'} pushed
+                {pushDone.failed > 0
+                  ? `${pushDone.pushed} of ${pushDone.pushed + pushDone.failed} sent`
+                  : `${pushDone.pushed} ${pushDone.pushed === 1 ? 'certificate' : 'certificates'} pushed`}
               </h2>
               <p className="dcd-done__body">
-                {pushDone.type === 'winners' ? 'Winners' : 'Participants'} have been emailed and
-                the certificates are now in their profiles.
+                {pushDone.failed > 0
+                  ? `${pushDone.failed} could not be sent. Nothing was charged and nobody was emailed twice — try those again.`
+                  : `${pushDone.type === 'winners' ? 'Winners' : 'Participants'} have been emailed and the certificates are now in their profiles.`}
               </p>
+              {/* A duplicate skip is correct behaviour, not a failure — so it is
+                  reported quietly and separately from the failures. */}
+              {pushDone.skipped > 0 ? (
+                <p className="dcd-done__body">
+                  {pushDone.skipped} already had this certificate and{' '}
+                  {pushDone.skipped === 1 ? 'was' : 'were'} skipped.
+                </p>
+              ) : null}
             </div>
             <div className="dcd-sheet__actions">
               <button

@@ -1,106 +1,126 @@
 // CrewDirectoryScreen.jsx
-// Route: /fests/:festSlug/crew-directory — the fest's crew contact directory,
-// Heritage Institutional (the "Crew Directory" Stitch frame): Playfair page
-// title, pill search, coordinator/volunteer stat cards, then the crew grouped
-// by ROLE — Coordinators (Core Team) and Volunteers (On-Ground) — each person
-// once, with the events they cover as their assignment line.
+// Route: /fests/:festSlug/crew-directory — who is running this fest, and how to
+// reach them.
 //
-// Data flow is unchanged: the fest slug resolves to festId via
+// DATA FLOW IS UNCHANGED. The fest slug resolves to festId via
 // GET /public/fests/:festSlug, then GET /fests/:festId/staff-directory (grouped
-// by event; phone/email only for the staff tier) and the public event tree load
-// in parallel. The by-event groups are flattened here into one entry per person
-// with their event names collected. Tapping a card reveals the phone number for
-// three seconds (REVEAL_MS) — a privacy measure, phones are never permanently
-// displayed; participants' payloads simply have no phone and nothing is
-// invented.
+// by event) and the public event tree load in parallel. The by-event groups are
+// still flattened here into one entry per person with their event names
+// collected.
+//
+// WHO IS RUNNING THE FEST IS OPEN; HOW TO REACH THEM IS TIERED. The endpoint no
+// longer refuses a caller who has not registered — it returns the roster to any
+// signed-in visitor and omits phoneNumber/emailAddress unless they are fest
+// staff or a confirmed participant. Knowing who oversees an event is part of
+// deciding whether to register for it, so the old "Register for an event under
+// this fest to view its crew directory" was answering the wrong question.
+//
+// WHAT CHANGED IS THE PRESENTATION. This was the last Heritage Institutional
+// frame on the participant surface — a Playfair 32px title, brand-navy on
+// brand-beige cards, a search field filled with a green gradient whose
+// placeholder was centred until focus, ALL-CAPS tracked stat labels, and four
+// `material-symbols-outlined` ligatures (mail, call, close, search) which
+// render as those literal words until the webfont arrives and permanently
+// where it is blocked. It is now on the dedal tokens, with lucide icons.
+//
+// A TITLE IS PASSED TO ScreenHeader, which it previously was not. A title is
+// what tells the layout to stand the global app header down; without one this
+// screen stacked the participant app header, a bare floating back arrow and its
+// own <h1> into three bands before any content.
+//
+// THE SEARCH FILTERS BY EVENT NAME, as before — "who is running Manthan" is the
+// question this screen is opened with. The placeholder now says so.
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Mail, Phone, Search, X } from 'lucide-react';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
+import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import apiClient from '../../api-client/api-client.js';
 import InlineError from '../../components/inline-error/InlineError.jsx';
-import EmptyState from '../../components/empty-state/EmptyState.jsx';
-import SkeletonBlock from '../../components/skeleton-block/SkeletonBlock.jsx';
 import UserAvatar from '../../components/user-avatar/UserAvatar.jsx';
 import { CREW_DIRECTORY_COPY } from '../../brand/brand-copy.js';
+import './crew-directory.css';
 
 const STAFF_ROLES = { COORDINATOR: 'coordinator', VOLUNTEER: 'volunteer' };
 
-// One person's card. The whole card is the reveal target; the contact icons are
-// separate stop-propagation links so a mail tap never triggers the reveal.
-function CrewCard({ person, accentClassName }) {
+const COPY = {
+  title: 'Crew & contacts',
+  searchPlaceholder: 'Search by event',
+  clear: 'Clear search',
+  coordinators: 'Coordinators',
+  volunteers: 'Volunteers',
+  statCoordinators: 'coordinators',
+  statVolunteers: 'volunteers',
+  empty: 'No crew listed yet.',
+  emptyAction: 'Back to the fest',
+  noMatch: (query) => `No events match “${query}”.`,
+};
+
+/*
+ * One person. The contact actions are the point of the screen — a name with no
+ * way to reach it is a list of strangers — so they are 44px targets rather than
+ * the 24px glyphs they were.
+ *
+ * Phone and email are HIDDEN when absent, not disabled. The service omits the
+ * fields entirely for a visitor who is neither staff nor a confirmed
+ * participant, and absent means "not yours to have" — a different statement
+ * from a staff member with no number on file. A greyed-out call button
+ * advertises a capability that does not exist here.
+ */
+function CrewCard({ person }) {
   const hasPhone = Boolean(person.phoneNumber);
   const hasEmail = Boolean(person.emailAddress);
 
   return (
-    <div
-      className={[
-        'rounded-xl border border-brand-brown/15 border-l-[3px] bg-brand-beige p-4',
-        accentClassName,
-      ].join(' ')}
-    >
-      <div className="flex items-center gap-3">
-        <UserAvatar user={person} size="directory" />
-        <div className="min-w-0 flex-1">
-          <span className="block truncate font-body text-[18px] font-semibold leading-6 text-brand-navy">
-            {person.fullName ?? '—'}
-          </span>
-          {person.assignmentLine ? (
-            <span className="block truncate font-body text-[13px] leading-[18px] text-brand-primary/60">
-              {person.assignmentLine}
-            </span>
-          ) : null}
-        </div>
-        <span className="flex shrink-0 items-center gap-1">
+    <div className="dcw-card">
+      <UserAvatar user={person} size="directory" />
+
+      <span className="dcw-card__body">
+        <span className="dcw-card__name">{person.fullName ?? '—'}</span>
+        {person.assignmentLine ? (
+          <span className="dcw-card__events">{person.assignmentLine}</span>
+        ) : null}
+      </span>
+
+      {hasEmail || hasPhone ? (
+        <span className="dcw-card__actions">
           {hasEmail ? (
             <a
+              className="dcw-action"
               href={`mailto:${person.emailAddress}`}
-              aria-label={`${CREW_DIRECTORY_COPY.email} ${person.fullName ?? ''}`}
-              className="flex h-11 w-11 items-center justify-center rounded-pill text-brand-primary transition-colors active:bg-brand-secondary/10"
+              aria-label={`Email ${person.fullName ?? 'this crew member'}`}
             >
-              <span className="material-symbols-outlined text-[24px]" aria-hidden="true">
-                mail
-              </span>
+              <Mail size={20} aria-hidden="true" />
             </a>
           ) : null}
-          {/*
-            * Hidden, not disabled. The service omits phone and email entirely
-            * for participants — absent means "you may not have this", which is
-            * different from a staff member who simply has no number on file.
-            * A greyed-out call icon advertised a capability participants do not
-            * have and made the card look broken.
-            */}
           {hasPhone ? (
             <a
+              className="dcw-action"
               href={`tel:${person.phoneNumber}`}
-              aria-label={`${CREW_DIRECTORY_COPY.call} ${person.fullName ?? ''}`}
-              className="flex h-11 w-11 items-center justify-center rounded-pill text-brand-primary transition-colors active:bg-brand-secondary/10"
+              aria-label={`Call ${person.fullName ?? 'this crew member'}`}
             >
-              <span className="material-symbols-outlined text-[24px]" aria-hidden="true">
-                call
-              </span>
+              <Phone size={20} aria-hidden="true" />
             </a>
           ) : null}
         </span>
-      </div>
+      ) : null}
     </div>
   );
 }
 
-function RoleSection({ heading, badge, people, accentClassName }) {
+function RoleSection({ heading, people }) {
   if (people.length === 0) {
     return null;
   }
   return (
-    <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-[24px] font-bold leading-8 text-brand-navy">{heading}</h2>
-        <span className="rounded-pill bg-brand-secondary/20 px-3 py-1 font-body text-[12px] font-semibold leading-4 text-brand-primary">
-          {badge}
-        </span>
+    <section className="dcw-section">
+      <div className="dcw-section__head">
+        <h2 className="dcw-section__title">{heading}</h2>
+        <span className="dcw-section__count">{people.length}</span>
       </div>
       {people.map((person) => (
-        <CrewCard key={person.key} person={person} accentClassName={accentClassName} />
+        <CrewCard key={person.key} person={person} />
       ))}
     </section>
   );
@@ -108,6 +128,7 @@ function RoleSection({ heading, badge, people, accentClassName }) {
 
 function CrewDirectoryScreen() {
   const { festSlug } = useParams();
+  const navigate = useTransitionNavigate();
 
   const [fest, setFest] = useState(null);
   const [groups, setGroups] = useState([]);
@@ -129,10 +150,11 @@ function CrewDirectoryScreen() {
       setLoadState('ready');
     } catch (loadException) {
       /*
-       * A refusal is not a failure. The directory is gated on having a confirmed
-       * registration in this fest, so a 403 means "not yours to see" — and
-       * offering Retry there invites someone to keep tapping at a door that will
-       * never open.
+       * The registration gate is gone, so a PERMISSION_DENIED is no longer the
+       * expected answer for an ordinary visitor. The branch is kept because the
+       * server may still refuse for another reason, and a refusal is not a
+       * failure: offering Retry against a door that will never open invites
+       * somebody to keep tapping it.
        */
       setLoadState(loadException?.code === 'PERMISSION_DENIED' ? 'notRegistered' : 'error');
     }
@@ -166,8 +188,7 @@ function CrewDirectoryScreen() {
     }));
   }, [groups]);
 
-  // Filter by EVENT NAME only — show crew members whose assigned events
-  // match the search query.
+  // Filter by EVENT NAME only — "who is running Manthan" is the question.
   const filteredPeople = useMemo(
     () =>
       normalisedQuery
@@ -182,125 +203,100 @@ function CrewDirectoryScreen() {
 
   const coordinators = filteredPeople.filter((person) => person.role === STAFF_ROLES.COORDINATOR);
   const volunteers = filteredPeople.filter((person) => person.role === STAFF_ROLES.VOLUNTEER);
-  const coordinatorCount = people.filter((person) => person.role === STAFF_ROLES.COORDINATOR).length;
+  const coordinatorCount = people.filter(
+    (person) => person.role === STAFF_ROLES.COORDINATOR,
+  ).length;
   const volunteerCount = people.filter((person) => person.role === STAFF_ROLES.VOLUNTEER).length;
 
   return (
-    <div className="min-h-screen bg-background pb-6">
-      <ScreenHeader />
+    <div className="dcw-screen">
+      <ScreenHeader title={COPY.title} />
 
-      <div className="flex flex-col gap-5 px-5 pb-6 pt-6">
-        <h2 className="font-display text-[32px] font-bold leading-10 text-brand-navy">
-          {CREW_DIRECTORY_COPY.pageTitle}
-        </h2>
-
-        {/* Search — exactly like home page, searches events only */}
-        <div className="flex h-12 w-full items-center gap-3 rounded-[14px] bg-gradient-to-r from-brand-secondary/20 to-brand-primary/15 px-4">
-          <input
-            value={query}
-            onChange={(changeEvent) => setQuery(changeEvent.target.value)}
-            placeholder="Search events..."
-            autoComplete="off"
-            spellCheck={false}
-            className="min-w-0 flex-grow bg-transparent font-body text-[14px] leading-[22px] text-brand-primary outline-none placeholder:text-brand-primary/60 placeholder:text-center focus:placeholder:text-left focus:outline-none focus:ring-0"
-            data-search-input
-          />
-          {query ? (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              aria-label="Clear"
-              className="flex shrink-0 items-center justify-center active:scale-95"
-            >
-              <span className="material-symbols-outlined text-[20px] text-brand-primary/50" aria-hidden="true">
-                close
-              </span>
-            </button>
-          ) : null}
-          {/* Search icon — RIGHT side. Tap to dismiss keyboard. */}
-          <button
-            type="button"
-            onClick={() => document.activeElement?.blur()}
-            className="flex shrink-0 items-center justify-center active:scale-95"
-          >
-            <span className="material-symbols-outlined text-[22px] text-brand-primary" aria-hidden="true">
-              search
-            </span>
-          </button>
-        </div>
-
+      <div className="dcw-page">
         {loadState === 'loading' ? (
           <>
-            <SkeletonBlock className="h-20 w-full" />
-            <SkeletonBlock className="h-40 w-full" />
+            <div className="dcw-stats">
+              <div className="dcw-skel dcw-skel--stat" />
+              <div className="dcw-skel dcw-skel--stat" />
+            </div>
+            <div className="dcw-section">
+              <div className="dcw-skel dcw-skel--card" />
+              <div className="dcw-skel dcw-skel--card" />
+              <div className="dcw-skel dcw-skel--card" />
+            </div>
           </>
         ) : loadState === 'notRegistered' ? (
           /* Deliberately says nothing about the fest — not even its name. The
              caller has no standing here, so the screen reveals nothing and just
              says what would grant it. */
-          <p className="px-6 py-16 text-center font-body text-[14px] leading-[22px] text-on-surface-variant">
-            {CREW_DIRECTORY_COPY.notRegisteredMessage}
-          </p>
+          <p className="dcw-note">{CREW_DIRECTORY_COPY.notRegisteredMessage}</p>
         ) : loadState === 'error' ? (
           <InlineError message={CREW_DIRECTORY_COPY.errorMessage} onRetry={loadDirectory} />
+        ) : people.length === 0 ? (
+          /*
+            Short, and with somewhere to go. It read "Crew assigned to this fest
+            will show up here" — a sentence explaining the component to the
+            reader instead of telling them what to do next, and it left them on
+            a dead screen with only the back arrow. Nobody can conjure crew, so
+            the action is the way out: back to the fest they came from.
+          */
+          <div className="dcw-empty">
+            <p className="dcw-note">{COPY.empty}</p>
+            <button
+              type="button"
+              className="dcw-empty__action"
+              onClick={() => navigate(`/fests/${festSlug}`)}
+            >
+              {COPY.emptyAction}
+            </button>
+          </div>
         ) : (
-          <>
-            {/* Fest name — which directory this is */}
-            {fest ? (
-              <p className="-mt-2 font-body text-[12px] font-bold uppercase leading-4 tracking-label-caps text-brand-primary/60">
-                {fest.festName}
-              </p>
-            ) : null}
+          <div className="dcw-list">
+            {fest ? <p className="dcw-fest">{fest.festName}</p> : null}
 
-            {people.length === 0 ? (
-              <EmptyState line="Crew assigned to this fest will show up here." />
+            <div className="dcw-search">
+              <Search size={18} className="dcw-search__icon" aria-hidden="true" />
+              <input
+                className="dcw-search__input"
+                value={query}
+                onChange={(changeEvent) => setQuery(changeEvent.target.value)}
+                placeholder={COPY.searchPlaceholder}
+                autoComplete="off"
+                spellCheck={false}
+                aria-label={COPY.searchPlaceholder}
+              />
+              {query ? (
+                <button
+                  type="button"
+                  className="dcw-search__clear"
+                  onClick={() => setQuery('')}
+                  aria-label={COPY.clear}
+                >
+                  <X size={16} aria-hidden="true" />
+                </button>
+              ) : null}
+            </div>
+
+            <div className="dcw-stats">
+              <div className="dcw-stat">
+                <span className="dcw-stat__value">{coordinatorCount}</span>
+                <span className="dcw-stat__label">{COPY.statCoordinators}</span>
+              </div>
+              <div className="dcw-stat">
+                <span className="dcw-stat__value">{volunteerCount}</span>
+                <span className="dcw-stat__label">{COPY.statVolunteers}</span>
+              </div>
+            </div>
+
+            {filteredPeople.length === 0 ? (
+              <p className="dcw-note">{COPY.noMatch(query.trim())}</p>
             ) : (
               <>
-                {/* Stats */}
-                <div className="flex gap-3">
-                  <div className="flex-1 rounded-xl border border-brand-brown/15 bg-brand-beige p-4 text-center">
-                    <p className="font-body text-[32px] font-bold leading-10 text-brand-navy">
-                      {coordinatorCount}
-                    </p>
-                    <p className="font-body text-[11px] font-bold uppercase leading-4 tracking-label-caps text-brand-primary/60">
-                      {CREW_DIRECTORY_COPY.statCoordinators}
-                    </p>
-                  </div>
-                  <div className="flex-1 rounded-xl border border-brand-brown/15 bg-brand-beige p-4 text-center">
-                    <p className="font-body text-[32px] font-bold leading-10 text-brand-navy">
-                      {volunteerCount}
-                    </p>
-                    <p className="font-body text-[11px] font-bold uppercase leading-4 tracking-label-caps text-brand-primary/60">
-                      {CREW_DIRECTORY_COPY.statVolunteers}
-                    </p>
-                  </div>
-                </div>
-
-                {filteredPeople.length === 0 ? (
-                  <div className="py-10 text-center">
-                    <p className="font-display text-[20px] font-bold leading-[28px] text-brand-navy">
-                      No events match &ldquo;{query}&rdquo;
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <RoleSection
-                      heading={CREW_DIRECTORY_COPY.sectionCoordinators}
-                      badge={CREW_DIRECTORY_COPY.badgeCoordinators}
-                      people={coordinators}
-                      accentClassName="border-l-secondary-container"
-                    />
-                    <RoleSection
-                      heading={CREW_DIRECTORY_COPY.sectionVolunteers}
-                      badge={CREW_DIRECTORY_COPY.badgeVolunteers}
-                      people={volunteers}
-                      accentClassName="border-l-surface-container-high"
-                    />
-                  </>
-                )}
+                <RoleSection heading={COPY.coordinators} people={coordinators} />
+                <RoleSection heading={COPY.volunteers} people={volunteers} />
               </>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>

@@ -17,6 +17,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
+import { ChevronRight, Users } from 'lucide-react';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import { useSharedFestPosterStyle } from '../../components/route-transition/shared-fest-poster.js';
 
@@ -444,8 +445,8 @@ function FestDetailScreen() {
   const [fest, setFest] = useState(null);
   const [events, setEvents] = useState([]);
   const [loadState, setLoadState] = useState('loading');
-  const [hasCrewAccess, setHasCrewAccess] = useState(false);
   const [myRegistrationId, setMyRegistrationId] = useState(null);
+  const [myRegistrationCount, setMyRegistrationCount] = useState(0);
 
   const [activeTab, setActiveTab] = useState(ALL_TAB);
   /*
@@ -489,6 +490,9 @@ function FestDetailScreen() {
   const [isAboutClamped, setIsAboutClamped] = useState(false);
   const [hasTabsBeyondEdge, setHasTabsBeyondEdge] = useState(false);
 
+  /* Kept as a stable anchor for the events section. Its scroll-into-view
+     helper went with the "Explore events" button that called it — a control
+     whose entire effect was to scroll the page you were already scrolling. */
   const eventsSectionRef = useRef(null);
   const aboutRef = useRef(null);
   const tabsRef = useRef(null);
@@ -510,18 +514,12 @@ function FestDetailScreen() {
         return;
       }
 
-      // Crew directory: only for someone who actually staffs this fest.
-      try {
-        const assignments = await apiClient.get('/staff-assignments/mine');
-        setHasCrewAccess(
-          (Array.isArray(assignments) ? assignments : []).some((assignment) => {
-            const assignmentFestId = assignment.festId?.id ?? assignment.festId;
-            return assignmentFestId === festDetail.id;
-          }),
-        );
-      } catch {
-        setHasCrewAccess(false);
-      }
+      /*
+       * The /staff-assignments/mine round-trip that used to run here is gone
+       * with the staff gate it fed. The crew link is shown to everyone now, so
+       * there is nothing to decide — and this screen makes one fewer request
+       * on every authenticated view of every fest.
+       */
 
       /*
        * Does this person already hold a pass to something in this fest? It
@@ -534,13 +532,26 @@ function FestDetailScreen() {
        */
       try {
         const mine = await apiClient.get('/registrations/mine');
-        const match = (Array.isArray(mine) ? mine : []).find((row) => {
+        /*
+         * A CANCELLED ROW IS NOT A REGISTRATION. Matching on fest alone counted
+         * seats the participant had given up, so the bar offered a pass for
+         * something they no longer held.
+         */
+        const LIVE_STATUSES = new Set([
+          'confirmed',
+          'attended',
+          'waitlisted',
+          'pendingPayment',
+        ]);
+        const matches = (Array.isArray(mine) ? mine : []).filter((row) => {
           const rowFestId = row.eventId?.festId?.id ?? row.eventId?.festId;
-          return rowFestId === festDetail.id;
+          return rowFestId === festDetail.id && LIVE_STATUSES.has(row.status);
         });
-        setMyRegistrationId(match?.id ?? null);
+        setMyRegistrationId(matches[0]?.id ?? null);
+        setMyRegistrationCount(matches.length);
       } catch {
         setMyRegistrationId(null);
+        setMyRegistrationCount(0);
       }
     } catch {
       setLoadState('error');
@@ -553,6 +564,12 @@ function FestDetailScreen() {
   }, [loadFest]);
 
   const childrenByParent = useMemo(() => buildChildrenByParent(events), [events]);
+  /* Event lookup by id. A contingent carries no artwork of its own, so a card
+     borrows the poster of the parent event it hangs off. */
+  const eventsById = useMemo(
+    () => new Map(events.map((event) => [event.id, event])),
+    [events],
+  );
   const groups = useMemo(
     () => groupsForFest(events, childrenByParent),
     [events, childrenByParent],
@@ -666,10 +683,6 @@ function FestDetailScreen() {
     } else {
       navigator.clipboard?.writeText(festUrl).catch(() => {});
     }
-  }
-
-  function scrollToEvents() {
-    eventsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   if (loadState === 'loading') {
@@ -871,6 +884,41 @@ function FestDetailScreen() {
                   Registration closes {formatShortDate(new Date(deadlineTs).toISOString())}
                 </p>
               ) : null}
+
+              {/*
+                CREW & CONTACTS, in the core info block rather than at the foot
+                of the page.
+                
+                It used to live beside the Organiser heading, which on a phone
+                measured 11,719px down a 12,075px page — 97% of the way to the
+                bottom, behind fifty event cards, the schedule and the about
+                text. A participant who needs to reach the person running their
+                event is not going to scroll for it; they are going to conclude
+                there is nobody to call.
+                
+                IT IS ALSO NO LONGER GATED. The button was rendered only when
+                /staff-assignments/mine placed the viewer on this fest's staff —
+                so a participant, the audience the directory was built for,
+                never saw it at all. The directory's own service says as much:
+                "CONTACT DETAILS ARE NOW SHOWN TO PARTICIPANTS TOO ... the
+                directory exists so a participant can reach the person running
+                their event." The frontend gate was narrower than the backend's
+                and hid the feature from everyone it was for.
+                
+                The server still decides who may READ it, and the screen has a
+                state that says so plainly when the answer is no. That is the
+                right place for the decision — a link that is present and
+                explains itself beats a link that silently does not exist.
+              */}
+              <button
+                type="button"
+                className="dfd-crewlink"
+                onClick={() => navigate(`/fests/${festSlug}/crew-directory`)}
+              >
+                <Users size={18} className="dfd-crewlink__icon" aria-hidden="true" />
+                <span className="dfd-crewlink__label">Crew &amp; contacts</span>
+                <ChevronRight size={18} className="dfd-crewlink__chevron" aria-hidden="true" />
+              </button>
             </section>
 
             {/*
@@ -914,14 +962,47 @@ function FestDetailScreen() {
 
             {packages.length > 0 ? (
               <section className="ddp-section dfd-aside-packages">
-                <h2 className="ddp-section__title">Squad packages</h2>
+                <h2 className="ddp-section__title">Contingents</h2>
+                {/*
+                  NOT "squad". A squad is four; a contingent is however many the
+                  college decides to sell — two, three, five — so the word has to
+                  be the one that does not carry a number.
+                */}
+                <p className="dfd-packages__lede">
+                  One pass covering several events, priced together.
+                </p>
                 <div className="dfd-packages">
                   {packages.map(({ eventId, contingent }) => {
+                    const capacity = contingent.maximumBundleClaims;
                     const left =
-                      contingent.maximumBundleClaims === null ||
-                      contingent.maximumBundleClaims === undefined
+                      capacity === null || capacity === undefined
                         ? null
-                        : contingent.maximumBundleClaims - (contingent.soldBundleCount ?? 0);
+                        : Math.max(0, capacity - (contingent.soldBundleCount ?? 0));
+                    /*
+                     * THE SAVING, ONLY WHEN THERE IS ONE.
+                     *
+                     * individualTotalPaise is the snapshot of what the included
+                     * events cost bought separately, and it is what makes a
+                     * bundle a bundle. It has never been rendered anywhere.
+                     *
+                     * It is also 0 on real rows in this database — a contingent
+                     * created before the snapshot was populated — and 0 minus a
+                     * price is a NEGATIVE saving. So the strikethrough and the
+                     * badge appear only when the comparison is genuinely
+                     * favourable. An honest bundle sells itself; an invented
+                     * discount is the thing shoppers are trained to distrust.
+                     */
+                    const individualTotal = contingent.individualTotalPaise ?? 0;
+                    const savingPaise = individualTotal - contingent.pricePaise;
+                    const hasSaving = savingPaise > 0;
+                    const includedCount = contingent.includedEventIds?.length ?? 0;
+                    /*
+                     * No image on the contingent model, so it borrows one: the
+                     * parent event it hangs off, then the fest banner. The wash
+                     * is the last resort rather than a broken <img>.
+                     */
+                    const artwork =
+                      eventsById.get(eventId)?.posterImageUrl || fest.bannerImageUrl || null;
                     return (
                       <button
                         type="button"
@@ -929,15 +1010,57 @@ function FestDetailScreen() {
                         key={contingent.id}
                         onClick={() => openPackage(contingent, eventId)}
                       >
-                        <span className="dfd-package__name">{contingent.contingentName}</span>
-                        <span className="dfd-package__price">
-                          {formatPaiseAmount(contingent.pricePaise)}
+                        <span className="dfd-package__media">
+                          {artwork ? (
+                            <img
+                              className="dfd-package__image"
+                              src={artwork}
+                              alt=""
+                              loading="lazy"
+                              decoding="async"
+                            />
+                          ) : (
+                            <span className="dfd-package__wash" aria-hidden="true" />
+                          )}
+                          {hasSaving ? (
+                            <span className="dfd-package__save">
+                              Save {formatPaiseAmount(savingPaise)}
+                            </span>
+                          ) : null}
                         </span>
-                        {left === null ? null : (
-                          <span className="dfd-package__slots">
-                            {Math.max(0, left)} of {contingent.maximumBundleClaims} left
+
+                        <span className="dfd-package__body">
+                          <span className="dfd-package__name">{contingent.contingentName}</span>
+
+                          <span className="dfd-package__prices">
+                            <span className="dfd-package__price">
+                              {formatPaiseAmount(contingent.pricePaise)}
+                            </span>
+                            {hasSaving ? (
+                              <s className="dfd-package__was">
+                                {formatPaiseAmount(individualTotal)}
+                              </s>
+                            ) : null}
                           </span>
-                        )}
+
+                          {/* Two pills at most. The references are consistent
+                              that a card carrying more stops being scannable. */}
+                          <span className="dfd-package__tags">
+                            {includedCount > 0 ? (
+                              <span className="dfd-package__tag">{includedCount} events</span>
+                            ) : null}
+                            {left !== null && left > 0 ? (
+                              <span className="dfd-package__tag dfd-package__tag--left">
+                                {left} left
+                              </span>
+                            ) : null}
+                            {left === 0 ? (
+                              <span className="dfd-package__tag dfd-package__tag--gone">
+                                Sold out
+                              </span>
+                            ) : null}
+                          </span>
+                        </span>
                       </button>
                     );
                   })}
@@ -952,15 +1075,42 @@ function FestDetailScreen() {
              * block of the sidebar. One element, two behaviours, no duplicate
              * markup to keep in sync.
              */}
-            <div className="ddp-cta">
-              <div className="ddp-cta__inner">
-                <div className="ddp-cta__meta">
-                  <span className="ddp-cta__label">Entry</span>
-                  {/* Fest entry is free platform-wide. Fees are per event and
-                      live on the cards and the event page. */}
-                  <span className="ddp-cta__value">Free</span>
-                </div>
-                {myRegistrationId ? (
+            {/*
+              THE BAR ONLY EXISTS WHEN THERE IS SOMETHING TO PUT IN IT.
+              
+              It used to render unconditionally with "Entry / Free" and either
+              "View my pass" or "Explore events". Two things were wrong with
+              that, and on a phone they cost the most valuable strip on the
+              screen.
+              
+              "Explore events" SCROLLED TO A SECTION OF THIS PAGE. A sticky bar
+              earns its place by keeping THE essential action reachable on a
+              long scroll — but a fest has no single action. You register per
+              EVENT, and there are five to sixty-three of them; the event cards
+              are the actions. A fabricated single CTA that only scrolls is the
+              decision-fatigue case the guidance warns about, pinned over the
+              content it is pointing at.
+              
+              "Entry / Free" is a platform-wide constant, not a fact about this
+              fest — fest entry is free everywhere, fees are per event and live
+              on the cards. It read as information while saying nothing, and
+              beside "View my pass" it was actively confusing: somebody holding
+              a pass is not asking what entry costs.
+              
+              So the bar is now rendered only for somebody who HAS a
+              registration here, where it carries a real action that is not
+              otherwise anywhere on the page, and a meta line that answers "how
+              much of this fest am I in". Everyone else gets the space back.
+            */}
+            {myRegistrationId ? (
+              <div className="ddp-cta">
+                <div className="ddp-cta__inner">
+                  <div className="ddp-cta__meta">
+                    <span className="ddp-cta__label">You are registered</span>
+                    <span className="ddp-cta__value">
+                      {myRegistrationCount === 1 ? '1 event' : `${myRegistrationCount} events`}
+                    </span>
+                  </div>
                   <button
                     type="button"
                     className="ddp-button"
@@ -968,13 +1118,9 @@ function FestDetailScreen() {
                   >
                     View my pass
                   </button>
-                ) : (
-                  <button type="button" className="ddp-button" onClick={scrollToEvents}>
-                    Explore events
-                  </button>
-                )}
+                </div>
               </div>
-            </div>
+            ) : null}
           </aside>
 
           <main>
@@ -1171,17 +1317,6 @@ function FestDetailScreen() {
                   ) : null}
                 </span>
               </div>
-              {/* Crew directory is a staff tool, not a visitor action — it sits
-                  quietly beside the organiser rather than in the hero. */}
-              {hasCrewAccess ? (
-                <button
-                  type="button"
-                  className="ddp-button ddp-button--quiet"
-                  onClick={() => navigate(`/fests/${festSlug}/crew-directory`)}
-                >
-                  Crew directory
-                </button>
-              ) : null}
             </section>
 
             <PromotionSlot placementKey="festDetail" />

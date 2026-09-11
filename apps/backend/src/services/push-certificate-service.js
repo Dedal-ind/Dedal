@@ -14,7 +14,10 @@ const { EventModel } = require("../models/event-model");
 const { FestModel } = require("../models/fest-model");
 const { TeamModel } = require("../models/team-model");
 const { RegistrationModel } = require("../models/registration-model");
-const { getStorageDriver } = require("./upload-storage-service");
+const {
+  getStorageDriver,
+  ALLOWED_CERTIFICATE_MIME_TYPES,
+} = require("./upload-storage-service");
 const { sendMailQuietly } = require("./email-service");
 const { applicationConfig } = require("../config/application-config");
 const { CERTIFICATE_TYPES, CERTIFICATE_STATUSES } = require("../constants/certificate-constants");
@@ -102,21 +105,70 @@ async function loadUserWithCollege(userId) {
   };
 }
 
+/*
+ * THE DRIVER'S OPTIONS ARE { kind, allowedMimeTypes } — NOT { folder, key }.
+ *
+ * Both calls below used to pass `{ folder }` / `{ folder, key }`. The driver
+ * reads neither: it destructures `options.kind` and `options.allowedMimeTypes`
+ * and nothing else. So `kind` was undefined, both calls fell through to
+ * assertImage(), and saving a PDF threw
+ *
+ *     "Uploaded file must be a JPEG, PNG, WebP, GIF, or AVIF image."
+ *
+ * on every single certificate. The throw landed in the per-recipient catch
+ * below and became `results.failed += 1`, so the endpoint still answered 200
+ * and the coordinator was told it had worked.
+ *
+ * The template call had the same mistake and survived only by luck — a JPEG or
+ * PNG passes assertImage, so the ignored option never mattered there.
+ *
+ * ALLOWED_CERTIFICATE_MIME_TYPES already exists in the driver for exactly this
+ * caller: application/pdf plus JPEG and PNG. It is narrower than the general
+ * document whitelist, which admits .doc and .pptx — a certificate is a
+ * printable artefact, not an office file.
+ *
+ * NOTE ON `key`: the driver names every object with random bytes and the
+ * type's extension, so the intended `${verificationCode}.pdf` filename is not
+ * honoured and never was. The URL it returns is what is stored on the
+ * certificate row, so nothing depends on the name; making keys predictable
+ * would also make a participant's certificate guessable, which is worse.
+ */
+const CERTIFICATE_UPLOAD_OPTIONS = {
+  kind: "document",
+  allowedMimeTypes: ALLOWED_CERTIFICATE_MIME_TYPES,
+};
+
 // Upload template buffer to storage and return the URL
 async function uploadTemplateToStorage(templateBuffer, mimeType) {
   const driver = getStorageDriver();
-  const { url } = await driver.upload(templateBuffer, mimeType, { folder: "certificate-templates" });
+  const { url } = await driver.upload(templateBuffer, mimeType, CERTIFICATE_UPLOAD_OPTIONS);
   return url;
 }
 
 // Save generated PDF to storage and return URL
-async function savePdfToStorage(pdfBuffer, verificationCode) {
+async function savePdfToStorage(pdfBuffer) {
   const driver = getStorageDriver();
-  const { url } = await driver.upload(pdfBuffer, "application/pdf", {
-    folder: "certificates",
-    key: `${verificationCode}.pdf`,
-  });
+  const { url } = await driver.upload(pdfBuffer, "application/pdf", CERTIFICATE_UPLOAD_OPTIONS);
   return url;
+}
+
+/*
+ * WHY THE FAILURES ARE LOGGED AT ALL.
+ *
+ * Both loops used a bare `catch { results.failed += 1 }`. Nothing was written
+ * anywhere, so the PDF-upload bug above ran in production behaving exactly like
+ * "some recipients just failed" — no message, no stack, no id, nothing to grep.
+ * It took reading the driver's option names to find it.
+ *
+ * console.error matches the rest of this backend (see certificate-pdf.js, which
+ * logs template-fetch and draw failures the same way) and is picked up by pm2's
+ * log files on the server.
+ */
+function logCertificateFailure(stage, { eventId, userId, error }) {
+  console.error(
+    `[certificate-push] ${stage} failed event=${eventId} user=${userId}: ` +
+      `${error?.message ?? error}`
+  );
 }
 
 /**
@@ -142,7 +194,13 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
   const templateUrl = await uploadTemplateToStorage(templateBuffer, templateMimeType);
   const templateObj = { documentTemplateUrl: templateUrl };
 
-  const results = { pushed: 0, skipped: 0, failed: 0 };
+  /*
+   * skippedUserIds and failedUserIds ride alongside the counts so the screen can
+   * name who was affected. A duplicate skip is correct behaviour — a second push
+   * must not fail the batch — but "3 skipped" with no names leaves the
+   * coordinator unable to tell a duplicate from a mistake.
+   */
+  const results = { pushed: 0, skipped: 0, failed: 0, skippedUserIds: [], failedUserIds: [] };
   /* Collected so the feed can be written once at the end rather than a row at
    * a time inside the PDF loop, which would be one insert per person. */
   const notifiedUserIds = [];
@@ -180,9 +238,15 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
             metadata,
           });
 
-          if (!certificate) { results.skipped += 1; continue; }
+          if (!certificate) {
+            /* insertCertificate returns null on a duplicate key: this person
+               already holds this certificate for this event. */
+            results.skipped += 1;
+            results.skippedUserIds.push(String(memberId));
+            continue;
+          }
 
-          const verifyUrl = `${applicationConfig.frontendBaseUrl}/verify/${certificate.verificationCode}`;
+          const verifyUrl = `${applicationConfig.frontendBaseUrl}/verify-certificate/${certificate.verificationCode}`;
 
           const pdfBuffer = await renderCertificatePdf({
             certificateType,
@@ -192,7 +256,7 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
             template: templateObj,
           });
 
-          const pdfUrl = await savePdfToStorage(pdfBuffer, certificate.verificationCode);
+          const pdfUrl = await savePdfToStorage(pdfBuffer);
           await CertificateModel.findByIdAndUpdate(certificate._id, { pdfUrl });
 
           if (user.emailAddress) {
@@ -215,12 +279,16 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
 
           results.pushed += 1;
           notifiedUserIds.push(String(userId));
-        } catch {
+        } catch (memberError) {
           results.failed += 1;
+          results.failedUserIds.push(String(memberId));
+          logCertificateFailure("winner", { eventId, userId: memberId, error: memberError });
         }
       }
-    } catch {
+    } catch (winnerError) {
       results.failed += 1;
+      results.failedUserIds.push(String(userId));
+      logCertificateFailure("winner-expand", { eventId, userId, error: winnerError });
     }
   }
 
@@ -255,9 +323,15 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
             metadata,
           });
 
-          if (!certificate) { results.skipped += 1; continue; }
+          if (!certificate) {
+            /* insertCertificate returns null on a duplicate key: this person
+               already holds this certificate for this event. */
+            results.skipped += 1;
+            results.skippedUserIds.push(String(memberId));
+            continue;
+          }
 
-          const verifyUrl = `${applicationConfig.frontendBaseUrl}/verify/${certificate.verificationCode}`;
+          const verifyUrl = `${applicationConfig.frontendBaseUrl}/verify-certificate/${certificate.verificationCode}`;
 
           const pdfBuffer = await renderCertificatePdf({
             certificateType: CERTIFICATE_TYPES.PARTICIPATION,
@@ -267,7 +341,7 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
             template: templateObj,
           });
 
-          const pdfUrl = await savePdfToStorage(pdfBuffer, certificate.verificationCode);
+          const pdfUrl = await savePdfToStorage(pdfBuffer);
           await CertificateModel.findByIdAndUpdate(certificate._id, { pdfUrl });
 
           if (user.emailAddress) {
@@ -289,12 +363,20 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
 
           results.pushed += 1;
           notifiedUserIds.push(String(userId));
-        } catch {
+        } catch (memberError) {
           results.failed += 1;
+          results.failedUserIds.push(String(memberId));
+          logCertificateFailure("participation", { eventId, userId: memberId, error: memberError });
         }
       }
-    } catch {
+    } catch (participantError) {
       results.failed += 1;
+      results.failedUserIds.push(String(userId));
+      logCertificateFailure("participation-expand", {
+        eventId,
+        userId,
+        error: participantError,
+      });
     }
   }
 

@@ -296,10 +296,23 @@ function ParticipantLayout({ children }) {
   );
 }
 
-const ENVIRONMENT_BANNER_LABELS = {
-  staging: 'STAGING ENVIRONMENT',
-  test: 'TEST ENVIRONMENT',
-};
+/*
+ * EMPTY, DELIBERATELY — the banner no longer labels any environment.
+ *
+ * It existed to stop somebody mistaking a deployed non-production environment
+ * for the real one. That risk is answered by the URL: staging is reached at
+ * testing.dedal.in and nowhere else, so anybody looking at it has already typed
+ * or bookmarked the thing the strip was there to tell them.
+ *
+ * What it cost was not free. A sticky 27px band at z-index 9999 sat above the
+ * app header on every screen of the environment the UI is actually reviewed in,
+ * which is the one place a reviewer needs the layout to match production.
+ *
+ * The component is kept rather than deleted: the labels are the whole of its
+ * behaviour, so restoring the banner for a future environment is one line here
+ * and nothing else.
+ */
+const ENVIRONMENT_BANNER_LABELS = {};
 
 /*
  * Development deliberately has NO label, so the banner renders nothing on a

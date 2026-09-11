@@ -195,6 +195,18 @@ const DESKTOP_READY_PARTICIPANT_PATTERNS = [
   /^\/policies\/versions\/[^/]+$/,
   /^\/account\/[^/]+$/,
   /*
+   * The fest crew directory. It was deliberately EXCLUDED — see the note in
+   * isDesktopReadyParticipantRoute about a fest sub-page not inheriting its
+   * parent's prefix — because it was a mobile-only Heritage frame that ran the
+   * full width of a laptop.
+   *
+   * It is a 720px centred column now, so the reason no longer holds. It also
+   * has to render here: the link to it sits in the fest's core info block, and
+   * a link that walls you on the device you are already reading the fest on is
+   * worse than no link.
+   */
+  /^\/fests\/[^/]+\/crew-directory$/,
+  /*
    * A registration's own URL. The hub shows the same detail in a right-hand
    * panel at desktop widths, so this route is only reached by a deep link or a
    * share — but it has to render rather than wall, because the link a student
@@ -211,10 +223,11 @@ function isDesktopReadyParticipantRoute(pathname) {
     return true;
   }
   /*
-   * A sub-page of a fest is NOT the fest page: /fests/:slug/crew-directory is a
-   * separate mobile-only screen that would otherwise inherit desktop readiness
-   * from its parent's prefix. So the prefix has to match the whole remaining
-   * segment, not just its start.
+   * A sub-page of a fest is NOT the fest page, so the prefix has to match the
+   * whole remaining segment rather than just its start — a future
+   * /fests/:slug/something must opt in deliberately rather than inherit.
+   * (/fests/:slug/crew-directory is now such an opt-in; it has its own pattern
+   * above.)
    */
   return DESKTOP_READY_PARTICIPANT_PREFIXES.some((prefix) => {
     if (!pathname.startsWith(prefix)) {

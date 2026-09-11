@@ -126,7 +126,14 @@ describe("GET /api/v1/fests/:festId/staff-directory", () => {
     }
   });
 
-  it("refuses a user with no registration and no assignment in the fest", async () => {
+  /*
+   * WHO is running the fest is open to any signed-in visitor; HOW to reach them
+   * is not. This replaces an assertion that the whole request was refused with
+   * 403 — knowing who oversees an event is part of deciding whether to register
+   * for it, so refusing the roster to somebody who has not registered yet was
+   * backwards. The tiering moved into the response instead.
+   */
+  it("gives a user with no registration and no assignment the roster without contact details", async () => {
     const outsider = await createTestOutsider();
 
     const response = await withToken(
@@ -134,8 +141,22 @@ describe("GET /api/v1/fests/:festId/staff-directory", () => {
       outsider.authenticationToken
     );
 
-    expect(response.status).toBe(403);
-    expect(response.body.error.code).toBe("PERMISSION_DENIED");
+    expect(response.status).toBe(200);
+    const allEntries = response.body.data.flatMap((group) => group.staff);
+    expect(allEntries.length).toBeGreaterThan(0);
+    for (const entry of allEntries) {
+      // The names and roles are there — that is the point of the directory.
+      expect(entry.fullName).toBeTruthy();
+      expect(entry.role).toBeTruthy();
+      expect(entry.canSeeContacts).toBe(false);
+      /*
+       * ABSENT, not null. A number that is never serialised cannot leak from a
+       * response somebody inspects, and the client hides an action it has no
+       * value for.
+       */
+      expect(entry).not.toHaveProperty("phoneNumber");
+      expect(entry).not.toHaveProperty("emailAddress");
+    }
   });
 
   it("filters to one event and includes a parent-scoped coordinator (hierarchy-aware)", async () => {
