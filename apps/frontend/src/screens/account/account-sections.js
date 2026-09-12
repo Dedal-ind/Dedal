@@ -11,6 +11,7 @@ import {
   BookmarkIcon,
   TeamIcon,
   CredentialIcon,
+  CrewIcon,
   PersonIcon,
   SettingsIcon,
 } from '../../components/detail-icons/DetailIcons.jsx';
@@ -21,6 +22,7 @@ import MyCertificatesScreen from '../my-certificates/MyCertificatesScreen.jsx';
 import NotificationsScreen from '../notifications/NotificationsScreen.jsx';
 import ProfileScreen from '../profile/ProfileScreen.jsx';
 import SettingsScreen from '../settings/SettingsScreen.jsx';
+import CrewFestPickerScreen from '../crew-directory/CrewFestPickerScreen.jsx';
 import TeamManagementScreen from '../team-management/TeamManagementScreen.jsx';
 import BackstageScreen from '../backstage/BackstageScreen.jsx';
 
@@ -104,6 +106,21 @@ export const SECTIONS = [
     Icon: CredentialIcon,
     Screen: BackstageScreen,
     staffOnly: true,
+  },
+  /*
+   * Placed directly above Settings, which is where the brief's "below My Fests
+   * and above Settings" lands in the current menu — My Fests was dismantled
+   * into the six entries above when it turned out to be a menu inside a menu.
+   *
+   * Not staff-only. This is the PARTICIPANT's way to reach the people running
+   * their fest; Backstage above is the staff surface and a different thing.
+   */
+  {
+    key: 'crew-directory',
+    label: 'Crew directory',
+    path: '/crew-directory',
+    Icon: CrewIcon,
+    Screen: CrewFestPickerScreen,
   },
   {
     key: 'settings',

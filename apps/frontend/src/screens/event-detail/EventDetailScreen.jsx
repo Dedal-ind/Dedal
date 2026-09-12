@@ -26,6 +26,10 @@ import { useLocation, useParams } from 'react-router-dom';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import gsap from 'gsap';
 import apiClient from '../../api-client/api-client.js';
+import {
+  isLiveRegistrationStatus,
+  canPurchaseAddOns,
+} from '../../helpers/registration-status.js';
 import { fetchPublicCatalogTree } from '../../helpers/public-catalog.js';
 import { saveIntendedRoute } from '../../helpers/post-sign-in-redirect.js';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
@@ -197,6 +201,18 @@ function EventDetailScreen() {
   const [festEvents, setFestEvents] = useState([]);
   const [contingents, setContingents] = useState([]);
   const [existingRegistrationId, setExistingRegistrationId] = useState(null);
+  /*
+   * The matched row's STATUS, kept beside its id.
+   *
+   * The live-status set is deliberately wide - it answers "do I already hold
+   * a seat here", and a paused checkout or a waitlist place both count. But
+   * add-ons are a narrower question: add-on-service refuses any registration
+   * that is not CONFIRMED with REGISTRATION_NOT_CONFIRMED. Reusing the wide
+   * set to enable the add-on button therefore offered the action to people it
+   * would then refuse, and the refusal surfaces on the next screen as a
+   * generic "could not load" with no way to tell what went wrong.
+   */
+  const [existingRegistrationStatus, setExistingRegistrationStatus] = useState(null);
   const [loadState, setLoadState] = useState('loading');
 
   const [showRules, setShowRules] = useState(false);
@@ -334,36 +350,44 @@ function EventDetailScreen() {
          * only accepts a CONFIRMED one, so every tap would have ended in a
          * refusal the screen could not explain.
          *
-         * The live set mirrors the one TeamManagementScreen already uses when
-         * deciding which events a team may be created for; `attended` is
-         * included because a seat that was used is still a seat that was held.
+         * The live set lives in helpers/registration-status.js, shared with
+         * FestDetailScreen, which asks the same question about the same rows.
+         * It was declared inline in both, and a set whose whole job is to stop
+         * cancelled rows counting is exactly the thing that must not drift
+         * between two screens.
          *
          * eventId arrives populated on some responses and as a bare id string
          * on others; both mean the same thing.
          */
-        const LIVE_STATUSES = new Set([
-          'confirmed',
-          'attended',
-          'waitlisted',
-          'pendingPayment',
-        ]);
         const mine = rows.find(
           (row) =>
-            (row?.eventId?.id ?? row?.eventId) === event.id && LIVE_STATUSES.has(row?.status),
+            (row?.eventId?.id ?? row?.eventId) === event.id &&
+            isLiveRegistrationStatus(row?.status),
         );
         if (isCurrent) {
           setExistingRegistrationId(mine?.id ?? null);
+          setExistingRegistrationStatus(mine?.status ?? null);
         }
       })
       .catch(() => {
         if (isCurrent) {
           setExistingRegistrationId(null);
+          setExistingRegistrationStatus(null);
         }
       });
     return () => {
       isCurrent = false;
     };
   }, [isAuthenticated, event?.id]);
+
+  /*
+   * Add-ons need a CONFIRMED seat, which is stricter than "holds a seat".
+   * add-on-service throws REGISTRATION_NOT_CONFIRMED for anything else, so this
+   * is the client-side mirror of that rule rather than a second opinion about
+   * it - a pendingPayment row must not be offered a button that leads to a 409.
+   */
+  const canPurchaseAddOnsForThisEvent =
+    Boolean(existingRegistrationId) && canPurchaseAddOns(existingRegistrationStatus);
 
   /*
    * The "read more" toggle appears only when the text is ACTUALLY cut off.
@@ -1331,8 +1355,12 @@ function EventDetailScreen() {
                 {purchasableAddOns.length > 0 ? (
                   <section className="ddp-section">
                     <h2 className="ddp-section__title">Add-ons</h2>
-                    {!existingRegistrationId ? (
-                      <p className="ded-addons__gate">Register first to get add-ons</p>
+                    {!canPurchaseAddOnsForThisEvent ? (
+                      <p className="ded-addons__gate">
+                        {existingRegistrationId
+                          ? 'Finish your registration to get add-ons'
+                          : 'Register first to get add-ons'}
+                      </p>
                     ) : null}
                     <ul className="ded-addons" role="list">
                       {purchasableAddOns.map(({ offer, scope }) => (
@@ -1352,7 +1380,7 @@ function EventDetailScreen() {
                             <button
                               type="button"
                               className="ded-addon__action"
-                              disabled={!existingRegistrationId}
+                              disabled={!canPurchaseAddOnsForThisEvent}
                               onClick={() =>
                                 navigate(`/registrations/${existingRegistrationId}/add-ons`)
                               }

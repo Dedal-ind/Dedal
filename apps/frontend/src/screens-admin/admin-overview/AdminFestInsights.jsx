@@ -64,8 +64,25 @@ function formatHour(hour) {
   return `${display}:00 ${suffix}`;
 }
 
-function LastDays({ series, take = 30 }) {
-  return series.length > take ? series.slice(-take) : series;
+/*
+ * The last `take` days, RE-KEYED TO WHAT THE CHART READS.
+ *
+ * The analytics service builds these series with buildDailySeries(start, map,
+ * valueKey), so the value lands under the caller's own key: registrationsPerDay
+ * carries `count` and revenuePerDayPaise carries `paise`. AdminLineChart's
+ * contract is `{ day, value }`. Slicing alone left `point.value` undefined, so
+ * every coordinate was NaN and maxValue was NaN too - which also defeated the
+ * `maxValue === 0` empty-state guard, because NaN === 0 is false. The result
+ * was a blank SVG on both new trend charts rather than either a line or an
+ * honest "no data yet".
+ *
+ * The mapping is done HERE rather than by teaching the chart three key names:
+ * a chart that guesses which field holds its value is a chart that silently
+ * plots the wrong one the day a series grows a second numeric field.
+ */
+function buildTrendSeries(series, valueKey, take = 30) {
+  const trimmed = series.length > take ? series.slice(-take) : series;
+  return trimmed.map((point) => ({ day: point.day, value: point[valueKey] ?? 0 }));
 }
 
 function AdminFestInsights({ summary, eventNameById }) {
@@ -83,8 +100,8 @@ function AdminFestInsights({ summary, eventNameById }) {
   const velocity = summary.velocity ?? {};
   const nameFor = (eventId) => eventNameById?.get(eventId) ?? 'Unnamed event';
 
-  const registrationSeries = LastDays({ series: summary.timeSeries?.registrationsPerDay ?? [] });
-  const revenueSeries = LastDays({ series: summary.timeSeries?.revenuePerDayPaise ?? [] });
+  const registrationSeries = buildTrendSeries(summary.timeSeries?.registrationsPerDay ?? [], 'count');
+  const revenueSeries = buildTrendSeries(summary.timeSeries?.revenuePerDayPaise ?? [], 'paise');
 
   const certificateRows = CERTIFICATE_GROUPS.map((group) => {
     const count = (certificates.byType ?? [])

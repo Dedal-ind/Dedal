@@ -65,6 +65,7 @@ import {
   UserRound,
   Gauge,
   Users,
+  UsersRound,
   UtensilsCrossed,
   Volume2,
   VolumeX,
@@ -106,6 +107,14 @@ export const PhoneIcon = icon(Phone);
 export const MailIcon = icon(Mail);
 export const PassIcon = icon(Ticket);
 export const TeamIcon = icon(Users);
+/*
+ * CrewIcon is UsersRound, not Users. The brief asked for a Users icon, but
+ * Users is already TeamIcon and "Teams" sits two rows above "Crew directory" in
+ * the same menu — the same glyph twice in one list makes both rows harder to
+ * find, not easier. UsersRound is the same family and reads as a group of
+ * people without colliding.
+ */
+export const CrewIcon = icon(UsersRound);
 export const ChevronIcon = icon(ChevronRight);
 export const ExpandIcon = icon(ChevronDown);
 export const RetryIcon = icon(RefreshCw);

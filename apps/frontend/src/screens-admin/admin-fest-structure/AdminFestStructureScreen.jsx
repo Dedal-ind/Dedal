@@ -15,7 +15,7 @@
 // TWO MODES, ONE AT A TIME. The org chart is the default and stays read-only:
 // it answers "what IS the shape", and a map that cannot be reshaped by a stray
 // drag while someone reads it is the safer default. The editor — the dnd-kit
-// indented tree in AdminEventStructureEditor — is an explicit second mode for
+// grouped table in AdminEventStructureTable — is an explicit second mode for
 // "change the shape". Leaving the editor re-reads the fest so the chart shows
 // what the server now holds rather than what the last drag left in memory.
 //
@@ -54,9 +54,10 @@ import AdminEventOrgChart, {
   AdminEventOrgChartNoSelection,
   AdminEventOrgChartSkeleton,
 } from '../../components-admin/admin-event-org-chart/AdminEventOrgChart.jsx';
-import AdminEventStructureEditor, {
-  AdminEventStructureEditorSkeleton,
-} from '../../components-admin/admin-event-structure-editor/AdminEventStructureEditor.jsx';
+import AdminEventStructureTable, {
+  AdminEventStructureTableSkeleton,
+} from '../../components-admin/admin-event-structure-table/AdminEventStructureTable.jsx';
+import AdminToast from '../../components-admin/admin-toast/AdminToast.jsx';
 import AdminSegmentedToggle from '../../components-admin/admin-segmented-toggle/AdminSegmentedToggle.jsx';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
 import AdminContingentConfig from '../../components-admin/admin-contingent-config/AdminContingentConfig.jsx';
@@ -192,6 +193,9 @@ function AdminFestStructureScreen() {
   const { isAdministrator } = useAuthentication();
 
   const [status, setStatus] = useState('loading');
+  /* Cleared by the toast on a timer; re-set on every move, which restarts
+     that timer rather than inheriting the previous one. */
+  const [toastMessage, setToastMessage] = useState('');
   const [fest, setFest] = useState(null);
   const [treeItems, setTreeItems] = useState([]);
   const [orphanItems, setOrphanItems] = useState([]);
@@ -374,7 +378,14 @@ function AdminFestStructureScreen() {
     [festId, loadStructure],
   );
 
-  /* A drop the editor refused before any request (own-descendant). */
+  /*
+   * Stable, because AdminToast's dismiss timer depends on it. An inline arrow
+   * would be a new identity every render, restarting the effect and leaving a
+   * toast that never goes away.
+   */
+  const handleToastDismiss = useCallback(() => setToastMessage(''), []);
+
+  /* A drop the table refused before any request (own-descendant). */
   const handleRejectDrop = useCallback((message) => {
     setErrorMessage(message);
     setAnnouncement(message);
@@ -556,7 +567,7 @@ function AdminFestStructureScreen() {
 
   if (status === 'loading') {
     return framed(
-      mode === MODE_EDITOR ? <AdminEventStructureEditorSkeleton /> : <AdminEventOrgChartSkeleton />,
+      mode === MODE_EDITOR ? <AdminEventStructureTableSkeleton /> : <AdminEventOrgChartSkeleton />,
     );
   }
 
@@ -589,7 +600,14 @@ function AdminFestStructureScreen() {
       ) : (
         <div className="relative h-full w-full">
           {mode === MODE_EDITOR && isAdministrator ? (
-            <AdminEventStructureEditor
+            /*
+             * The indented dnd-kit tree used to be here. Same props, same
+             * onDrop contract, same optimistic-then-reconcile write path in
+             * this screen — only the presentation changed, from an indented
+             * tree to a grouped table. Nothing about the move endpoint or the
+             * neighbour-id payload moved with it.
+             */
+            <AdminEventStructureTable
               roots={treeItems}
               buildActions={buildActions}
               onDrop={handleDrop}
@@ -598,11 +616,20 @@ function AdminFestStructureScreen() {
               canEdit={isOnline}
               isOnline={isOnline}
               announcement={announcement}
+              onToast={setToastMessage}
             />
           ) : (
             <AdminEventOrgChart fest={fest} roots={treeItems} buildActions={buildActions} />
           )}
 
+
+          {/*
+            The toast confirms a move that has already been applied and is
+            already visible. Errors stay in the banner below, which does not
+            self-dismiss — a failure the reader might miss is worse than a
+            confirmation they do.
+          */}
+          <AdminToast message={toastMessage} onDismiss={handleToastDismiss} />
 
           {/* Errors float over the canvas rather than displacing it. */}
           {errorMessage ? (

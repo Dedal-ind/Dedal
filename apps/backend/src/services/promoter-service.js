@@ -426,10 +426,22 @@ async function getCreative(creativeId) {
   return { ...creative.toJSON(), campaigns: usage.get(String(creative._id)) ?? [] };
 }
 
-/* The declared medium must match the supplied media, on the merged row. */
-function assertDeclaredMedia(creativeLike) {
+/*
+ * The declared medium must match the supplied media, on the merged row.
+ *
+ * `isNew` is passed through rather than assumed: the poster requirement binds
+ * creation only, so that an existing video creative saved before the rule
+ * existed stays editable. See checkDeclaredMedia.
+ */
+function assertDeclaredMedia(creativeLike, isNew) {
   const details = {};
-  checkDeclaredMedia(creativeLike.mediaType, creativeLike.imageUrl, creativeLike.videoUrl, details);
+  checkDeclaredMedia(
+    creativeLike.mediaType,
+    creativeLike.imageUrl,
+    creativeLike.videoUrl,
+    details,
+    isNew
+  );
   if (Object.keys(details).length > 0) {
     throw new ApplicationError(
       400,
@@ -449,7 +461,7 @@ async function createCreative(adminUserId, payload, context = {}) {
       "An archived promoter cannot receive new creatives. Restore it first."
     );
   }
-  assertDeclaredMedia(payload);
+  assertDeclaredMedia(payload, true);
   const creative = await CreativeModel.create({
     promoterId: promoter._id,
     title: payload.title,
@@ -493,7 +505,7 @@ async function updateCreative(adminUserId, creativeId, payload, context = {}) {
       creative[field] = payload[field];
     }
   }
-  assertDeclaredMedia(creative);
+  assertDeclaredMedia(creative, false);
   await creative.save();
 
   const usage = (await loadUsage([creative._id])).get(String(creative._id)) ?? [];

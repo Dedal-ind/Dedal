@@ -182,14 +182,30 @@ function validateListPromotersQuery(query) {
 
 /* The declared medium must match what was supplied — the promotion model's
    own rule, checked here too so the 400 names the field. */
-function checkDeclaredMedia(mediaType, imageUrl, videoUrl, details) {
+/*
+ * `isNew` is REQUIRED, not defaulted, and it governs the poster rule only.
+ *
+ * imageUrl doubles as a video's poster frame: it is what the feed shows before
+ * playback, what a slow connection gets instead of autoplay, and what the pass
+ * screen shows in place of a video it deliberately will not play. So a new
+ * video creative must carry one.
+ *
+ * But requiring it unconditionally makes every video creative ALREADY saved
+ * without a poster fail its next save - including an admin merely renaming it.
+ * creative-model.js guards its own copy of this rule with `this.isNew` for
+ * exactly that reason and says so; this function was checking it
+ * unconditionally and is reached on the update path too (promoter-service's
+ * assertDeclaredMedia runs on the merged row before save), which quietly
+ * reversed that promise and made legacy video creatives uneditable.
+ *
+ * No default value: a caller that has not thought about which case it is in
+ * should not silently get the stricter one and start rejecting edits.
+ */
+function checkDeclaredMedia(mediaType, imageUrl, videoUrl, details, isNew) {
   if (mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !videoUrl) {
     details.videoUrl = "is required for a video creative";
   }
-  /* The poster. imageUrl doubles as a video's poster frame, and the feed, the
-     slow-connection path and the pass screen all render it instead of the
-     video — so a video without one has nothing to show in three places. */
-  if (mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !imageUrl) {
+  if (isNew && mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !imageUrl) {
     details.imageUrl = "a poster image is required for a video creative";
   }
   if (mediaType === CREATIVE_MEDIA_TYPES.IMAGE && !imageUrl) {
@@ -221,7 +237,7 @@ function validateCreateCreativePayload(requestBody) {
     description: parseOptionalString(requestBody.description, "description", DESCRIPTION_MAX_LENGTH, details) ?? null,
   };
   if (!details.mediaType && !details.imageUrl && !details.videoUrl) {
-    checkDeclaredMedia(value.mediaType, value.imageUrl, value.videoUrl, details);
+    checkDeclaredMedia(value.mediaType, value.imageUrl, value.videoUrl, details, true);
   }
   if (Object.keys(details).length > 0) {
     return buildValidationFailure(details);

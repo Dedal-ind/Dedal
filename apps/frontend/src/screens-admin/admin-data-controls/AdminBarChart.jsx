@@ -3,14 +3,26 @@
 // library (fest console, not Tableau). Fixed-width 8px bars, native <title>
 // tooltips carrying the exact value, a baseline, and min/max axis hints.
 //
-// series: Array<{ day: 'yyyy-mm-dd', value: number }>
+// series: Array<{ day: string, value: number }>  — `day` is the x label and the
+// React key, so it is any unique string, not necessarily a date. The arrival
+// pattern passes hours through it.
+//
+// highlightKey names ONE bar to draw at full strength while the rest recede.
+// Used by the arrival-pattern chart for the peak hour: a chart where every bar
+// is the accent colour has no accent, and the peak is the one thing that chart
+// exists to point at. Omitted, every bar is drawn the same as before.
 
 const BAR_WIDTH = 6;
 const BAR_GAP = 2;
 const CHART_HEIGHT = 120;
 const AXIS_HEIGHT = 18;
 
-function AdminBarChart({ series, formatValue = (value) => String(value), emptyLabel }) {
+function AdminBarChart({
+  series,
+  formatValue = (value) => String(value),
+  emptyLabel,
+  highlightKey = null,
+}) {
   const maxValue = Math.max(0, ...series.map((point) => point.value));
   const chartWidth = series.length * (BAR_WIDTH + BAR_GAP);
 
@@ -37,7 +49,11 @@ function AdminBarChart({ series, formatValue = (value) => String(value), emptyLa
               y={CHART_HEIGHT - barHeight}
               width={BAR_WIDTH}
               height={Math.max(barHeight, point.value > 0 ? 2 : 0)}
-              className="fill-admin-primary-blue"
+              className={
+                highlightKey === null || point.day === highlightKey
+                  ? 'fill-admin-primary-blue'
+                  : 'fill-admin-primary-blue/30'
+              }
             >
               <title>{`${point.day}: ${formatValue(point.value)}`}</title>
             </rect>

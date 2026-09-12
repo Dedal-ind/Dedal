@@ -10,13 +10,15 @@ const {
   postUploadStudentId,
   postUploadApplicationDocument,
   uploadMiddleware,
+  videoUploadMiddleware,
 } = require("../controllers/upload-controller");
 
 const uploadRouter = express.Router();
 
 // multer parses the multipart body before the handler runs; asyncHandler forwards
 // any storage/permission error to the shared error handler.
-uploadRouter.post("/", authenticationMiddleware, uploadMiddleware, asyncHandler(postUploadImage));
+/* The only route that may exceed 5MB - it is the one that carries videos. */
+uploadRouter.post("/", authenticationMiddleware, videoUploadMiddleware, asyncHandler(postUploadImage));
 // Participant student-ID upload — any signed-in user, image-only.
 uploadRouter.post("/student-id", authenticationMiddleware, uploadMiddleware, asyncHandler(postUploadStudentId));
 /*

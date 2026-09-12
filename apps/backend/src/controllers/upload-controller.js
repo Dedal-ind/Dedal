@@ -32,10 +32,98 @@ const MAX_VIDEO_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB — a promo clip, not 
  * anything over nginx's default is refused at the proxy and never reaches this
  * cap at all.
  */
-const uploadMiddleware = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_VIDEO_UPLOAD_BYTES },
-}).single("file");
+/*
+ * TWO MIDDLEWARES, NOT ONE, BECAUSE THE LIMIT IS PER ROUTE.
+ *
+ * There was a single `uploadMiddleware` here and its fileSize was raised from
+ * MAX_UPLOAD_BYTES (5MB) to MAX_VIDEO_UPLOAD_BYTES (50MB) so that the generic
+ * admin endpoint could accept promotion videos. But all three upload routes
+ * mount the same instance, and only postUploadImage re-applies a per-kind cap
+ * via assertUploadSize. So raising it for one route silently raised it for the
+ * other two:
+ *
+ *   . POST /uploads/student-id - any signed-in user, not just staff, could
+ *     upload a 50MB "ID card" image;
+ *   . POST /uploads/application-document - the single UNAUTHENTICATED upload in
+ *     the system, where the rate limit is the only brake, could take 50MB per
+ *     request.
+ *
+ * Three comments in this file still said "the same 5MB multer cap" while that
+ * was untrue, which is the tell: a shared middleware whose limit is set by its
+ * loosest consumer stops being a limit for everyone else.
+ *
+ * So the 50MB allowance is now scoped to the one route that asked for it, and
+ * every other route keeps the 5MB ceiling it always had and its comments still
+ * describe.
+ */
+/*
+ * MULTER'S OWN ERRORS ARE TRANSLATED, NOT LEFT TO ESCAPE.
+ *
+ * multer runs before the handler and signals a refusal by calling next() with a
+ * MulterError, which is not an ApplicationError and so fell through the shared
+ * error handler as an unhandled 500 - in practice the client saw the connection
+ * reset mid-upload, with no message at all. That was true at the old 5MB cap
+ * too; it simply had no test pointed at it.
+ *
+ * LIMIT_FILE_SIZE becomes the same 400 envelope assertUploadSize already
+ * produces for the cap it enforces itself, so "that file is too large" reads
+ * identically whichever layer decided it. Anything else from multer is a
+ * malformed multipart body, which is also the caller's mistake and also a 400.
+ */
+function describeUploadLimit(maximumBytes) {
+  const megabytes = Math.round(maximumBytes / (1024 * 1024));
+  return {
+    message: "That file is too large. The limit is " + megabytes + " MB.",
+    details: { file: "must be " + megabytes + " MB or smaller" },
+  };
+}
+
+function buildUploadMiddleware(maximumBytes) {
+  const parseUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: maximumBytes },
+  }).single("file");
+
+  return function uploadMiddlewareWithTranslatedErrors(request, response, next) {
+    parseUpload(request, response, (uploadError) => {
+      if (!uploadError) {
+        return next();
+      }
+      if (uploadError instanceof multer.MulterError) {
+        if (uploadError.code === "LIMIT_FILE_SIZE") {
+          const limit = describeUploadLimit(maximumBytes);
+          return next(
+            new ApplicationError(
+              400,
+              ERROR_CODES.VALIDATION_FAILED,
+              limit.message,
+              limit.details
+            )
+          );
+        }
+        return next(
+          new ApplicationError(
+            400,
+            ERROR_CODES.VALIDATION_FAILED,
+            "That upload could not be read.",
+            { file: uploadError.code }
+          )
+        );
+      }
+      return next(uploadError);
+    });
+  };
+}
+
+/* The default for every route: 5MB, unchanged. */
+const uploadMiddleware = buildUploadMiddleware(MAX_UPLOAD_BYTES);
+
+/*
+ * The generic admin endpoint only. It carries both images and videos, so multer
+ * has to admit the larger of the two and assertUploadSize narrows an image back
+ * to 5MB once the declared kind is known.
+ */
+const videoUploadMiddleware = buildUploadMiddleware(MAX_VIDEO_UPLOAD_BYTES);
 
 /*
  * MAGIC BYTES, BECAUSE A CONTENT-TYPE HEADER IS A CLAIM, NOT A FACT.
@@ -259,4 +347,5 @@ module.exports = {
   postUploadStudentId,
   postUploadApplicationDocument,
   uploadMiddleware,
+  videoUploadMiddleware,
 };

@@ -278,7 +278,20 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
           }
 
           results.pushed += 1;
-          notifiedUserIds.push(String(userId));
+          /*
+           * memberId, NOT the outer `userId`.
+           *
+           * For a team event the outer loop iterates SUBMISSIONS and `userId` is
+           * whoever the win/participation was recorded against; expandToTeamMembers
+           * then fans that out to every member, and each one gets their own
+           * certificate row and their own email. Pushing the submitter's id here
+           * instead meant the in-app "your certificate is ready" feed row went to
+           * that one person once per member, and the other members - who by then
+           * held a certificate and had been emailed about it - got no feed row at
+           * all. skippedUserIds and failedUserIds a few lines away already track
+           * memberId; this was the odd one out.
+           */
+          notifiedUserIds.push(String(memberId));
         } catch (memberError) {
           results.failed += 1;
           results.failedUserIds.push(String(memberId));
@@ -362,7 +375,20 @@ async function pushCertificates({ eventId, templateBuffer, templateMimeType, win
           }
 
           results.pushed += 1;
-          notifiedUserIds.push(String(userId));
+          /*
+           * memberId, NOT the outer `userId`.
+           *
+           * For a team event the outer loop iterates SUBMISSIONS and `userId` is
+           * whoever the win/participation was recorded against; expandToTeamMembers
+           * then fans that out to every member, and each one gets their own
+           * certificate row and their own email. Pushing the submitter's id here
+           * instead meant the in-app "your certificate is ready" feed row went to
+           * that one person once per member, and the other members - who by then
+           * held a certificate and had been emailed about it - got no feed row at
+           * all. skippedUserIds and failedUserIds a few lines away already track
+           * memberId; this was the odd one out.
+           */
+          notifiedUserIds.push(String(memberId));
         } catch (memberError) {
           results.failed += 1;
           results.failedUserIds.push(String(memberId));

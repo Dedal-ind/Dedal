@@ -73,6 +73,7 @@ import VolunteerEventScreen from './screens/volunteer-event/VolunteerEventScreen
 import CoordinatorPanelScreen from './screens/coordinator-panel/CoordinatorPanelScreen.jsx';
 import CoordinatorEventScreen from './screens/coordinator-event/CoordinatorEventScreen.jsx';
 import CrewDirectoryScreen from './screens/crew-directory/CrewDirectoryScreen.jsx';
+import CrewFestPickerScreen from './screens/crew-directory/CrewFestPickerScreen.jsx';
 import CrewSelectScreen from './screens/crew-select/CrewSelectScreen.jsx';
 import DevSwitchUserScreen from './screens/dev-switch-user/DevSwitchUserScreen.jsx';
 import SignOutScreen from './screens/sign-out/SignOutScreen.jsx';
@@ -484,7 +485,11 @@ function App() {
                 path="/backstage/coordinator/events/:eventId/push-certificate"
                 element={<PushCertificateScreen />}
               />
+              {/* The fest-scoped crew list, reached from inside a fest. */}
               <Route path="/fests/:festSlug/crew-directory" element={<CrewDirectoryScreen />} />
+              {/* The same list reached from the account menu, where no fest has
+                  been named yet — the picker redirects into the route above. */}
+              <Route path="/crew-directory" element={<CrewFestPickerScreen />} />
               <Route path="/my-registrations/:registrationId" element={<RegistrationDetailScreen />} />
               <Route path="/saved" element={<SavedEventsScreen />} />
               <Route path="/settings" element={<SettingsScreen />} />

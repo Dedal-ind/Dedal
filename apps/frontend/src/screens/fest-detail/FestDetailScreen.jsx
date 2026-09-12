@@ -22,6 +22,7 @@ import { useTransitionNavigate } from '../../components/route-transition/use-tra
 import { useSharedFestPosterStyle } from '../../components/route-transition/shared-fest-poster.js';
 
 import apiClient from '../../api-client/api-client.js';
+import { isLiveRegistrationStatus } from '../../helpers/registration-status.js';
 import { DURATION, prefersReducedMotion } from '../../design/motion.js';
 import PromotionSlot from '../../components/promotion-slot/PromotionSlot.jsx';
 import {
@@ -535,17 +536,12 @@ function FestDetailScreen() {
         /*
          * A CANCELLED ROW IS NOT A REGISTRATION. Matching on fest alone counted
          * seats the participant had given up, so the bar offered a pass for
-         * something they no longer held.
+         * something they no longer held. The set is shared with
+         * EventDetailScreen - see helpers/registration-status.js.
          */
-        const LIVE_STATUSES = new Set([
-          'confirmed',
-          'attended',
-          'waitlisted',
-          'pendingPayment',
-        ]);
         const matches = (Array.isArray(mine) ? mine : []).filter((row) => {
           const rowFestId = row.eventId?.festId?.id ?? row.eventId?.festId;
-          return rowFestId === festDetail.id && LIVE_STATUSES.has(row.status);
+          return rowFestId === festDetail.id && isLiveRegistrationStatus(row.status);
         });
         setMyRegistrationId(matches[0]?.id ?? null);
         setMyRegistrationCount(matches.length);

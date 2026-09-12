@@ -18,6 +18,7 @@ import AdminExecutiveTable from '../../components-admin/admin-executive-table/Ad
 import AdminKpiCard from '../../components-admin/admin-kpi-card/AdminKpiCard.jsx';
 import AdminErrorBanner from '../../components-admin/admin-error-banner/AdminErrorBanner.jsx';
 import AdminBarChart from './AdminBarChart.jsx';
+import AdminEventInsights from './AdminEventInsights.jsx';
 import { formatDepartmentLabel } from '../../helpers/department-format.js';
 import { ADMIN_DATA_CONTROLS_COPY as COPY } from '../../brand-admin/brand-copy.js';
 
@@ -676,7 +677,15 @@ function AdminDataControlsScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    /*
+     * Capped at 1200px and centred, matching AdminOverviewScreen. The layout's
+     * <main> is unconstrained, which suits the export tables but not this tab:
+     * on a wide monitor the five KPI cards stretch to hold a four-digit number
+     * and a breakdown bar puts its label and its value a screen apart. The cap
+     * is on the screen rather than in AdminLayout so the wide tabular screens
+     * keep the width they need.
+     */
+    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       </div>
 
@@ -720,7 +729,20 @@ function AdminDataControlsScreen() {
       ) : null}
 
       {activeTab === 'analytics' && summary ? (
-        <AnalyticsTab summary={summary} />
+        <>
+          {/*
+            PER-EVENT DEPTH FIRST, when an event is selected.
+            `perEventDeep` is only computed by the backend when ?eventId=
+            narrowed the scope, so its presence IS the condition — no second
+            request, no separate loading state, and nothing to keep in sync with
+            the filter above. The fest-wide tab still renders underneath, since
+            its funnel and exports remain correct under the narrowed scope.
+          */}
+          {summary.perEventDeep ? (
+            <AdminEventInsights deep={summary.perEventDeep} summary={summary} />
+          ) : null}
+          <AnalyticsTab summary={summary} />
+        </>
       ) : null}
       {activeTab === 'exports' && counts ? (
         <ExportsTab festId={festId} counts={counts} onError={setTabError} scopeQuery={scopeQuery} />

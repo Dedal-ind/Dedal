@@ -217,9 +217,78 @@
   white-space: nowrap;
 }
 
-/* The events this person covers. One line — a coordinator on forty events
-   would otherwise make one card as tall as the screen. */
-.dcw-card__events {
+/*
+ * The role pill. --muted rather than --primary or --accent: on a list where
+ * every row carries one, a saturated badge turns the column into stripes and
+ * the eye stops reading the names. The distinction it draws is a small one —
+ * coordinator or volunteer — and it should look like a small one.
+ *
+ * The events this person covers are no longer printed on the row; the event is
+ * the section heading above it, so repeating it here said the same thing twice
+ * on every line.
+ */
+.dcw-role {
+  align-self: flex-start;
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--divider);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/*
+ * THE FEST PICKER, shown at /crew-directory when the participant has seats in
+ * more than one fest. One row per fest, tappable end to end.
+ */
+.dcw-festcard {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.dcw-festcard:active {
+  opacity: 0.7;
+}
+
+/* 48px, fixed. A poster is whatever aspect ratio the organiser uploaded, so it
+   is cropped to a square rather than allowed to set the row's height. */
+.dcw-festcard__poster {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--r-card);
+  background: var(--divider);
+  object-fit: cover;
+}
+
+.dcw-festcard__body {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dcw-festcard__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dcw-festcard__meta {
   font-size: var(--body-s-size);
   line-height: var(--body-s-line);
   color: var(--muted);
@@ -227,6 +296,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.dcw-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+
 
 .dcw-card__actions {
   display: flex;
@@ -338,6 +415,20 @@
  * nothing to scroll. dvh, not vh, so a mobile browser's collapsing toolbar
  * cannot push it off the bottom.
  */
+/*
+ * EVERY EMPTY STATE ON THIS SCREEN USES THIS, and every one of them carries an
+ * action.
+ *
+ * Centred in the viewport rather than parked under the header, on desktop as
+ * well as mobile: a single sentence pinned to the top-left of an otherwise
+ * blank 720px column reads as content that failed to load. Centred, with
+ * somewhere to go, it reads as a state.
+ *
+ * The min-height is what does the centring - the page is a flex column, so
+ * without an explicit height there is nothing to centre WITHIN. --header-h is
+ * subtracted so the block is centred in the space below the header rather than
+ * in the whole viewport, which would push it visibly low.
+ */
 .dcw-empty {
   display: flex;
   min-height: calc(100dvh - var(--header-h) - var(--s8));
@@ -346,6 +437,14 @@
   justify-content: center;
   gap: var(--s3);
   text-align: center;
+}
+
+/* The centred variant of the note: .dcw-note is used inline elsewhere (the
+   no-match line under the search box), where centring would be wrong. */
+.dcw-empty .dcw-note {
+  padding-block: 0;
+  max-width: 34ch;
+  color: var(--muted);
 }
 
 .dcw-empty__action {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from "vitest";
 import request from "supertest";
+import mongoose from "mongoose";
 
 import { application } from "../../src/application.js";
 import { PromoterModel } from "../../src/models/promoter-model.js";
@@ -255,6 +256,55 @@ describe("creatives", () => {
 
     const restored = await owner().post(`/api/v1/creatives/${creative.id}/restore`);
     expect(restored.body.data).toMatchObject({ status: "active", archivedAt: null });
+  });
+
+  it("requires a poster image on a NEW video creative", async () => {
+    const promoter = await createPromoter("Acme");
+
+    const response = await owner().post("/api/v1/creatives", {
+      promoterId: promoter.id,
+      title: "Clip",
+      mediaType: "video",
+      videoUrl: "https://example.com/clip.mp4",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.details.imageUrl).toMatch(/poster/);
+  });
+
+  it("still allows editing a video creative that predates the poster rule", async () => {
+    /*
+     * THE REGRESSION THIS PINS. creative-model guards its poster rule with
+     * `this.isNew` precisely so the rule binds creation and leaves rows saved
+     * before it existed editable. The validator alongside it was checking the
+     * same rule unconditionally and is reached on the update path too, so a
+     * legacy video creative without a poster could not be saved again at all -
+     * an admin merely renaming it got a 400 about an image they never had.
+     *
+     * The row is written through the model with validation bypassed, because
+     * that is the only way to produce the shape this is about: a row the
+     * current rules would refuse to create but which exists in the database.
+     */
+    const promoter = await createPromoter("Acme");
+    const legacy = await CreativeModel.collection.insertOne({
+      promoterId: new mongoose.Types.ObjectId(String(promoter.id)),
+      title: "Old clip",
+      mediaType: "video",
+      imageUrl: null,
+      videoUrl: "https://example.com/old.mp4",
+      linkUrl: null,
+      description: null,
+      status: "active",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await owner().patch(`/api/v1/creatives/${legacy.insertedId}`, {
+      title: "Old clip, renamed",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.title).toBe("Old clip, renamed");
   });
 
   it("refuses a media kind that does not match the media supplied", async () => {

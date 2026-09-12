@@ -26,6 +26,7 @@ const {
   getPlatformContingentAnalytics,
   getPlatformCollegeLeaderboards,
 } = require("./analytics-extras-service");
+const { getPerEventDeepAnalytics } = require("./per-event-analytics-service");
 const {
   REGISTRATION_STATUSES,
   PAYMENT_STATUSES,
@@ -508,6 +509,31 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
     ]);
   const extras = { addOns, contingents, attendance, certificates, revenueByPurpose, velocity };
 
+  /*
+   * THE PER-EVENT BLOCK, COMPUTED ONLY WHEN ?eventId= NARROWED THE SCOPE.
+   *
+   * Seven more aggregations - arrival pattern by hour, round drop-off, team
+   * size distribution, per-offer revenue, certificate coverage, the fest
+   * comparison and co-registration - and every one of them is either
+   * meaningless fest-wide or needs the fest as a denominator while one event is
+   * the subject. Running them on every fest-wide dashboard load would be work
+   * nobody asked for, so the key is ABSENT rather than null when no event is
+   * chosen: absent is what tells the client not to render the per-event view.
+   *
+   * The funnel, the gross revenue and the daily series are passed in rather
+   * than recomputed - this function has already paid for them under exactly the
+   * same scope.
+   */
+  const perEventDeep = options.eventId
+    ? await getPerEventDeepAnalytics({
+        festId: fest._id,
+        eventIds,
+        scopedFunnel: festFunnel,
+        grossRevenuePaise,
+        registrationsPerDay: buildDailySeries(seriesStart, registrationsByDay, "count"),
+      })
+    : null;
+
   return {
     fest: { festId: String(fest._id), festName: fest.festName, festSlug: fest.festSlug },
     scopedEventCount: events.length,
@@ -570,6 +596,7 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
      * no certificates — which is most fests, most of the time — still renders.
      */
     ...extras,
+    ...(perEventDeep ? { perEventDeep } : {}),
   };
 }
 
