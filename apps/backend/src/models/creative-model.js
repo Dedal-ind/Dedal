@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const { CREATIVE_MEDIA_TYPES, CREATIVE_STATUSES } = require("../constants/campaign-constants");
+const { describeVideoSource, VIDEO_SOURCE_KINDS } = require("@dedal/shared");
 
 /*
  * THE MEDIA: an image or a video, its poster frame, a link, a title and a
@@ -64,10 +65,14 @@ const creativeSchema = new mongoose.Schema(
  */
 creativeSchema.pre("validate", function requireDeclaredMedia(next) {
   if (this.mediaType === CREATIVE_MEDIA_TYPES.VIDEO) {
+    const videoSource = describeVideoSource(this.videoUrl);
     if (!this.videoUrl) {
       this.invalidate("videoUrl", "A video creative needs a videoUrl.");
+    } else if (videoSource?.kind === VIDEO_SOURCE_KINDS.INVALID) {
+      this.invalidate("videoUrl", "A video creative needs a video file or a YouTube / Vimeo video link.");
     }
-    if (this.isNew && !this.imageUrl) {
+    /* YouTube supplies its own thumbnail from the video id; see the validator. */
+    if (this.isNew && !this.imageUrl && videoSource?.kind !== VIDEO_SOURCE_KINDS.YOUTUBE) {
       this.invalidate("imageUrl", "A video creative needs a poster image.");
     }
   } else if (!this.imageUrl) {

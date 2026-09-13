@@ -6,6 +6,7 @@ const {
   CREATIVE_MEDIA_TYPES,
   CREATIVE_STATUSES,
 } = require("../constants/campaign-constants");
+const { describeVideoSource, VIDEO_SOURCE_KINDS } = require("@dedal/shared");
 
 /*
  * Shape checks for the promoter and creative admin endpoints. Only shape —
@@ -101,6 +102,25 @@ function parseOptionalUrl(rawValue, fieldName, details) {
   }
   if (!/^https?:\/\//i.test(value)) {
     details[fieldName] = "must be an http(s) URL";
+    return undefined;
+  }
+  return value;
+}
+
+/*
+ * A video URL must be something a participant can actually play: a direct file,
+ * or a YouTube / Vimeo link that names a video. A YouTube channel page or a
+ * Vimeo showcase passes the http(s) check but plays nowhere — it would reach the
+ * feed as a broken <video> — so it is refused here with a reason. The decision is
+ * describeVideoSource's, shared with the participant renderers and the admin form.
+ */
+function parseOptionalVideoUrl(rawValue, fieldName, details) {
+  const value = parseOptionalUrl(rawValue, fieldName, details);
+  if (value === undefined || value === null) {
+    return value;
+  }
+  if (describeVideoSource(value)?.kind === VIDEO_SOURCE_KINDS.INVALID) {
+    details[fieldName] = "must be a video file or a YouTube / Vimeo video link";
     return undefined;
   }
   return value;
@@ -205,7 +225,11 @@ function checkDeclaredMedia(mediaType, imageUrl, videoUrl, details, isNew) {
   if (mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !videoUrl) {
     details.videoUrl = "is required for a video creative";
   }
-  if (isNew && mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !imageUrl) {
+  /* A YouTube video's thumbnail comes from its id (img.youtube.com), so it does
+     not need an uploaded poster. Vimeo exposes none without an API call, and a
+     direct file has none at all, so both still do. */
+  const hasDerivedThumbnail = describeVideoSource(videoUrl)?.kind === VIDEO_SOURCE_KINDS.YOUTUBE;
+  if (isNew && mediaType === CREATIVE_MEDIA_TYPES.VIDEO && !imageUrl && !hasDerivedThumbnail) {
     details.imageUrl = "a poster image is required for a video creative";
   }
   if (mediaType === CREATIVE_MEDIA_TYPES.IMAGE && !imageUrl) {
@@ -232,7 +256,7 @@ function validateCreateCreativePayload(requestBody) {
       parseEnum(requestBody.mediaType, "mediaType", Object.values(CREATIVE_MEDIA_TYPES), details) ??
       CREATIVE_MEDIA_TYPES.IMAGE,
     imageUrl: parseOptionalUrl(requestBody.imageUrl, "imageUrl", details) ?? null,
-    videoUrl: parseOptionalUrl(requestBody.videoUrl, "videoUrl", details) ?? null,
+    videoUrl: parseOptionalVideoUrl(requestBody.videoUrl, "videoUrl", details) ?? null,
     linkUrl: parseOptionalUrl(requestBody.linkUrl, "linkUrl", details) ?? null,
     description: parseOptionalString(requestBody.description, "description", DESCRIPTION_MAX_LENGTH, details) ?? null,
   };
@@ -259,7 +283,7 @@ function validateUpdateCreativePayload(requestBody) {
     value.mediaType = parseEnum(requestBody.mediaType, "mediaType", Object.values(CREATIVE_MEDIA_TYPES), details);
   }
   value.imageUrl = parseOptionalUrl(requestBody.imageUrl, "imageUrl", details);
-  value.videoUrl = parseOptionalUrl(requestBody.videoUrl, "videoUrl", details);
+  value.videoUrl = parseOptionalVideoUrl(requestBody.videoUrl, "videoUrl", details);
   value.linkUrl = parseOptionalUrl(requestBody.linkUrl, "linkUrl", details);
   value.description = parseOptionalString(requestBody.description, "description", DESCRIPTION_MAX_LENGTH, details);
   if (Object.keys(details).length > 0) {

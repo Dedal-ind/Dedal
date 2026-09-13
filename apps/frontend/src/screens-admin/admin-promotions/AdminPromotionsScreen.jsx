@@ -15,6 +15,8 @@
 // screen-reader-usable without the WCAG 2.5.7 single-pointer alternative that
 // dragging would oblige.
 
+import AdminVideoSourceField from '../../components-admin/admin-video-source-field/AdminVideoSourceField.jsx';
+import { VIDEO_SOURCE_KINDS, describeVideoSource } from '@dedal/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Megaphone, ArrowUp, ArrowDown, AlertTriangle, RotateCw } from 'lucide-react';
 import apiClient from '../../api-client/api-client.js';
@@ -232,6 +234,10 @@ function AdminPromotionsScreen() {
     if (form.mediaType === 'video') {
       if (!form.videoUrl.trim()) {
         setFormError(COPY.videoRequired);
+        return;
+      }
+      if (describeVideoSource(form.videoUrl)?.kind === VIDEO_SOURCE_KINDS.INVALID) {
+        setFormError(COPY.videoInvalid);
         return;
       }
     } else if (!form.imageUrl) {
@@ -620,14 +626,13 @@ function AdminPromotionsScreen() {
 
           {form.mediaType === 'video' ? (
             <div>
-              <AdminExecutiveInput
+              {/* Upload a file or paste a YouTube / Vimeo link — the same field
+                  the creative form uses, so both admin surfaces accept the same
+                  videos and both preview them. */}
+              <AdminVideoSourceField
                 label={COPY.videoUrlLabel}
-                placeholder="https://youtube.com/watch?v=… or https://…/clip.mp4"
-                helperText={COPY.videoUrlHelp}
                 value={form.videoUrl}
-                onChange={(changeEvent) =>
-                  setForm((previous) => ({ ...previous, videoUrl: changeEvent.target.value }))
-                }
+                onChange={(nextUrl) => setForm((previous) => ({ ...previous, videoUrl: nextUrl }))}
               />
               {/* The poster is optional but strongly wanted: without it the slide
                   is a black rectangle until the video buffers. */}

@@ -35,7 +35,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Contact,
-  Download,
   ListOrdered,
   Megaphone,
   ScanLine,
@@ -46,6 +45,9 @@ import { useSearchParams } from 'react-router-dom';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import apiClient from '../../api-client/api-client.js';
+import OperatorStatGrid from '../../components/operator-stat-grid/OperatorStatGrid.jsx';
+import { buildCheckInStats } from '../../helpers/check-in-stats.js';
+import { downloadCsv } from '../../helpers/download-csv.js';
 
 function CoordinatorEventScreen() {
   const navigate = useTransitionNavigate();
@@ -113,19 +115,10 @@ function CoordinatorEventScreen() {
   async function handleDownloadKind(kind) {
     setDownloadError('');
     try {
-      const csv = await apiClient.get(
+      await downloadCsv(
         `/backstage/coordinator/events/${eventId}/${kind}.csv`,
-        { responseType: 'blob' },
+        `${data?.eventName ?? 'event'}_${kind}.csv`,
       );
-      const blob = csv instanceof Blob ? csv : new Blob([csv], { type: 'text/csv' });
-      const blobUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = blobUrl;
-      anchor.download = `${data?.eventName ?? 'event'}_${kind}.csv`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(blobUrl);
     } catch {
       setDownloadError('Could not download that list. Please try again.');
     }
@@ -175,12 +168,12 @@ function CoordinatorEventScreen() {
     },
   ];
 
-  const stats = [
-    { key: 'checked-in', label: 'Checked in', value: checkedIn, download: 'checked-in' },
-    { key: 'yet', label: 'Yet to arrive', value: yetToCheckIn, download: 'yet-to-checkin' },
-    { key: 'total', label: 'Registered', value: total, download: 'participants' },
-    { key: 'out', label: 'Checked out', value: checkedOut, download: 'checked-out' },
-  ];
+  const stats = buildCheckInStats({
+    checkedIn,
+    yetToArrive: yetToCheckIn,
+    total,
+    checkedOut,
+  });
 
   return (
     <div className="dop-screen">
@@ -250,22 +243,7 @@ function CoordinatorEventScreen() {
                 <span className="dop-meter__fill" style={{ width: `${percentage}%` }} />
               </div>
 
-              <div className="dop-stats">
-                {stats.map((stat) => (
-                  <div key={stat.key} className="dop-stat">
-                    <span className="dop-stat__value">{stat.value}</span>
-                    <span className="dop-stat__label">{stat.label}</span>
-                    <button
-                      type="button"
-                      className="dop-btn dop-btn--sm dop-stat__action"
-                      onClick={() => handleDownloadKind(stat.download)}
-                    >
-                      <Download size={14} aria-hidden="true" />
-                      Download list
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <OperatorStatGrid stats={stats} onDownload={handleDownloadKind} />
 
               {downloadError ? (
                 <p className="dop-alert" role="alert">

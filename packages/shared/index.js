@@ -7,4 +7,7 @@ export const {
   CAMPAIGN_STATUSES,
   CAMPAIGN_PRIORITY_TIERS,
   CREATIVE_MEDIA_TYPES,
+  VIDEO_SOURCE_KINDS,
+  describeVideoSource,
+  isLinkedVideoSource,
 } = shared;

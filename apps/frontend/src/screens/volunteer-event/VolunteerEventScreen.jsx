@@ -42,55 +42,33 @@ import apiClient from '../../api-client/api-client.js';
 import ConfirmDialog from '../../components/confirm-dialog/ConfirmDialog.jsx';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
+import OperatorStatGrid from '../../components/operator-stat-grid/OperatorStatGrid.jsx';
+import { buildCheckInStats } from '../../helpers/check-in-stats.js';
+import { downloadCsv } from '../../helpers/download-csv.js';
 import {
   BellIcon,
-  DownloadIcon,
   QrIcon,
 } from '../../components/detail-icons/DetailIcons.jsx';
 import '../../design/volunteer.css';
 
 /*
- * THE VOCABULARY, and why it is this short.
- *
- * The four export controls used to read "Download the full list", "Download
- * the checked in list", "Download the not checked in list" and "Download the
- * checked out list". At 166px each that wrapped every one of them onto two
- * lines, and the word "Download" was printed four times beside four download
- * icons — the redundancy UX-writing guidance exists to cut. A label wants two
- * or three words, and articles and prepositions can go if the meaning survives.
- *
- * So the verb is said ONCE, by the section heading and the icons, and each
- * control is named for the list it produces. The full sentence still reaches a
- * screen reader through aria-label, which has no width to run out of.
- *
- * The stat words are the coordinator event screen's words exactly — checked
- * in, yet to arrive, registered, checked out — so the two staff screens
- * describe the same four numbers the same way.
+ * The four check-in numbers and their downloads come from the shared
+ * OperatorStatGrid + buildCheckInStats, the same pair the coordinator event
+ * screen uses — so both staff screens show the same numbers, with the same
+ * words, and the download sits inside the card for the list it produces
+ * rather than in a separate Export section.
  */
 const COPY = {
   title: 'My checkpoint',
   openScanner: 'Open the scanner',
   scanOffline: 'Scanning needs a network',
   checkedInOf: (checkedIn, expected) => `${checkedIn} of ${expected} checked in`,
-  statTotal: 'Registered',
-  statCheckedIn: 'Checked in',
-  statCheckedOut: 'Checked out',
-  statYetToCheckIn: 'Yet to arrive',
   team: 'Team event',
   solo: 'Solo event',
   recentTitle: 'Recent check ins',
   recentCount: (count) => `${count} ${count === 1 ? 'scan' : 'scans'}`,
   noScans: 'No check ins yet.',
   unknownName: 'Name not recorded',
-  exportTitle: 'Export',
-  downloadFull: 'Everyone',
-  downloadCheckedIn: 'Checked in',
-  downloadCheckedOut: 'Checked out',
-  downloadYetToCheckIn: 'Yet to arrive',
-  downloadFullAria: 'Download the list of everyone registered',
-  downloadCheckedInAria: 'Download the list of people checked in',
-  downloadCheckedOutAria: 'Download the list of people checked out',
-  downloadYetToCheckInAria: 'Download the list of people yet to arrive',
   downloadFailed: 'Could not download that list. Try again.',
   errorMessage: 'Could not load this checkpoint.',
   retry: 'Try again',
@@ -120,37 +98,6 @@ function formatClock(value) {
   }
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : CLOCK.format(date);
-}
-
-/*
- * The download path, moved verbatim: same token lookup order, same base URL,
- * same Authorization header, same object-URL lifecycle. The only change is that
- * a failure now THROWS instead of calling window.alert, so the caller can put
- * the message in the page rather than in a modal the volunteer has to clear
- * before they can scan the next person.
- */
-async function downloadCsv(path, filename) {
-  const token =
-    localStorage.getItem('festpass.authToken') ??
-    sessionStorage.getItem('festpass.authToken') ??
-    '';
-  const baseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
-  const url = `${baseUrl}${path}`;
-  const response = await fetch(url, {
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  if (!response.ok) throw new Error('Download failed');
-  const blob = await response.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = blobUrl;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-  URL.revokeObjectURL(blobUrl);
 }
 
 function VolunteerEventScreen() {
@@ -271,75 +218,23 @@ function VolunteerEventScreen() {
                 <span className="dvl-headline__label">{COPY.checkedInOf(checkedIn, total)}</span>
               </div>
 
-              <div className="dvl-stats">
-                <div className="dvl-stat">
-                  <span className="dvl-stat__value">{yetToCheckIn}</span>
-                  <span className="dvl-stat__label">{COPY.statYetToCheckIn}</span>
-                </div>
-                <div className="dvl-stat">
-                  <span className="dvl-stat__value">{total}</span>
-                  <span className="dvl-stat__label">{COPY.statTotal}</span>
-                </div>
-                <div className="dvl-stat">
-                  <span className="dvl-stat__value">{checkedOut}</span>
-                  <span className="dvl-stat__label">{COPY.statCheckedOut}</span>
-                </div>
-              </div>
+              <OperatorStatGrid
+                stats={buildCheckInStats({
+                  checkedIn,
+                  yetToArrive: yetToCheckIn,
+                  total,
+                  checkedOut,
+                })}
+                onDownload={handleDownloadKind}
+                /* Downloads need a network; the offline strip above says why. */
+                isDownloadDisabled={!isOnline}
+              />
 
               {downloadError ? (
                 <p className="dvl-alert" role="alert">
                   {downloadError}
                 </p>
               ) : null}
-
-              {/*
-               * The four exports. Each one is a full-width 56px target with the
-               * list it produces named in full — the 24px corner icons they
-               * replaced were four unlabelled taps of the same picture.
-               */}
-              <h3 className="dvl-subhead">{COPY.exportTitle}</h3>
-              <div className="dvl-actions">
-                <button
-                  type="button"
-                  className="dvl-button"
-                  disabled={!isOnline}
-                  onClick={() => handleDownloadKind('participants')}
-                  aria-label={COPY.downloadFullAria}
-                >
-                  <DownloadIcon size="sm" />
-                  {COPY.downloadFull}
-                </button>
-                <button
-                  type="button"
-                  className="dvl-button"
-                  disabled={!isOnline}
-                  onClick={() => handleDownloadKind('checked-in')}
-                  aria-label={COPY.downloadCheckedInAria}
-                >
-                  <DownloadIcon size="sm" />
-                  {COPY.downloadCheckedIn}
-                </button>
-                <button
-                  type="button"
-                  className="dvl-button"
-                  disabled={!isOnline}
-                  onClick={() => handleDownloadKind('yet-to-checkin')}
-                  aria-label={COPY.downloadYetToCheckInAria}
-                >
-                  <DownloadIcon size="sm" />
-                  {COPY.downloadYetToCheckIn}
-                </button>
-                <button
-                  type="button"
-                  className="dvl-button"
-                  disabled={!isOnline}
-                  onClick={() => handleDownloadKind('checked-out')}
-                  aria-label={COPY.downloadCheckedOutAria}
-                >
-                  <DownloadIcon size="sm" />
-                  {COPY.downloadCheckedOut}
-                </button>
-              </div>
             </section>
 
             <section className="dvl-post">

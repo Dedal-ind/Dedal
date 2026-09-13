@@ -307,6 +307,52 @@ describe("creatives", () => {
     expect(response.body.data.title).toBe("Old clip, renamed");
   });
 
+  it("accepts a YouTube video creative without an uploaded poster", async () => {
+    /* The thumbnail comes from img.youtube.com for the video id, so demanding a
+       separate poster upload would be friction with nothing behind it. */
+    const promoter = await createPromoter("Acme");
+
+    const response = await owner().post("/api/v1/creatives", {
+      promoterId: promoter.id,
+      title: "Aftermovie",
+      mediaType: "video",
+      videoUrl: "https://youtu.be/dQw4w9WgXcQ",
+    });
+
+    expect(response.status).toBe(201);
+    expect(response.body.data.videoUrl).toBe("https://youtu.be/dQw4w9WgXcQ");
+  });
+
+  it("refuses a YouTube link that names no video", async () => {
+    const promoter = await createPromoter("Acme");
+
+    const response = await owner().post("/api/v1/creatives", {
+      promoterId: promoter.id,
+      title: "Channel",
+      mediaType: "video",
+      videoUrl: "https://www.youtube.com/@somechannel",
+      imageUrl: "https://example.com/poster.png",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.details.videoUrl).toMatch(/YouTube \/ Vimeo video link/);
+  });
+
+  it("still requires a poster for a Vimeo video creative", async () => {
+    /* Vimeo has no id-derived thumbnail, so without a poster the card is blank. */
+    const promoter = await createPromoter("Acme");
+
+    const response = await owner().post("/api/v1/creatives", {
+      promoterId: promoter.id,
+      title: "Vimeo clip",
+      mediaType: "video",
+      videoUrl: "https://vimeo.com/76979871",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.details.imageUrl).toMatch(/poster/);
+  });
+
   it("refuses a media kind that does not match the media supplied", async () => {
     const promoter = await createPromoter("Acme");
 

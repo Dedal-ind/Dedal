@@ -11,6 +11,7 @@ const { EVENT_TYPES, EVENT_STATUSES, FEE_TYPES } = require("../constants/event-c
 const {
   CONTINGENT_STATUSES,
   CONTINGENT_CLAIM_STATUSES,
+  CONTINGENT_EVENTS_MINIMUM,
 } = require("../constants/contingent-constants");
 
 async function loadFestOrThrow(festId) {
@@ -37,13 +38,24 @@ async function loadContingentOrThrow(festId, contingentId) {
  * The client's example parent (a "management" container like Chidaranga) is
  * expected to be free; a fee on it is an admin mistake worth its own code.
  */
+/*
+ * C.4 as a QUESTION, not only as a refusal. The scope read has to tell the admin
+ * form "this parent charges its own fee" before anyone fills a form in, and the
+ * create path has to refuse it — both ask this one predicate, so the rule has a
+ * single definition. A fest-level bundle has no parent, and so no second fee to
+ * collide with.
+ */
+function parentEventHasFee(parentEvent) {
+  if (!parentEvent) {
+    return false;
+  }
+  return parentEvent.feeType !== FEE_TYPES.FREE || parentEvent.feeAmountPaise > 0;
+}
+
 function assertParentEventHasNoFee(parentEvent) {
   /* A fest-level bundle has no parent event, so there is no second fee to
      collide with — the check simply does not apply. */
-  if (!parentEvent) {
-    return;
-  }
-  if (parentEvent.feeType !== FEE_TYPES.FREE || parentEvent.feeAmountPaise > 0) {
+  if (parentEventHasFee(parentEvent)) {
     throw new ApplicationError(
       409,
       ERROR_CODES.CONTINGENT_PARENT_HAS_FEE,
@@ -59,6 +71,37 @@ function assertParentEventHasNoFee(parentEvent) {
  * SOLO. Team events inside a contingent are pathological: the attendee would
  * need to form a team, which the buyer cannot do on their behalf.
  */
+/*
+ * WHY ONE EVENT CANNOT GO IN A BUNDLE, as a list of plain reasons.
+ *
+ * Extracted so the create/publish refusal and the admin scope read cannot
+ * disagree. Before this, the form re-implemented the rule in the browser —
+ * greying out team events but not draft ones — so it offered choices the server
+ * then refused with a generic 400. Now the form draws exactly the verdict the
+ * server will reach, from the same function, and an empty array is the only
+ * thing that means "eligible".
+ */
+function describeEventEligibilityProblems(event, parentEvent) {
+  const problems = [];
+  if (parentEvent) {
+    if (String(event.parentEventId) !== String(parentEvent._id)) {
+      problems.push("is not a sub-event of the parent event");
+    }
+  } else if (event.parentEventId) {
+    /* A fest-level bundle covers the fest's TOP-LEVEL events. A nested event
+       belongs to a container, and bundling it here would sell a seat from
+       under a main event whose own contingent may already include it. */
+    problems.push("is not a top-level event of this fest");
+  }
+  if (event.status !== EVENT_STATUSES.PUBLISHED) {
+    problems.push("is not published");
+  }
+  if (event.eventType !== EVENT_TYPES.SOLO) {
+    problems.push("is a team event — a contingent wraps solo sub-events only");
+  }
+  return problems;
+}
+
 async function loadIncludedEventsOrThrow(fest, parentEvent, includedEventIds) {
   const events = await EventModel.find({ _id: { $in: includedEventIds }, festId: fest._id });
   if (events.length !== includedEventIds.length) {
@@ -69,23 +112,7 @@ async function loadIncludedEventsOrThrow(fest, parentEvent, includedEventIds) {
 
   const details = {};
   for (const event of events) {
-    const problems = [];
-    if (parentEvent) {
-      if (String(event.parentEventId) !== String(parentEvent._id)) {
-        problems.push("is not a sub-event of the parent event");
-      }
-    } else if (event.parentEventId) {
-      /* A fest-level bundle covers the fest's TOP-LEVEL events. A nested event
-         belongs to a container, and bundling it here would sell a seat from
-         under a main event whose own contingent may already include it. */
-      problems.push("is not a top-level event of this fest");
-    }
-    if (event.status !== EVENT_STATUSES.PUBLISHED) {
-      problems.push("is not published");
-    }
-    if (event.eventType !== EVENT_TYPES.SOLO) {
-      problems.push("is a team event — a contingent wraps solo sub-events only");
-    }
+    const problems = describeEventEligibilityProblems(event, parentEvent);
     if (problems.length > 0) {
       details[String(event._id)] = problems.join("; ");
     }
@@ -354,6 +381,161 @@ async function publishContingent(actorUserId, festId, contingentId, context = {}
   return contingent.toJSON();
 }
 
+/*
+ * EVERYTHING THE ADMIN FORM NEEDS FOR ONE SCOPE, in one read.
+ *
+ * A scope is a Main Event (parentEventId set) or the fest itself (null). The
+ * participant side has always treated a scope as holding SEVERAL bundles — the
+ * public reads return a list per parent and purchase works per bundle — but the
+ * admin form assumed exactly one, and could not even find that one: it read the
+ * list endpoint's { contingents } envelope as if it were a bare array, never
+ * matched an existing bundle, and POSTed a fresh duplicate on every save until
+ * a published copy made the next save a CONTINGENT_EVENT_CONFLICT.
+ *
+ * So instead of the form reconstructing a scope from a flat list and
+ * re-deriving the rules, the server returns the scope already resolved:
+ *
+ *   scope           — who it is, whether the parent's own fee blocks it, and a
+ *                     machine-readable blockedReason (the client owns the copy);
+ *   candidateEvents — every event that could be bundled here, each with the
+ *                     same eligibility verdict create/publish will reach, and
+ *                     the published bundle in THIS scope already selling it;
+ *   contingents     — every non-cancelled bundle in the scope, with its claim
+ *                     count and whether C.5 has frozen its structure.
+ *
+ * WHAT COUNTS AS A CANDIDATE. For a Main Event, its direct children. For the
+ * fest, its top-level events that are not themselves containers: a container is
+ * a grouping, not a seat, so bundling it would sell nothing. That is the set the
+ * structure screen already offered; it is defined here now so it has one home.
+ */
+async function getContingentScope(actorUserId, festId, parentEventId) {
+  const fest = await loadFestOrThrow(festId);
+  await assertAdministratorOfFest(actorUserId, fest._id);
+
+  let parentEvent = null;
+  if (parentEventId) {
+    parentEvent = await EventModel.findOne({ _id: parentEventId, festId: fest._id }).lean();
+    if (!parentEvent) {
+      throw new ApplicationError(404, ERROR_CODES.EVENT_NOT_FOUND, "Parent event not found.");
+    }
+  }
+
+  const candidateFields = "eventName eventType status feeAmountPaise parentEventId siblingRank";
+  let candidates;
+  if (parentEvent) {
+    candidates = await EventModel.find({ festId: fest._id, parentEventId: parentEvent._id })
+      .select(candidateFields)
+      .lean();
+  } else {
+    const [topLevelEvents, containerIds] = await Promise.all([
+      EventModel.find({ festId: fest._id, parentEventId: null }).select(candidateFields).lean(),
+      EventModel.distinct("parentEventId", { festId: fest._id, parentEventId: { $ne: null } }),
+    ]);
+    const containerKeys = new Set(containerIds.map(String));
+    candidates = topLevelEvents.filter((event) => !containerKeys.has(String(event._id)));
+  }
+
+  /* Structure order, not alphabetical — the same order the rearrange table
+     shows, so the form lists events where the admin just saw them. String ranks
+     compare by code unit, not by locale. */
+  candidates.sort((first, second) => {
+    const firstRank = first.siblingRank ?? null;
+    const secondRank = second.siblingRank ?? null;
+    if (firstRank === secondRank) {
+      return String(first.eventName).localeCompare(String(second.eventName));
+    }
+    if (firstRank === null) return 1;
+    if (secondRank === null) return -1;
+    return firstRank < secondRank ? -1 : 1;
+  });
+
+  const contingents = await ContingentModel.find({
+    festId: fest._id,
+    parentEventId: parentEvent ? parentEvent._id : null,
+    status: { $ne: CONTINGENT_STATUSES.CANCELLED },
+  }).sort({ createdAt: 1 });
+
+  const claimGroups =
+    contingents.length > 0
+      ? await ContingentClaimModel.aggregate([
+          { $match: { contingentId: { $in: contingents.map((contingent) => contingent._id) } } },
+          { $group: { _id: "$contingentId", claimCount: { $sum: 1 } } },
+        ])
+      : [];
+  const claimCountByContingentId = new Map(
+    claimGroups.map((group) => [String(group._id), group.claimCount])
+  );
+
+  /*
+   * Only PUBLISHED bundles claim an event, matching assertNoPublishedOverlap:
+   * two drafts may share events while an admin is still deciding, and it is
+   * publishing that makes the overlap real.
+   */
+  const publishedBundleByEventId = new Map();
+  for (const contingent of contingents) {
+    if (contingent.status !== CONTINGENT_STATUSES.PUBLISHED) {
+      continue;
+    }
+    for (const eventId of contingent.includedEventIds) {
+      const key = String(eventId);
+      if (!publishedBundleByEventId.has(key)) {
+        publishedBundleByEventId.set(key, {
+          id: String(contingent._id),
+          contingentName: contingent.contingentName,
+        });
+      }
+    }
+  }
+
+  const candidateEvents = candidates.map((event) => {
+    const problems = describeEventEligibilityProblems(event, parentEvent);
+    return {
+      id: String(event._id),
+      eventName: event.eventName,
+      eventType: event.eventType,
+      status: event.status,
+      feeAmountPaise: event.feeAmountPaise ?? 0,
+      isEligible: problems.length === 0,
+      ineligibleReasons: problems,
+      inPublishedContingent: publishedBundleByEventId.get(String(event._id)) ?? null,
+    };
+  });
+
+  const hasOwnFee = parentEventHasFee(parentEvent);
+  const eligibleEventCount = candidateEvents.filter((event) => event.isEligible).length;
+  let blockedReason = null;
+  if (hasOwnFee) {
+    blockedReason = "parentHasFee";
+  } else if (eligibleEventCount < CONTINGENT_EVENTS_MINIMUM) {
+    blockedReason = "notEnoughEligibleEvents";
+  }
+
+  return {
+    scope: {
+      festId: String(fest._id),
+      parentEventId: parentEvent ? String(parentEvent._id) : null,
+      isFestLevel: !parentEvent,
+      scopeName: parentEvent ? parentEvent.eventName : fest.festName,
+      parentHasFee: hasOwnFee,
+      eligibleEventCount,
+      minimumEventCount: CONTINGENT_EVENTS_MINIMUM,
+      blockedReason,
+    },
+    candidateEvents,
+    contingents: contingents.map((contingent) => {
+      const claimCount = claimCountByContingentId.get(String(contingent._id)) ?? 0;
+      return {
+        ...contingent.toJSON(),
+        includedEventIds: contingent.includedEventIds.map(String),
+        claimCount,
+        /* C.5, stated as data so the form disables the fields rather than
+           letting the admin edit a price the save will refuse. */
+        isStructureLocked: contingent.status !== CONTINGENT_STATUSES.DRAFT || claimCount > 0,
+      };
+    }),
+  };
+}
+
 async function listFestContingents(actorUserId, festId) {
   const fest = await loadFestOrThrow(festId);
   await assertAdministratorOfFest(actorUserId, fest._id);
@@ -515,6 +697,7 @@ module.exports = {
   updateContingent,
   publishContingent,
   listFestContingents,
+  getContingentScope,
   getContingentDetail,
   listPublicContingentsForParentEvent,
   listPublicContingentsForFest,

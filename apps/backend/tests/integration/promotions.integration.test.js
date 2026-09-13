@@ -317,6 +317,37 @@ describe("reorder is scoped to one type", () => {
   });
 });
 
+describe("video links", () => {
+  /*
+   * The promotion routes have no payload validator, so the model is the only
+   * gate between a pasted YouTube channel page and the participant feed, where
+   * it would reach a <video src> that cannot play it.
+   */
+  it("refuses a video promotion whose link names no playable video", async () => {
+    const response = await withToken(
+      request(application).post("/api/v1/promotions"),
+      platformAdmin.authenticationToken
+    ).send({
+      title: "channel-link",
+      promotionType: "commercial",
+      mediaType: "video",
+      videoUrl: "https://www.youtube.com/@somechannel",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.details.videoUrl).toMatch(/YouTube \/ Vimeo video link/);
+  });
+
+  it("accepts a YouTube video promotion", async () => {
+    const promotion = await createDraft("aftermovie", {
+      mediaType: "video",
+      videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    });
+
+    expect(promotion.videoUrl).toBe("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  });
+});
+
 describe("authorization", () => {
   it("the public read needs no token, but every write is platform-admin only", async () => {
     const anonymous = await request(application).get("/api/v1/public/promotions");

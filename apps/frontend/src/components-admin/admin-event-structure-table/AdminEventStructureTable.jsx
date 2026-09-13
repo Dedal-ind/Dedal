@@ -39,7 +39,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, WifiOff } from 'lucide-react';
+import { GripVertical, Layers, WifiOff } from 'lucide-react';
 import AdminStatusPill from '../admin-status-pill/AdminStatusPill.jsx';
 import AdminActionsMenu from '../admin-actions-menu/AdminActionsMenu.jsx';
 import {
@@ -64,7 +64,13 @@ const COPY = {
   grabbed: (name) => `Picked up ${name}. Use arrow keys to move it, Space to drop.`,
   cancelled: (name) => `Cancelled. ${name} is back where it started.`,
   circular: 'An event cannot be moved inside itself.',
+  contingent: 'Contingent',
+  contingentFor: (name) => `Configure contingent for ${name}`,
 };
+
+/* Same id the org chart gives its synthetic fest root, so both views hand the
+   contingent modal an identical node. */
+const FEST_ROOT_ID = '__fest-root__';
 
 /*
  * ALTERNATING GROUP TINTS, not alternating ROW tints.
@@ -199,10 +205,53 @@ function AdminEventStructureTable({
   isOnline = true,
   announcement = '',
   onToast,
+  fest = null,
 }) {
   const groups = useMemo(() => buildGroups(roots, { topLevelLabel: COPY.topLevel }), [roots]);
   const rows = useMemo(() => flattenRows(groups), [groups]);
   const rowIds = useMemo(() => rows.map((row) => row.id), [rows]);
+
+  /*
+   * THE CONTINGENT BUTTON LIVES ON THE GROUP HEADER, because that is where the
+   * thing it configures now is.
+   *
+   * In the tree a Main Event was a ROW, so its overflow menu carried "Configure
+   * contingent". In this table a Main Event is the group header and only its
+   * children are rows — so buildActions was never called for it, and the
+   * action silently disappeared along with the tree. The fest root, which
+   * carries the fest-level bundle on a two-layer fest, is not rendered as a row
+   * either.
+   *
+   * ELIGIBILITY IS NOT RE-DECIDED HERE. The rule — a Main Event with verticals,
+   * or a fest root with at least two events — and the administrator-only gate
+   * both live in the screen's buildActions. This asks that same function and
+   * shows the button only if it returns a contingent action, so a coordinator
+   * sees no button and an ineligible group shows none, with no second copy of
+   * the rule to drift.
+   *
+   * The fest node is built exactly as AdminEventOrgChart builds its own, so the
+   * modal cannot tell which view opened it.
+   */
+  const festNode = useMemo(
+    () => ({
+      id: FEST_ROOT_ID,
+      isFestRoot: true,
+      eventName: fest?.festName ?? '',
+      children: roots ?? [],
+    }),
+    [fest, roots],
+  );
+
+  const contingentActionFor = useCallback(
+    (group) => {
+      if (!buildActions) {
+        return null;
+      }
+      const target = group.groupId === TOP_LEVEL_GROUP_ID ? festNode : group.mainEvent;
+      return buildActions(target).find((action) => action.key === 'contingent') ?? null;
+    },
+    [buildActions, festNode],
+  );
 
   const [activeId, setActiveId] = useState(null);
   /* The keyboard grab. Separate from activeId because a keyboard grab persists
@@ -460,12 +509,44 @@ function AdminEventStructureTable({
                       anyway. */}
                   <tr className={GROUP_TINTS[groupIndex % GROUP_TINTS.length]}>
                     <td colSpan={7} className="border-y border-admin-slate-200 px-3 py-1.5">
-                      <span className="font-admin-body text-[12px] font-semibold uppercase tracking-admin-label text-admin-slate-600">
-                        {group.groupId === TOP_LEVEL_GROUP_ID ? COPY.topLevel : group.groupName}
-                      </span>
-                      <span className="ml-2 font-admin-mono text-[11px] text-admin-slate-600">
-                        {group.rows.length}
-                      </span>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="min-w-0 truncate">
+                          <span className="font-admin-body text-[12px] font-semibold uppercase tracking-admin-label text-admin-slate-600">
+                            {group.groupId === TOP_LEVEL_GROUP_ID ? COPY.topLevel : group.groupName}
+                          </span>
+                          <span className="ml-2 font-admin-mono text-[11px] text-admin-slate-600">
+                            {group.rows.length}
+                          </span>
+                        </span>
+                        {(() => {
+                          const contingentAction = contingentActionFor(group);
+                          if (!contingentAction) {
+                            return null;
+                          }
+                          const scopeName =
+                            group.groupId === TOP_LEVEL_GROUP_ID
+                              ? fest?.festName ?? COPY.topLevel
+                              : group.groupName;
+                          return (
+                            /*
+                             * A labelled button, not an icon. It is the one
+                             * action a header carries, and a bare glyph beside
+                             * an uppercase label reads as decoration. 32px tall
+                             * with a wide hit area so it stays tappable in the
+                             * compact mobile header.
+                             */
+                            <button
+                              type="button"
+                              onClick={contingentAction.onSelect}
+                              aria-label={COPY.contingentFor(scopeName)}
+                              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-admin-slate-200 bg-admin-surface-white px-2.5 font-admin-body text-[12px] font-medium text-admin-neutral-ink transition-colors hover:border-admin-primary-blue hover:text-admin-primary-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-admin-primary-blue"
+                            >
+                              <Layers size={14} strokeWidth={1.75} aria-hidden="true" />
+                              {COPY.contingent}
+                            </button>
+                          );
+                        })()}
+                      </div>
                     </td>
                   </tr>
 

@@ -60,7 +60,7 @@ import AdminEventStructureTable, {
 import AdminToast from '../../components-admin/admin-toast/AdminToast.jsx';
 import AdminSegmentedToggle from '../../components-admin/admin-segmented-toggle/AdminSegmentedToggle.jsx';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
-import AdminContingentConfig from '../../components-admin/admin-contingent-config/AdminContingentConfig.jsx';
+import AdminContingentScopeManager from '../../components-admin/admin-contingent-scope-manager/AdminContingentScopeManager.jsx';
 import AdminEventEditModal from '../../components-admin/admin-event-edit-modal/AdminEventEditModal.jsx';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { ADMIN_FEST_STRUCTURE_COPY as COPY } from '../../brand-admin/brand-copy.js';
@@ -207,6 +207,14 @@ function AdminFestStructureScreen() {
    * two layers deep and has no Main Event to hang a bundle off.
    */
   const [contingentTarget, setContingentTarget] = useState(null);
+  /*
+   * Set when the contingent manager saved or published something, so the
+   * structure is re-read ONCE, when the manager closes. Re-reading on every save
+   * flipped this screen to its loading state, which unmounted the manager
+   * mid-task — after saving a draft the admin could never reach its Publish
+   * button. A close with nothing changed does not refetch at all.
+   */
+  const [hasUnrefreshedContingentChanges, setHasUnrefreshedContingentChanges] = useState(false);
   /* The event being edited in the inline modal, or null. The modal opens OVER
      the canvas — editing an event must never cost the map you were reading. */
   const [editTarget, setEditTarget] = useState(null);
@@ -617,6 +625,9 @@ function AdminFestStructureScreen() {
               isOnline={isOnline}
               announcement={announcement}
               onToast={setToastMessage}
+              /* The fest name for the fest-level contingent button's label and
+                 for the synthetic fest-root node the modal is opened with. */
+              fest={fest}
             />
           ) : (
             <AdminEventOrgChart fest={fest} roots={treeItems} buildActions={buildActions} />
@@ -687,23 +698,24 @@ function AdminFestStructureScreen() {
       </AdminModal>
 
       {contingentTarget ? (
-        <AdminContingentConfig
+        <AdminContingentScopeManager
           festId={festId}
-          festName={fest?.festName}
-          /* null mainEvent IS the fest-level scope — see AdminContingentConfig. */
-          mainEvent={contingentTarget.isFestRoot ? null : contingentTarget}
-          verticals={
-            contingentTarget.isFestRoot
-              ? /* Top-level events only, and only the ones a participant can
-                   actually register for: a container root is a grouping, not a
-                   seat, so bundling it would sell nothing. */
-                (contingentTarget.children ?? []).filter(
-                  (child) => (child.children ?? []).length === 0,
-                )
-              : (contingentTarget.children ?? [])
-          }
-          onClose={() => setContingentTarget(null)}
-          onSaved={loadStructure}
+          /*
+           * null is the fest scope. The org chart and the rearrange table both
+           * hand over a synthetic isFestRoot node for it, so both views open the
+           * same manager for the same scope. The candidate events are no longer
+           * computed here — the server returns them with their eligibility, so
+           * the rule that decides what can be bundled has one home.
+           */
+          parentEventId={contingentTarget.isFestRoot ? null : contingentTarget.id}
+          onSaved={() => setHasUnrefreshedContingentChanges(true)}
+          onClose={() => {
+            setContingentTarget(null);
+            if (hasUnrefreshedContingentChanges) {
+              setHasUnrefreshedContingentChanges(false);
+              loadStructure();
+            }
+          }}
         />
       ) : null}
 

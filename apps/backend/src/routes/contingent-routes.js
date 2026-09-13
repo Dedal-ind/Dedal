@@ -11,6 +11,7 @@ const {
   postPublishContingent,
   postCancelContingent,
   getListFestContingents,
+  getContingentScope,
   getContingentDetail,
   getPublicContingentsForEvent,
   postPurchaseContingent,
@@ -44,6 +45,16 @@ festContingentRouter.get(
   authenticationMiddleware,
   requireAdministratorMiddleware,
   asyncHandler(getListFestContingents)
+);
+/*
+ * The admin form's single read for one scope. Declared BEFORE "/:contingentId",
+ * or Express would bind the literal "scope" as a contingent id and 404 it.
+ */
+festContingentRouter.get(
+  "/scope",
+  authenticationMiddleware,
+  requireAdministratorMiddleware,
+  asyncHandler(getContingentScope)
 );
 festContingentRouter.get(
   "/:contingentId",

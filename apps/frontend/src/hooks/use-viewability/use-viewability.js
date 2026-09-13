@@ -37,6 +37,7 @@ const VIDEO_DWELL_MILLISECONDS = 2000;
  * onViewable    — called once, with the decisionKey, when dwell completes.
  */
 export function useViewability({ elementRef, decisionKey, mediaType, onViewable }) {
+
   /* The latest callback, read from inside the observer without re-arming
      the observer (and restarting the dwell) every time the parent renders. */
   const onViewableRef = useRef(onViewable);

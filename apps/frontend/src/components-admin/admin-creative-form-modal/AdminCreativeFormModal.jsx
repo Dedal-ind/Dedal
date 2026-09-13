@@ -14,7 +14,8 @@ import AdminExecutiveInput from '../admin-executive-input/AdminExecutiveInput.js
 import AdminExecutiveSelect from '../admin-executive-select/AdminExecutiveSelect.jsx';
 import AdminExecutiveTextarea from '../admin-executive-textarea/AdminExecutiveTextarea.jsx';
 import AdminPosterUpload from '../admin-poster-upload/AdminPosterUpload.jsx';
-import AdminVideoUpload from '../admin-video-upload/AdminVideoUpload.jsx';
+import AdminVideoSourceField from '../admin-video-source-field/AdminVideoSourceField.jsx';
+import { VIDEO_SOURCE_KINDS, describeVideoSource } from '@dedal/shared';
 import AdminErrorBanner from '../admin-error-banner/AdminErrorBanner.jsx';
 import { ADMIN_CREATIVES_COPY as COPY } from '../../brand-admin/brand-copy.js';
 import { CREATIVE_MEDIA_TYPES, creativesApi } from '../../helpers/admin-promotions-api.js';
@@ -78,6 +79,10 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
     if (form.mediaType === 'video' && !form.videoUrl.trim()) {
       return COPY.videoRequired;
     }
+    const videoSource = form.mediaType === 'video' ? describeVideoSource(form.videoUrl) : null;
+    if (videoSource?.kind === VIDEO_SOURCE_KINDS.INVALID) {
+      return COPY.videoInvalid;
+    }
     /*
      * The poster, required for a video and not optional the way it used to be.
      * imageUrl doubles as a video's poster frame, and three places on the
@@ -87,7 +92,13 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
      * The server enforces the same rule on create; this is the fast local copy
      * so the admin is told before a round trip.
      */
-    if (form.mediaType === 'video' && !form.imageUrl) {
+    /* Except for YouTube, whose thumbnail comes from the video id — the same
+       exception the server makes. */
+    if (
+      form.mediaType === 'video' &&
+      !form.imageUrl &&
+      videoSource?.kind !== VIDEO_SOURCE_KINDS.YOUTUBE
+    ) {
       return 'A video creative needs a poster image.';
     }
     return '';
@@ -175,31 +186,19 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
           </div>
 
           {/*
-            THE VIDEO ITSELF, uploaded rather than pasted.
-            
-            This was an AdminExecutiveInput the admin typed a URL into, with a
-            placeholder offering "https://youtube.com/watch?v=… or
-            https://…/clip.mp4". Two problems with that. There was no way to get
-            a video INTO the platform at all — the file had to be hosted
-            somewhere else first — and a YouTube watch URL pasted here reaches
-            the participant feed as a <video src>, which cannot play it.
-            
-            Uploading gives a URL the app serves itself, in a container the
-            browser can play, with the size and progress an admin needs to
-            decide whether to start a 40 MB upload on venue wifi.
+            THE VIDEO: an uploaded file OR a YouTube / Vimeo link, through the
+            same field the promotions form uses. Upload-only left a YouTube link
+            nowhere to go; a free-text box let one through to the feed as a
+            <video src> that cannot play it. The field offers both paths, and the
+            participant side renders each with the player that can actually
+            play it.
           */}
           {form.mediaType === 'video' ? (
-            <div className="flex flex-col gap-1">
-              <span className="font-admin-body text-[13px] font-medium leading-[18px] text-admin-neutral-ink">
-                {COPY.videoUrlLabel}
-              </span>
-              <AdminVideoUpload
-                value={form.videoUrl}
-                onChange={(nextUrl) =>
-                  setForm((previous) => ({ ...previous, videoUrl: nextUrl ?? '' }))
-                }
-              />
-            </div>
+            <AdminVideoSourceField
+              label={COPY.videoUrlLabel}
+              value={form.videoUrl}
+              onChange={(nextUrl) => setForm((previous) => ({ ...previous, videoUrl: nextUrl }))}
+            />
           ) : null}
 
           <AdminExecutiveInput label={COPY.titleLabel} required maxLength={120} value={form.title} onChange={set('title')} />

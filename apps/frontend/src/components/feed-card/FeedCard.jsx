@@ -18,6 +18,8 @@
 // A card with no decisionToken (the public promotion list, and every fest)
 // reports nothing at all. None of that logic changed; only its container did.
 
+import { openPromotionDestination, resolvePromotionDestination } from '../../helpers/promotion-destination.js';
+import { viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
 import { useCallback, useRef, useState } from 'react';
 import { useViewability } from '../../hooks/use-viewability/use-viewability.js';
 import { DELIVERY_EVENT_KINDS, reportDeliveryEvent } from '../../helpers/delivery-reporter.js';
@@ -254,17 +256,18 @@ export function StandaloneEventFeedCard({ event, nowTs, onOpen }) {
  * destination is the fest — never the open web. Nothing here opens a new tab
  * any more.
  *
- * WHERE A TAP GOES:
- *   · associated with a fest -> that fest's page
- *   · not associated         -> NOWHERE. The card is the content, like a
- *                               billboard. It renders as a plain <div>, not a
- *                               disabled button: a control that announces
- *                               itself and then refuses is worse than
- *                               something that was never a control.
+ * WHERE A TAP GOES (helpers/promotion-destination.js):
+ *   · the promotion's destination URL (linkUrl), in a new tab
+ *   · a YouTube / Vimeo video promotion with no destination -> the video on its
+ *     own site, in a new tab
+ *   · otherwise the fest it is associated with
+ *   · none of those -> NOWHERE. The card is the content, like a billboard. It
+ *                renders as a plain <div>, not a disabled button: a control that
+ *                announces itself and then refuses is worse than something that
+ *                was never a control.
  *
- * `promotion.linkUrl` still arrives in the payload and is DELIBERATELY IGNORED
- * here. It is not removed from the backend — the admin console still reads it —
- * it simply is not a destination on the participant side.
+ * Nothing plays inline for a linked video — the card shows its thumbnail and a
+ * play mark, and the tap goes somewhere.
  *
  * MEASUREMENT IS UNCHANGED. measurable / viewable / click still fire against
  * the same decision token through the same hook and the same reporter. A click
@@ -278,7 +281,9 @@ export function PromotionFeedCard({ promotion, onOpenFest }) {
   useViewability({
     elementRef: frameRef,
     decisionKey: decisionToken,
-    mediaType: promotion.mediaType === 'video' ? 'video' : 'image',
+    /* A YouTube or Vimeo creative is shown as its thumbnail, so it is
+       measured as an image; only a direct file plays. */
+    mediaType: viewabilityMediaTypeFor(promotion),
     onViewable: useCallback(
       (token) => reportDeliveryEvent(token, DELIVERY_EVENT_KINDS.VIEWABLE),
       [],
@@ -300,17 +305,15 @@ export function PromotionFeedCard({ promotion, onOpenFest }) {
    * defensively across the shapes it could arrive in, so the card starts
    * working the day that association exists with no second pass over this file.
    */
-  const festSlug = promotion.festSlug ?? promotion.fest?.festSlug ?? null;
   const festName = promotion.festName ?? promotion.fest?.festName ?? null;
-  const isTappable = Boolean(festSlug);
+  const destination = resolvePromotionDestination(promotion);
+  const isTappable = Boolean(destination);
 
   function handleActivate() {
     if (decisionToken) {
       reportDeliveryEvent(decisionToken, DELIVERY_EVENT_KINDS.CLICK);
     }
-    if (festSlug) {
-      onOpenFest?.(festSlug);
-    }
+    openPromotionDestination(destination, onOpenFest);
   }
 
   const body = (

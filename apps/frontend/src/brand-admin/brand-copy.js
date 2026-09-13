@@ -655,11 +655,11 @@ export const ADMIN_PROMOTIONS_COPY = {
   mediaTypeLabel: 'Media',
   mediaTypeImage: 'Image',
   mediaTypeVideo: 'Video',
-  videoUrlLabel: 'Video URL',
-  videoUrlHelp: 'A YouTube link or a direct MP4 URL.',
+  videoUrlLabel: 'Video',
   videoPosterLabel: 'Poster image (recommended)',
   videoPosterHelp: 'Shown while the video loads. Without one the slide starts black.',
-  videoRequired: 'Add a video URL, or switch this promotion back to an image.',
+  videoRequired: 'Add a video, or switch this promotion back to an image.',
+  videoInvalid: 'That isn’t a playable video. Upload a file, or paste a YouTube or Vimeo video link.',
   linkLabel: 'Link (optional)',
   // Deliberate non-feature: remote URLs are never health-checked. A check would
   // slow every save and could not keep a link alive after publishing anyway.
@@ -1928,33 +1928,6 @@ export const ADMIN_CONTINGENT_CODES_COPY = {
 };
 
 /* The contingent editor opened from a Main Event in the Event Structure tree. */
-export const ADMIN_CONTINGENT_CONFIG_COPY = {
-  title: (eventName) => `Contingent configuration — ${eventName}`,
-  nameLabel: 'Contingent name',
-  descriptionLabel: 'Contingent description',
-  descriptionHelp: 'What the bundle offers. Separate from the main event\u2019s own description.',
-  priceLabel: 'Contingent price (\u20b9)',
-  priceHelp: 'The whole-bundle price. Independent of what each vertical charges individually.',
-  verticalsLabel: 'Included verticals',
-  verticalsHelp: 'Pick the sub-events this bundle covers. At least two.',
-  noVerticals: 'This event has no sub-events to bundle yet.',
-
-  // Fest-level bundle: a two-layer fest (fest → events) has no main event to
-  // hang a contingent off, so the fest itself is the scope.
-  festTitle: (festName) => `Contingent configuration — ${festName}`,
-  festEventsLabel: 'Included events',
-  festEventsHelp: 'Pick the top-level events this bundle covers. At least two.',
-  noFestEvents: 'This fest has no top-level events to bundle yet.',
-  teamEventNote: 'Team event — a contingent bundles solo events only.',
-  needTwoEvents: 'A contingent bundles at least two events.',
-  save: 'Save contingent',
-  cancel: 'Cancel',
-  nameRequired: 'Give the contingent a name.',
-  priceInvalid: 'Enter a price of zero or more.',
-  needTwoVerticals: 'A contingent bundles at least two verticals.',
-  saveFailed: 'The contingent could not be saved.',
-};
-
 /*
  * The inline event editor on the Event Structure canvas. Essential fields only —
  * the full editor is one link away, and this exists so a rename does not cost a
@@ -2104,12 +2077,12 @@ export const ADMIN_CREATIVES_COPY = {
   imageHelp: 'JPG or PNG, up to 5 MB, at the carousel’s 16:9 ratio.',
   posterLabel: 'Poster frame',
   posterHelp: 'Shown before the video plays. JPG or PNG, up to 5 MB.',
-  videoUrlLabel: 'Video URL',
-  videoUrlHelp: 'A direct MP4 link, or a YouTube watch URL.',
+  videoUrlLabel: 'Video',
   titleLabel: 'Title',
   titleRequired: 'Give the creative a title.',
   imageRequired: 'Upload the artwork first.',
-  videoRequired: 'Enter the video URL.',
+  videoRequired: 'Upload a video, or paste a YouTube or Vimeo link.',
+  videoInvalid: 'That isn’t a playable video. Upload a file, or paste a YouTube or Vimeo video link.',
   linkUrlLabel: 'Link',
   linkUrlHelp: 'Optional. Where a tap goes. Leave empty for a display-only banner.',
   descriptionLabel: 'Description',

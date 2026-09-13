@@ -21,6 +21,8 @@
 // hook and the same reporter as a promotion card. It is a bigger box; it is
 // not a different kind of thing.
 
+import { openPromotionDestination, resolvePromotionDestination } from '../../helpers/promotion-destination.js';
+import { viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
 import { useCallback, useRef } from 'react';
 import { useViewability } from '../../hooks/use-viewability/use-viewability.js';
 import { DELIVERY_EVENT_KINDS, reportDeliveryEvent } from '../../helpers/delivery-reporter.js';
@@ -111,7 +113,9 @@ function FestHero({ fest, isLive, nowTs, onOpen }) {
  * surface it as a resolved `festSlug` in the decide() creative block and in
  * toPublicPromotion, so the client can route without a second request.
  *
- * `promotion.linkUrl` still arrives in the payload and is deliberately ignored.
+ * A tap goes to the promotion's destination URL, otherwise (for a YouTube /
+ * Vimeo video) the video on its own site, otherwise its fest, otherwise nowhere
+ * — the same rule as the sponsor feed card (helpers/promotion-destination.js).
  */
 function PromotionHero({ promotion, onOpenFest }) {
   const frameRef = useRef(null);
@@ -120,7 +124,9 @@ function PromotionHero({ promotion, onOpenFest }) {
   useViewability({
     elementRef: frameRef,
     decisionKey: decisionToken,
-    mediaType: promotion.mediaType === 'video' ? 'video' : 'image',
+    /* A YouTube or Vimeo creative is shown as its thumbnail, so it is
+       measured as an image; only a direct file plays. */
+    mediaType: viewabilityMediaTypeFor(promotion),
     onViewable: useCallback(
       (token) => reportDeliveryEvent(token, DELIVERY_EVENT_KINDS.VIEWABLE),
       [],
@@ -135,15 +141,13 @@ function PromotionHero({ promotion, onOpenFest }) {
 
   const isVideo = promotion.mediaType === 'video' && Boolean(promotion.videoUrl);
   const sponsorName = promotion.promoterName ?? promotion.collegeName ?? null;
-  const festSlug = promotion.festSlug ?? promotion.fest?.festSlug ?? null;
+  const destination = resolvePromotionDestination(promotion);
 
   function handleActivate() {
     if (decisionToken) {
       reportDeliveryEvent(decisionToken, DELIVERY_EVENT_KINDS.CLICK);
     }
-    if (festSlug) {
-      onOpenFest?.(festSlug);
-    }
+    openPromotionDestination(destination, onOpenFest);
   }
 
   /*
@@ -180,7 +184,7 @@ function PromotionHero({ promotion, onOpenFest }) {
 
   return (
     <section className="dsc-hero" ref={frameRef}>
-      {festSlug ? (
+      {destination ? (
         <button type="button" className="dsc-hero__hit" onClick={handleActivate}>
           {body}
         </button>

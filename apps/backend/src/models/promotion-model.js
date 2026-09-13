@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { describeVideoSource, VIDEO_SOURCE_KINDS } = require("@dedal/shared");
 
 const PROMOTION_STATUSES = { DRAFT: "draft", PUBLISHED: "published", ARCHIVED: "archived" };
 
@@ -55,7 +56,8 @@ const promotionSchema = new mongoose.Schema(
      * is a black rectangle until the video buffers.
      */
     imageUrl: { type: String, trim: true, default: null },
-    // Direct file (MP4) or a YouTube/Vimeo watch URL; the client picks how to embed.
+    // Direct file (MP4) or a YouTube/Vimeo video link. Which one it is, is decided by
+    // describeVideoSource in @dedal/shared — not stored, because the URL already says.
     videoUrl: { type: String, trim: true, default: null },
     // Optional. A promotion with no link is a display banner, not a dead link.
     linkUrl: { type: String, trim: true, default: null },
@@ -97,6 +99,13 @@ promotionSchema.pre("validate", function requireDeclaredMedia(next) {
   if (this.mediaType === PROMOTION_MEDIA_TYPES.VIDEO) {
     if (!this.videoUrl) {
       this.invalidate("videoUrl", "A video promotion needs a videoUrl.");
+    } else if (describeVideoSource(this.videoUrl)?.kind === VIDEO_SOURCE_KINDS.INVALID) {
+      /* The promotion routes have no payload validator, so this is the one
+         gate between a pasted YouTube channel page and the participant feed. */
+      this.invalidate(
+        "videoUrl",
+        "A video promotion needs a video file or a YouTube / Vimeo video link."
+      );
     }
   } else if (!this.imageUrl) {
     this.invalidate("imageUrl", "An image promotion needs an imageUrl.");

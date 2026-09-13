@@ -243,7 +243,24 @@ function validatePurchaseContingentPayload(requestBody) {
   return { ok: true, value: { attendees } };
 }
 
+/*
+ * ?parentEventId= names a Main Event scope; absent or empty is the fest scope.
+ * An empty string is accepted as absent because that is what a select with no
+ * value serialises to, and treating it as malformed would 400 the fest scope.
+ */
+function validateContingentScopeQuery(query) {
+  const details = {};
+  const rawValue = query?.parentEventId;
+  const parentEventId =
+    rawValue === undefined || rawValue === "" ? null : parseParentEventId(rawValue, details);
+  if (Object.keys(details).length > 0) {
+    return buildValidationFailure(details);
+  }
+  return { ok: true, value: { parentEventId } };
+}
+
 module.exports = {
+  validateContingentScopeQuery,
   validateCreateContingentPayload,
   validateUpdateContingentPayload,
   validatePurchaseContingentPayload,

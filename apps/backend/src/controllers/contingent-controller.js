@@ -3,6 +3,7 @@ const contingentService = require("../services/contingent-service");
 const contingentPurchaseService = require("../services/contingent-purchase-service");
 const contingentClaimService = require("../services/contingent-claim-service");
 const {
+  validateContingentScopeQuery,
   validateCreateContingentPayload,
   validateUpdateContingentPayload,
   validatePurchaseContingentPayload,
@@ -65,6 +66,20 @@ async function getListFestContingents(request, response) {
     request.params.festId
   );
   return response.status(200).json({ data: { contingents } });
+}
+
+/* One scope's candidates, bundles and blocking reason — see getContingentScope. */
+async function getContingentScope(request, response) {
+  const validation = validateContingentScopeQuery(request.query);
+  if (!validation.ok) {
+    return response.status(400).json({ error: validation.error });
+  }
+  const scope = await contingentService.getContingentScope(
+    request.authenticatedUser.userId,
+    request.params.festId,
+    validation.value.parentEventId
+  );
+  return response.status(200).json({ data: scope });
 }
 
 async function getContingentDetail(request, response) {
@@ -185,6 +200,7 @@ module.exports = {
   postPublishContingent,
   postCancelContingent,
   getListFestContingents,
+  getContingentScope,
   getContingentDetail,
   getPublicContingentsForEvent,
   postPurchaseContingent,

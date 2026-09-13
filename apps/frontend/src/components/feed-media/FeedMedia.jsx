@@ -26,6 +26,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useHalfVisible, useNearViewport } from '../../hooks/use-feed-observer/use-feed-observer.js';
 import { flashGlyph, prefersReducedMotion, stopMotion } from '../../design/motion.js';
+import { VIDEO_SOURCE_KINDS, describeVideoSource } from '@dedal/shared';
+import VideoLinkPreview from '../video-link-preview/VideoLinkPreview.jsx';
+import { isConstrainedConnection } from '../../helpers/network-quality.js';
 
 function SpeakerIcon({ muted }) {
   return (
@@ -62,8 +65,24 @@ function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered }) {
   const [isNear, setIsNear] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [hasMediaFailed, setHasMediaFailed] = useState(false);
+  /* On 2G / slow-2G a direct video shows its poster instead of attaching a
+     source: a looping preview there is a stall that spends the viewer's data.
+     Read once per card. */
+  const [isConstrained] = useState(isConstrainedConnection);
 
-  const isVideo = Boolean(videoUrl) && !hasMediaFailed;
+  /*
+   * WHICH MEDIA. A direct file plays in the native <video> below. A YouTube or
+   * Vimeo link is never embedded — its player cannot be made clean — so it is
+   * shown as its thumbnail with a play mark, and a tap on the card goes to the
+   * promotion's destination or the video's own site. A video link that names
+   * nothing playable shows an "Invalid video URL" placeholder rather than
+   * silently falling back to a still.
+   */
+  const videoSource = describeVideoSource(videoUrl);
+  const showsVideoLinkPreview =
+    Boolean(videoSource) && videoSource.kind !== VIDEO_SOURCE_KINDS.DIRECT;
+  const isVideo =
+    videoSource?.kind === VIDEO_SOURCE_KINDS.DIRECT && !hasMediaFailed && !isConstrained;
   const hasImage = Boolean(imageUrl) && !hasMediaFailed;
 
   const markNear = useCallback(() => setIsNear(true), []);
@@ -151,7 +170,17 @@ function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered }) {
   }
 
   let content;
-  if (isVideo) {
+  if (showsVideoLinkPreview) {
+    content = (
+      <VideoLinkPreview
+        videoUrl={videoUrl}
+        posterUrl={imageUrl}
+        alt={alt}
+        shouldLoad={isNear}
+        onRendered={onMediaRendered}
+      />
+    );
+  } else if (isVideo) {
     content = (
       <video
         ref={videoRef}
