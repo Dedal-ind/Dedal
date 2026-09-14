@@ -30,6 +30,24 @@ const teamSchema = new mongoose.Schema(
      * every team that existed before this field.
      */
     captainUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+    /*
+     * Set only on a team assembled from one contingent purchase's codes. Its
+     * roster is filled by code redemption and nothing else, so the ordinary
+     * invite-code join refuses it: a stranger who saw the team code must not
+     * take a seat the buyer paid for.
+     */
+    contingentPurchaseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ContingentPurchase",
+      default: null,
+    },
+    /*
+     * When a member actually chose the team name. Only meaningful on a
+     * contingent team: the first redeemer may skip naming, so the team starts
+     * under a placeholder, and this is how "has it been named yet" is answered
+     * without pattern-matching the placeholder string.
+     */
+    teamNameChosenAt: { type: Date, default: null },
     inviteCode: {
       type: String,
       required: true,
@@ -59,6 +77,19 @@ teamSchema.pre("validate", function ensureLeaderIsMember(next) {
 teamSchema.index({ eventId: 1 }, { name: "index_teams_eventId" });
 teamSchema.index({ inviteCode: 1 }, { name: "index_teams_inviteCode", unique: true });
 teamSchema.index({ leaderUserId: 1 }, { name: "index_teams_leaderUserId" });
+/*
+ * One team per (contingent purchase × team event). Two redeemers arriving at the
+ * same instant would otherwise each create "the" team; the loser trips this and
+ * joins the winner's instead.
+ */
+teamSchema.index(
+  { contingentPurchaseId: 1, eventId: 1 },
+  {
+    name: "index_teams_contingentPurchaseId_eventId",
+    unique: true,
+    partialFilterExpression: { contingentPurchaseId: { $type: "objectId" } },
+  }
+);
 
 teamSchema.set("toJSON", {
   virtuals: true,

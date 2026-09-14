@@ -1,49 +1,48 @@
 /*
  * promotion-destination.test.js
  *
- * Where a tap on a sponsor card goes: its destination URL, else (for a YouTube /
- * Vimeo video) the video on its own site, else its fest, else nowhere.
+ * Where a tap on a sponsor card goes: its destination URL, else its fest, else
+ * nowhere. The creative's media is never where a tap goes.
  *
- * Two cases matter most. A value that is not an http(s) URL must never be
- * opened, or a pasted "javascript:" link becomes a script on tap. And the video
- * must NOT win over a real destination — it is promotional content, not where
- * the sponsor paid to send people.
+ * A value that is not an http(s) URL must never be opened, or a pasted
+ * "javascript:" link becomes a script on tap.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { openPromotionDestination, resolvePromotionDestination } from './promotion-destination.js';
-
-const YOUTUBE_URL = 'https://youtu.be/dQw4w9WgXcQ';
-const WATCH_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 describe('resolvePromotionDestination', () => {
-  it('prefers the destination URL over the video and the fest', () => {
+  it('prefers the destination URL over the fest', () => {
     expect(
       resolvePromotionDestination({
         linkUrl: 'https://sponsor.example/offer',
         mediaType: 'video',
-        videoUrl: YOUTUBE_URL,
+        videoUrl: 'https://cdn.example.com/clip.mp4',
         festSlug: 'saarang',
       }),
     ).toEqual({ kind: 'external', url: 'https://sponsor.example/offer' });
   });
 
-  it('opens the YouTube video when a video promotion has no destination URL', () => {
-    expect(
-      resolvePromotionDestination({ mediaType: 'video', videoUrl: YOUTUBE_URL, festSlug: 'saarang' }),
-    ).toEqual({ kind: 'external', url: WATCH_URL });
-  });
-
-  it('does not send a direct video file anywhere by itself', () => {
+  it('never sends a video creative to its video, file or link', () => {
     expect(
       resolvePromotionDestination({ mediaType: 'video', videoUrl: 'https://cdn.example.com/clip.mp4' }),
     ).toBeNull();
+    expect(
+      resolvePromotionDestination({ mediaType: 'video', videoUrl: 'https://youtu.be/dQw4w9WgXcQ' }),
+    ).toBeNull();
+    expect(
+      resolvePromotionDestination({
+        mediaType: 'video',
+        videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
+        festSlug: 'saarang',
+      }),
+    ).toEqual({ kind: 'fest', festSlug: 'saarang' });
   });
 
-  it('falls back to the fest when there is no destination URL and no linked video', () => {
+  it('falls back to the fest when there is no destination URL', () => {
     expect(resolvePromotionDestination({ linkUrl: null, festSlug: 'saarang' })).toEqual({
       kind: 'fest',
       festSlug: 'saarang',

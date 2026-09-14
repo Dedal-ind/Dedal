@@ -82,17 +82,20 @@ async function loadFestAndEvent(registration) {
  * different rule, so offering them here would create a second, disagreeing way
  * to buy the same thing.
  */
-async function listAvailableAddOns(userId, registrationId) {
-  const registration = await loadOwnConfirmedRegistration(userId, registrationId);
-  const { fest, event } = await loadFestAndEvent(registration);
-
+/*
+ * The offer list itself, independent of any registration. Shared by the
+ * post-registration read below and the contingent code preview, which has to
+ * show the same add-ons BEFORE a registration exists — two copies of this
+ * mapping would disagree about what a participant can buy.
+ */
+function describeAddOnOffers(fest, event, existingSelections = []) {
   const alreadyChosen = new Set(
-    (registration.offerSelections ?? []).map(
+    existingSelections.map(
       (selection) => `${selection.scope ?? OFFER_SCOPES.FEST}:${selection.offerKey}`
     )
   );
 
-  const offers = listActiveOffers(fest, event)
+  return listActiveOffers(fest, event)
     .filter((entry) => !RESERVED_OFFER_KEYS_LIST.includes(entry.offer.offerKey))
     .filter((entry) => !alreadyChosen.has(`${entry.scope}:${entry.offer.offerKey}`))
     .map((entry) => ({
@@ -109,6 +112,12 @@ async function listAvailableAddOns(userId, registrationId) {
       numberOfDaysMinimum: entry.offer.numberOfDaysMinimum ?? 1,
       numberOfDaysMaximum: entry.offer.numberOfDaysMaximum ?? null,
     }));
+}
+
+async function listAvailableAddOns(userId, registrationId) {
+  const registration = await loadOwnConfirmedRegistration(userId, registrationId);
+  const { fest, event } = await loadFestAndEvent(registration);
+  const offers = describeAddOnOffers(fest, event, registration.offerSelections ?? []);
 
   return {
     registrationId: String(registration._id),
@@ -280,6 +289,7 @@ async function confirmAddOnOrder(paymentGroupId, paymentReference = null) {
 }
 
 module.exports = {
+  describeAddOnOffers,
   listAvailableAddOns,
   addRegistrationAddOns,
   confirmAddOnOrder,

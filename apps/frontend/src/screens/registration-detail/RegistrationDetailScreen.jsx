@@ -589,8 +589,16 @@ export function RegistrationDetail({
 
   const eventStartsMs = event.startsAt ? new Date(event.startsAt).getTime() : 0;
   const minutesUntilEvent = (eventStartsMs - nowMs) / 60000;
+  /*
+   * The event decides whether participants may cancel at all. When it does not,
+   * this screen shows nothing about cancelling — no button, no "not available"
+   * notice. The absence is the design.
+   */
+  const eventAllowsCancellation = event.allowCancellation === true;
   const isCancellable =
-    CANCELLABLE_SELF_STATUSES.includes(status) && minutesUntilEvent > CANCELLATION_FREEZE_MINUTES;
+    eventAllowsCancellation &&
+    CANCELLABLE_SELF_STATUSES.includes(status) &&
+    minutesUntilEvent > CANCELLATION_FREEZE_MINUTES;
 
   const foodLabel = FOOD_PREFERENCE_OPTIONS.find(
     (option) => option.value === registration.foodPreference,
@@ -1034,7 +1042,7 @@ export function RegistrationDetail({
         >
           {COPY.cancelOpen}
         </button>
-      ) : CANCELLABLE_SELF_STATUSES.includes(status) ? (
+      ) : eventAllowsCancellation && CANCELLABLE_SELF_STATUSES.includes(status) ? (
         <div className="drd-notice">
           <p className="drd-notice__title">{COPY.cancelWindowClosed}</p>
           <p className="drd-notice__text">{COPY.cancelWindowHint}</p>

@@ -145,7 +145,7 @@ async function cancelFestContingents(fest, actorUserId, context) {
     status: { $ne: CONTINGENT_STATUSES.CANCELLED },
   });
   if (contingents.length === 0) {
-    return { contingentsCancelled: 0, claimsCancelled: 0 };
+    return { contingentsCancelled: 0, claimsCancelled: 0, codePurchasesCancelled: 0 };
   }
 
   const contingentIds = contingents.map((contingent) => contingent._id);
@@ -153,6 +153,17 @@ async function cancelFestContingents(fest, actorUserId, context) {
     { contingentId: { $in: contingentIds }, claimStatus: { $in: SEAT_HOLDING_CLAIM_STATUSES } },
     { $set: { claimStatus: CONTINGENT_CLAIM_STATUSES.CANCELLED, cancelledAt: new Date() } }
   );
+  /*
+   * Code-distribution purchases end with their contingent: unredeemed codes die
+   * and captured payments go refund-pending. Late require, as the contingent
+   * services reach back into the cancellation graph.
+   */
+  const { cancelCodePurchasesForContingent } = require("./contingent-code-purchase-service");
+  let codePurchasesCancelled = 0;
+  for (const contingent of contingents) {
+    const codePurchaseResult = await cancelCodePurchasesForContingent(contingent, actorUserId, context);
+    codePurchasesCancelled += codePurchaseResult.cancelledCount;
+  }
   await ContingentModel.updateMany(
     { _id: { $in: contingentIds } },
     { $set: { status: CONTINGENT_STATUSES.CANCELLED } }
@@ -169,7 +180,11 @@ async function cancelFestContingents(fest, actorUserId, context) {
       ...context,
     });
   }
-  return { contingentsCancelled: contingents.length, claimsCancelled: claimResult.modifiedCount ?? 0 };
+  return {
+    contingentsCancelled: contingents.length,
+    claimsCancelled: claimResult.modifiedCount ?? 0,
+    codePurchasesCancelled,
+  };
 }
 
 /*

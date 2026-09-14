@@ -109,6 +109,15 @@ const AUDIT_ACTIONS = {
   CONTINGENT_CLAIM_DECLINED: "contingentClaim.declined",
   /* The buyer (or an admin cancelling the contingent) unwound a purchase. */
   CONTINGENT_PURCHASE_CANCELLED: "contingent.purchaseCancelled",
+  /* Code-distribution flow: a purchase opened (free or awaiting payment). */
+  CONTINGENT_CODES_PURCHASED: "contingentPurchase.created",
+  /* The purchase completed and its codes were minted. */
+  CONTINGENT_CODES_ISSUED: "contingentPurchase.codesIssued",
+  CONTINGENT_CODE_REDEEMED: "contingentPurchase.codeRedeemed",
+  /* An organiser unwound the purchase; its unredeemed codes are dead. */
+  CONTINGENT_CODE_PURCHASE_CANCELLED: "contingentPurchase.cancelled",
+  /* The payment hold lapsed before capture. */
+  CONTINGENT_CODE_PURCHASE_EXPIRED: "contingentPurchase.expired",
   /*
    * A captured payment now owed back. The platform has no refund API — this row
    * plus the order's refundPending status is what the operator acts on.
@@ -164,6 +173,7 @@ const AUDIT_ENTITY_TYPES = {
   REGISTRATION: "registration",
   CONTINGENT: "contingent",
   CONTINGENT_CLAIM: "contingentClaim",
+  CONTINGENT_PURCHASE: "contingentPurchase",
   CERTIFICATE: "certificate",
   MATCH: "match",
   SHIFT: "shift",

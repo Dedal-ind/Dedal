@@ -49,7 +49,7 @@ async function createFullableEvent(overrides = {}) {
   return createTestEvent(
     fest,
     admin.user,
-    openRegistrationOverrides({ capacity: 1, waitlistEnabled: true, ...overrides })
+    openRegistrationOverrides({ allowCancellation: true, capacity: 1, waitlistEnabled: true, ...overrides })
   );
 }
 

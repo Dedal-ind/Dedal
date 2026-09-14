@@ -168,6 +168,15 @@ const registrationSchema = new mongoose.Schema(
       ref: "ContingentClaim",
       default: null,
     },
+    /*
+     * The code-distribution counterpart: present only on a row a contingent CODE
+     * redemption created. Same presence-is-the-type rule as contingentClaimId.
+     */
+    contingentPurchaseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ContingentPurchase",
+      default: null,
+    },
 
     /*
      * Payment fields, live only for paid events. notRequired on free ones. Every
@@ -235,6 +244,10 @@ registrationSchema.index({ paymentGroupId: 1 }, { name: "index_registrations_pay
 registrationSchema.index(
   { contingentClaimId: 1 },
   { name: "index_registrations_contingentClaimId", sparse: true }
+);
+registrationSchema.index(
+  { contingentPurchaseId: 1 },
+  { name: "index_registrations_contingentPurchaseId", sparse: true }
 );
 
 registrationSchema.set("toJSON", {

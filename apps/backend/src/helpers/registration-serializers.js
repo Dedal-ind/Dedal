@@ -11,7 +11,7 @@ const DETAIL_POPULATE = [
     // customQuestions rides along so a read can name each answer's prompt without
     // a second query, and without the frontend joining back to the event itself.
     select:
-      "eventName festId startsAt endsAt venue status category eventType scoringFormat customQuestions posterImageUrl",
+      "eventName festId startsAt endsAt venue status category eventType scoringFormat customQuestions posterImageUrl allowCancellation",
     /*
      * The fest rides along, and so does ITS host college and banner.
      *

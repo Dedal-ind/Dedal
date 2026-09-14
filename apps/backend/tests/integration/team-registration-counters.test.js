@@ -48,6 +48,7 @@ function makeTeamEvent(overrides = {}) {
     fest,
     admin.user,
     openRegistrationOverrides({
+      allowCancellation: true,
       eventType: "team",
       minimumTeamSize: 2,
       maximumTeamSize: 4,

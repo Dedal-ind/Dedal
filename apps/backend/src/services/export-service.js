@@ -142,8 +142,8 @@ async function streamRegistrationsCsv(actorUserId, festId, response, scope, cont
     toCells: (row) => [
       String(row._id),
       eventNameById.get(String(row.eventId)) ?? "",
-      // Presence of contingentClaimId IS the registration type (see the model).
-      row.contingentClaimId ? "contingent" : "individual",
+      // Presence of either contingent reference IS the registration type (see the model).
+      row.contingentClaimId || row.contingentPurchaseId ? "contingent" : "individual",
       row.userId?.fullName ?? "",
       row.userId?.emailAddress ?? "",
       row.userId?.phoneNumber ?? "",

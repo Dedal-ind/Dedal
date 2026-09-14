@@ -14,8 +14,8 @@ import AdminExecutiveInput from '../admin-executive-input/AdminExecutiveInput.js
 import AdminExecutiveSelect from '../admin-executive-select/AdminExecutiveSelect.jsx';
 import AdminExecutiveTextarea from '../admin-executive-textarea/AdminExecutiveTextarea.jsx';
 import AdminPosterUpload from '../admin-poster-upload/AdminPosterUpload.jsx';
-import AdminVideoSourceField from '../admin-video-source-field/AdminVideoSourceField.jsx';
-import { VIDEO_SOURCE_KINDS, describeVideoSource } from '@dedal/shared';
+import AdminVideoUpload from '../admin-video-upload/AdminVideoUpload.jsx';
+import { isPlayableVideoUrl } from '../../helpers/playable-video.js';
 import AdminErrorBanner from '../admin-error-banner/AdminErrorBanner.jsx';
 import { ADMIN_CREATIVES_COPY as COPY } from '../../brand-admin/brand-copy.js';
 import { CREATIVE_MEDIA_TYPES, creativesApi } from '../../helpers/admin-promotions-api.js';
@@ -79,8 +79,7 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
     if (form.mediaType === 'video' && !form.videoUrl.trim()) {
       return COPY.videoRequired;
     }
-    const videoSource = form.mediaType === 'video' ? describeVideoSource(form.videoUrl) : null;
-    if (videoSource?.kind === VIDEO_SOURCE_KINDS.INVALID) {
+    if (form.mediaType === 'video' && !isPlayableVideoUrl(form.videoUrl)) {
       return COPY.videoInvalid;
     }
     /*
@@ -92,13 +91,7 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
      * The server enforces the same rule on create; this is the fast local copy
      * so the admin is told before a round trip.
      */
-    /* Except for YouTube, whose thumbnail comes from the video id — the same
-       exception the server makes. */
-    if (
-      form.mediaType === 'video' &&
-      !form.imageUrl &&
-      videoSource?.kind !== VIDEO_SOURCE_KINDS.YOUTUBE
-    ) {
+    if (form.mediaType === 'video' && !form.imageUrl) {
       return 'A video creative needs a poster image.';
     }
     return '';
@@ -186,18 +179,16 @@ function AdminCreativeFormModal({ isOpen, promoterId, creative, onClose, onSaved
           </div>
 
           {/*
-            THE VIDEO: an uploaded file OR a YouTube / Vimeo link, through the
-            same field the promotions form uses. Upload-only left a YouTube link
-            nowhere to go; a free-text box let one through to the feed as a
-            <video src> that cannot play it. The field offers both paths, and the
-            participant side renders each with the player that can actually
-            play it.
+            THE VIDEO: an uploaded file, and nothing else — there is no link
+            field. Participants only ever see uploaded video. A creative saved
+            earlier with a link opens with an empty upload and must be given a
+            file before it saves.
           */}
           {form.mediaType === 'video' ? (
-            <AdminVideoSourceField
+            <AdminVideoUpload
               label={COPY.videoUrlLabel}
-              value={form.videoUrl}
-              onChange={(nextUrl) => setForm((previous) => ({ ...previous, videoUrl: nextUrl }))}
+              value={isPlayableVideoUrl(form.videoUrl) ? form.videoUrl : ''}
+              onChange={(nextUrl) => setForm((previous) => ({ ...previous, videoUrl: nextUrl ?? '' }))}
             />
           ) : null}
 

@@ -168,6 +168,7 @@ const EVENT_FIELD_PARSERS = {
   capacity: parseNullableCapacity,
   waitlistEnabled: parseBoolean,
   requiresMedicalDeclaration: parseBoolean,
+  allowCancellation: parseBoolean,
   isLeaderboardVisible: parseBoolean,
   /*
    * Without this the admin's waitlist toggle would be silently DROPPED by the

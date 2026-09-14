@@ -15,8 +15,8 @@
 // screen-reader-usable without the WCAG 2.5.7 single-pointer alternative that
 // dragging would oblige.
 
-import AdminVideoSourceField from '../../components-admin/admin-video-source-field/AdminVideoSourceField.jsx';
-import { VIDEO_SOURCE_KINDS, describeVideoSource } from '@dedal/shared';
+import AdminVideoUpload from '../../components-admin/admin-video-upload/AdminVideoUpload.jsx';
+import { isPlayableVideoUrl } from '../../helpers/playable-video.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Megaphone, ArrowUp, ArrowDown, AlertTriangle, RotateCw } from 'lucide-react';
 import apiClient from '../../api-client/api-client.js';
@@ -236,7 +236,7 @@ function AdminPromotionsScreen() {
         setFormError(COPY.videoRequired);
         return;
       }
-      if (describeVideoSource(form.videoUrl)?.kind === VIDEO_SOURCE_KINDS.INVALID) {
+      if (!isPlayableVideoUrl(form.videoUrl)) {
         setFormError(COPY.videoInvalid);
         return;
       }
@@ -626,13 +626,12 @@ function AdminPromotionsScreen() {
 
           {form.mediaType === 'video' ? (
             <div>
-              {/* Upload a file or paste a YouTube / Vimeo link — the same field
-                  the creative form uses, so both admin surfaces accept the same
-                  videos and both preview them. */}
-              <AdminVideoSourceField
+              {/* Upload only — no link field. A promotion saved earlier with a
+                  link opens with an empty upload and needs a file to save. */}
+              <AdminVideoUpload
                 label={COPY.videoUrlLabel}
-                value={form.videoUrl}
-                onChange={(nextUrl) => setForm((previous) => ({ ...previous, videoUrl: nextUrl }))}
+                value={isPlayableVideoUrl(form.videoUrl) ? form.videoUrl : ''}
+                onChange={(nextUrl) => setForm((previous) => ({ ...previous, videoUrl: nextUrl ?? '' }))}
               />
               {/* The poster is optional but strongly wanted: without it the slide
                   is a black rectangle until the video buffers. */}

@@ -26,6 +26,13 @@ const { confirmContingentPurchase } = require("./contingent-purchase-service");
  * paid and fires the attendee invites. The order row's purposeType decides.
  */
 async function confirmCapturedOrder(order, razorpayPaymentId, actorUserId, context) {
+  if (order.purposeType === PAYMENT_ORDER_PURPOSE_TYPES.CONTINGENT_CODES) {
+    // A code-distribution purchase: capture mints the buyer's codes. Late
+    // require — that service reaches back through the contingent purchase graph.
+    const { confirmCodePurchasePayment } = require("./contingent-code-purchase-service");
+    await confirmCodePurchasePayment(order.paymentGroupId, razorpayPaymentId);
+    return;
+  }
   if (order.purposeType === PAYMENT_ORDER_PURPOSE_TYPES.CONTINGENT) {
     await confirmContingentPurchase(order.paymentGroupId, razorpayPaymentId);
     return;
@@ -249,6 +256,11 @@ async function readPaymentGroupStatus(userId, paymentGroupId) {
      * reader applies its own buyer-ownership rule and throws the same 403 for
      * everything else, so the not-found/not-yours surface stays probe-proof.
      */
+    const { readCodePurchaseStatus } = require("./contingent-code-purchase-service");
+    const codePurchaseStatus = await readCodePurchaseStatus(userId, paymentGroupId);
+    if (codePurchaseStatus) {
+      return codePurchaseStatus;
+    }
     return readContingentPurchaseStatus(userId, paymentGroupId);
   }
 

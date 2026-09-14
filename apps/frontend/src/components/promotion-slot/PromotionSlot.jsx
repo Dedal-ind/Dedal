@@ -8,14 +8,12 @@
 // participant is waiting for.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { VIDEO_SOURCE_KINDS, describeVideoSource } from '@dedal/shared';
 import { fetchDecision, toPromotionSlide } from '../../helpers/decision-session.js';
 import { useViewability } from '../../hooks/use-viewability/use-viewability.js';
 import { reportDeliveryEvent, DELIVERY_EVENT_KINDS } from '../../helpers/delivery-reporter.js';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { resolvePromotionDestination } from '../../helpers/promotion-destination.js';
-import { viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
-import VideoLinkPreview from '../video-link-preview/VideoLinkPreview.jsx';
+import { resolvePromotionMedia, viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
 
 function PromotionSlot({ placementKey }) {
   const { isAuthenticated } = useAuthentication();
@@ -41,8 +39,7 @@ function PromotionSlot({ placementKey }) {
   useViewability({
     elementRef: frameRef,
     decisionKey: decisionToken,
-    /* A YouTube or Vimeo creative is shown as its thumbnail, so it is measured
-       as an image; only a direct file plays. */
+    /* Only an uploaded video file plays, so only it is measured as video. */
     mediaType: viewabilityMediaTypeFor(slide),
     onViewable: useCallback((token) => reportDeliveryEvent(token, DELIVERY_EVENT_KINDS.VIEWABLE), []),
   });
@@ -61,54 +58,48 @@ function PromotionSlot({ placementKey }) {
 
   if (!slide) return null;
 
-  /* Same split as FeedMedia: a direct file plays natively; a YouTube or Vimeo
-     link — or a video link that names nothing playable — gets the thumbnail
-     preview. */
-  const declaresVideo = slide.mediaType === 'video' && Boolean(slide.videoUrl);
-  const videoSource = declaresVideo ? describeVideoSource(slide.videoUrl) : null;
-  const isDirectVideo = videoSource?.kind === VIDEO_SOURCE_KINDS.DIRECT;
-  const showsVideoLinkPreview = declaresVideo && !isDirectVideo;
+  /* An image, an uploaded video file, or — for anything else — the fallback
+     wash with the title. See helpers/promotion-media.js. */
+  const media = resolvePromotionMedia(slide);
+  const isVideo = Boolean(media.videoUrl);
 
-  const artwork = showsVideoLinkPreview ? (
-    <VideoLinkPreview
-      videoUrl={slide.videoUrl}
-      posterUrl={slide.imageUrl}
-      alt={slide.title}
-      onRendered={handleMediaRendered}
-    />
-  ) : isDirectVideo ? (
+  const artwork = isVideo ? (
     <video
-      src={slide.videoUrl}
-      poster={slide.imageUrl || undefined}
+      src={media.videoUrl}
+      poster={media.imageUrl || undefined}
+      autoPlay
+      muted
+      loop
       controls
       playsInline
-      muted
       preload="metadata"
       onLoadedData={handleMediaRendered}
       className="h-full w-full object-cover"
     >
       {slide.title}
     </video>
-  ) : slide.imageUrl && !hasImageFailed ? (
+  ) : media.imageUrl && !hasImageFailed ? (
     <img
-      src={slide.imageUrl}
+      src={media.imageUrl}
       alt={slide.title}
       loading="lazy"
       onLoad={handleMediaRendered}
       onError={() => setHasImageFailed(true)}
       className="h-full w-full object-cover"
     />
-  ) : null;
-
-  if (!artwork) return null;
+  ) : (
+    /* Not the sponsor's artwork, so it reports no measurable impression. */
+    <div className="flex h-full w-full items-end bg-gradient-to-br from-olive-accent to-black p-4">
+      <span className="font-body text-[16px] font-semibold leading-snug text-white">{slide.title}</span>
+    </div>
+  );
 
   /*
-   * A direct video keeps its own controls, so its link moves to the Learn more
-   * line below. Everything else — an image, or a video thumbnail — is itself
-   * the link, to the same destination the feed card uses: the promotion's link,
-   * or for a YouTube / Vimeo video with none, the video on its own site.
+   * A video keeps its own controls, so its link moves to the Learn more line
+   * below. Everything else is itself the link, to the same destination the feed
+   * card uses.
    */
-  const destination = isDirectVideo ? null : resolvePromotionDestination(slide);
+  const destination = isVideo ? null : resolvePromotionDestination(slide);
   const destinationUrl = destination?.kind === 'external' ? destination.url : null;
 
   return (
@@ -128,7 +119,7 @@ function PromotionSlot({ placementKey }) {
           artwork
         )}
       </div>
-      {isDirectVideo && slide.linkUrl ? (
+      {isVideo && slide.linkUrl ? (
         <a
           href={slide.linkUrl}
           target="_blank"

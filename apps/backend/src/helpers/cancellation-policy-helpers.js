@@ -75,6 +75,19 @@ async function resolveCancellationPolicy({ registration, event, fest, actorUserI
  * neither applies to staff.
  */
 function assertSelfCancellationAllowed(registration, event) {
+  /*
+   * The event's own setting comes first: if the organiser has not opted in,
+   * the window and the status are irrelevant. Checked only for SELF — staff
+   * removing a participant is a different act and stays available.
+   */
+  if (event.allowCancellation !== true) {
+    throw new ApplicationError(
+      403,
+      ERROR_CODES.REGISTRATION_CANCELLATION_NOT_ALLOWED,
+      "Cancellation is not available for this event."
+    );
+  }
+
   const freezeAt = new Date(
     event.startsAt.getTime() - CANCELLATION_FREEZE_MINUTES_BEFORE_EVENT * 60 * 1000
   );

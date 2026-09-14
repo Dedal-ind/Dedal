@@ -902,6 +902,12 @@ function AdminCreateEventScreen() {
                   checked={form.requiresMedicalDeclaration}
                   onChange={(checked) => updateField('requiresMedicalDeclaration', checked)}
                 />
+                <AdminExecutiveCheckbox
+                  label={COPY.allowCancellationLabel}
+                  description={COPY.allowCancellationDescription}
+                  checked={form.allowCancellation}
+                  onChange={(checked) => updateField('allowCancellation', checked)}
+                />
                 {/*
                   * ADD-ONS BELONG TO ONE LEVEL, NOT BOTH.
                   *
@@ -1439,6 +1445,7 @@ function ReviewSummary({ form, fests, parentOptions }) {
       <ReviewRow label={COPY.capacityLabel} value={capacity} />
       <ReviewRow label={COPY.feeTypeLabel} value={fee} />
       <ReviewRow label={COPY.medicalLabel} value={form.requiresMedicalDeclaration ? COPY.reviewYes : COPY.reviewNo} />
+      <ReviewRow label={COPY.allowCancellationLabel} value={form.allowCancellation ? COPY.reviewYes : COPY.reviewNo} />
       {form.nestUnderParent ? <ReviewRow label={COPY.parentHeading} value={parentName} /> : null}
       {form.customQuestions.length > 0 ? (
         <ReviewRow label={COPY.questionsHeading} value={COPY.questionsSummary(form.customQuestions.length)} />

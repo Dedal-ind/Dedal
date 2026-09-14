@@ -99,6 +99,7 @@ async function createPublishedContingent(overrides = {}) {
   });
   expect(createResponse.status).toBe(201);
   const contingentId = createResponse.body.data.contingent.id;
+  await markAsLegacyClaimFlow(contingentId);
   const publishResponse = await withToken(
     request(application).post(`/api/v1/fests/${fest.id}/contingents/${contingentId}/publish`),
     admin.authenticationToken
@@ -122,6 +123,15 @@ async function payForPurchase(razorpayOrderId, token = buyer.authenticationToken
     razorpaySignature: signPayment(razorpayOrderId, paymentId),
   });
   expect(verifyResponse.status).toBe(200);
+}
+
+/*
+ * Every contingent the admin endpoint creates is code-distribution now. This
+ * suite exercises the LEGACY claim-based flow, so it strips the flag the way a
+ * contingent that predates it carries it: absent, which reads as claimBased.
+ */
+async function markAsLegacyClaimFlow(contingentId) {
+  await ContingentModel.updateOne({ _id: contingentId }, { $unset: { flowType: 1 } });
 }
 
 function attendeeRow(eventId, fullName, emailAddress) {
@@ -166,23 +176,34 @@ beforeEach(async () => {
 afterAll(teardownTestDatabase);
 
 describe("contingent creation constraints", () => {
-  it("rejects a paid parent, a team sub-event, and an unpublished sub-event", async () => {
+  it("accepts a paid parent and a team sub-event for a code bundle, and still refuses an unpublished sub-event", async () => {
     const paidParent = await createTestEvent(
       fest,
       admin.user,
       openRegistrationOverrides({ eventSlug: "paid-parent", category: null, feeType: "perPerson", feeAmountPaise: 5000 })
+    );
+    const paidChildA = await createTestEvent(
+      fest,
+      admin.user,
+      openRegistrationOverrides({ eventSlug: "paid-child-a", parentEventId: paidParent._id })
+    );
+    const paidChildB = await createTestEvent(
+      fest,
+      admin.user,
+      openRegistrationOverrides({ eventSlug: "paid-child-b", parentEventId: paidParent._id })
     );
     const paidParentResponse = await withToken(
       request(application).post(`/api/v1/fests/${fest.id}/contingents`),
       admin.authenticationToken
     ).send({
       parentEventId: String(paidParent._id),
-      contingentName: "Bad Parent",
-      includedEventIds: [String(subEventA._id), String(subEventB._id)],
+      includedEventIds: [String(paidChildA._id), String(paidChildB._id)],
       pricePaise: 1000,
     });
-    expect(paidParentResponse.status).toBe(409);
-    expect(paidParentResponse.body.error.code).toBe("CONTINGENT_PARENT_HAS_FEE");
+    expect(paidParentResponse.status).toBe(201);
+    expect(paidParentResponse.body.data.contingent.flowType).toBe("codeDistribution");
+    // No name was sent: the bundle reads as its scope.
+    expect(paidParentResponse.body.data.contingent.contingentName).toBe(paidParent.eventName);
 
     const teamChild = await createSubEvent("team-child", 5000, {
       eventType: "team",
@@ -198,8 +219,7 @@ describe("contingent creation constraints", () => {
       includedEventIds: [String(subEventA._id), String(teamChild._id)],
       pricePaise: 1000,
     });
-    expect(teamResponse.status).toBe(400);
-    expect(teamResponse.body.error.details.includedEventIds[String(teamChild._id)]).toMatch(/team event/);
+    expect(teamResponse.status).toBe(201);
 
     const draftChild = await createSubEvent("draft-child", 5000, { status: "draft" });
     const draftResponse = await withToken(
@@ -214,7 +234,7 @@ describe("contingent creation constraints", () => {
     expect(draftResponse.status).toBe(400);
   });
 
-  it("recomputes individualTotalPaise server-side and refuses an unintentional negative discount", async () => {
+  it("recomputes individualTotalPaise server-side and accepts a price above it without a flag", async () => {
     const createResponse = await withToken(
       request(application).post(`/api/v1/fests/${fest.id}/contingents`),
       admin.authenticationToken
@@ -222,22 +242,10 @@ describe("contingent creation constraints", () => {
       parentEventId: String(parentEvent._id),
       contingentName: "Overpriced",
       includedEventIds: [String(subEventA._id), String(subEventB._id)],
-      pricePaise: 99000, // above the 30000 individual total
+      pricePaise: 99000, // above the 30000 individual total — a valid admin choice now
     });
-    expect(createResponse.status).toBe(400);
-
-    const allowedResponse = await withToken(
-      request(application).post(`/api/v1/fests/${fest.id}/contingents`),
-      admin.authenticationToken
-    ).send({
-      parentEventId: String(parentEvent._id),
-      contingentName: "Overpriced On Purpose",
-      includedEventIds: [String(subEventA._id), String(subEventB._id)],
-      pricePaise: 99000,
-      allowNegativeDiscount: true,
-    });
-    expect(allowedResponse.status).toBe(201);
-    expect(allowedResponse.body.data.contingent.individualTotalPaise).toBe(30000);
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.data.contingent.individualTotalPaise).toBe(30000);
   });
 
   it("no two published contingents under the same parent may share a sub-event", async () => {
@@ -298,6 +306,7 @@ describe("purchase, payment and the attendee claim flow", () => {
       pricePaise: 25000,
     });
     const contingentId = createResponse.body.data.contingent.id;
+    await markAsLegacyClaimFlow(contingentId);
     await withToken(
       request(application).post(`/api/v1/fests/${fest.id}/contingents/${contingentId}/publish`),
       admin.authenticationToken
@@ -454,6 +463,7 @@ describe("purchase, payment and the attendee claim flow", () => {
       pricePaise: 10000,
     });
     const contingentId = createResponse.body.data.contingent.id;
+    await markAsLegacyClaimFlow(contingentId);
     await withToken(
       request(application).post(`/api/v1/fests/${fest.id}/contingents/${contingentId}/publish`),
       admin.authenticationToken
@@ -705,6 +715,7 @@ describe("expiry sweep", () => {
       pricePaise: 9000,
     });
     const contingentId = createResponse.body.data.contingent.id;
+    await markAsLegacyClaimFlow(contingentId);
     await withToken(
       request(application).post(`/api/v1/fests/${pastFest.id}/contingents/${contingentId}/publish`),
       admin.authenticationToken

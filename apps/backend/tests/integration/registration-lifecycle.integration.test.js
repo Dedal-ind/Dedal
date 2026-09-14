@@ -52,7 +52,7 @@ beforeEach(async () => {
   admin = await createTestAdministrator(college);
   fest = await createTestFest(college, admin.user, { status: "published" });
   participant = await createTestParticipant(college);
-  event = await createTestEvent(fest, admin.user, openRegistrationOverrides({ eventType: "solo", capacity: 5 }));
+  event = await createTestEvent(fest, admin.user, openRegistrationOverrides({ allowCancellation: true, eventType: "solo", capacity: 5 }));
 });
 
 afterAll(teardownTestDatabase);

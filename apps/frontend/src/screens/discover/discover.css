@@ -505,9 +505,21 @@
 }
 
 .dsc-media__fallback {
+  display: flex;
+  align-items: flex-end;
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg, var(--accent), var(--ink));
+}
+
+/* A promotion with no playable media carries its title on the wash. */
+.dsc-media__fallback-title {
+  padding: 16px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
 }
 
 /* The sound target covers the media and nothing else, so a tap on the artwork

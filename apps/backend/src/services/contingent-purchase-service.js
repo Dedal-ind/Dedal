@@ -37,6 +37,8 @@ const {
   CONTINGENT_STATUSES,
   CONTINGENT_CLAIM_STATUSES,
   SEAT_HOLDING_CLAIM_STATUSES,
+  CONTINGENT_FLOW_TYPES,
+  resolveContingentFlowType,
 } = require("../constants/contingent-constants");
 const {
   sendContingentInviteEmails,
@@ -227,6 +229,20 @@ async function purchaseContingent(buyerUserId, festId, contingentId, attendees, 
       ERROR_CODES.CONTINGENT_NOT_PURCHASABLE,
       "This contingent is not open for purchase.",
       { status: contingent.status }
+    );
+  }
+  /*
+   * This endpoint names attendees, which only the claim-based flow does. A
+   * code-distribution bundle is bought through POST /contingents/:id/purchase;
+   * letting it through here would hold seats and send invites for a bundle
+   * whose whole point is that nobody is named.
+   */
+  if (resolveContingentFlowType(contingent) !== CONTINGENT_FLOW_TYPES.CLAIM_BASED) {
+    throw new ApplicationError(
+      409,
+      ERROR_CODES.CONTINGENT_FLOW_MISMATCH,
+      "This contingent is sold as shareable codes. Purchase it without naming attendees.",
+      { flowType: resolveContingentFlowType(contingent) }
     );
   }
 
@@ -652,6 +668,14 @@ async function cancelContingent(actorUserId, festId, contingentId, context = {})
     }
   }
 
+  /*
+   * Code-distribution purchases end with the contingent too: every unredeemed
+   * code is invalidated and a captured payment goes refund-pending. Late require
+   * — the code purchase service requires this module for the bundle-slot helpers.
+   */
+  const { cancelCodePurchasesForContingent } = require("./contingent-code-purchase-service");
+  const codePurchaseResult = await cancelCodePurchasesForContingent(contingent, actorUserId, context);
+
   contingent.status = CONTINGENT_STATUSES.CANCELLED;
   await contingent.save();
 
@@ -661,7 +685,11 @@ async function cancelContingent(actorUserId, festId, contingentId, context = {})
     action: AUDIT_ACTIONS.CONTINGENT_CANCELLED,
     entityType: AUDIT_ENTITY_TYPES.CONTINGENT,
     entityId: contingent._id,
-    afterState: { status: contingent.status, unwoundPurchaseCount: groupIds.length },
+    afterState: {
+      status: contingent.status,
+      unwoundPurchaseCount: groupIds.length,
+      cancelledCodePurchaseCount: codePurchaseResult.cancelledCount,
+    },
     ...context,
   });
 
@@ -677,4 +705,6 @@ module.exports = {
   releaseExpiredContingentPurchaseHolds,
   computeContingentOrderAmounts,
   anyClaimHasAcceptedScan,
+  claimBundleSlot,
+  releaseBundleSlot,
 };

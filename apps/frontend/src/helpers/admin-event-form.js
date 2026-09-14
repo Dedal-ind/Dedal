@@ -61,6 +61,8 @@ export const emptyEventForm = {
   rules: '',
   prizePoolDescription: '',
   requiresMedicalDeclaration: false,
+  // Off by default: most college events commit the money to arrangements up front.
+  allowCancellation: false,
   // Event-scoped offers (an add-on to the fest's own; see AdminOffersEditor).
   offers: [],
   weightCategories: '',
@@ -249,6 +251,8 @@ export function buildEventPayload(form) {
      */
     registrationClosesAt: combineDateTime(form.endDate || form.eventDate, form.endTime),
     requiresMedicalDeclaration: Boolean(form.requiresMedicalDeclaration),
+    // Always sent, so turning the toggle OFF on edit is saved rather than skipped.
+    allowCancellation: Boolean(form.allowCancellation),
   };
 
   if (form.category) {
@@ -387,6 +391,7 @@ export function eventToForm(event, festId) {
     rules: event.rules ?? '',
     prizePoolDescription: event.prizePoolDescription ?? '',
     requiresMedicalDeclaration: Boolean(event.requiresMedicalDeclaration),
+    allowCancellation: Boolean(event.allowCancellation),
     offers: Array.isArray(event.offers)
       ? event.offers.map((offer) => ({ ...offer }))
       : [],

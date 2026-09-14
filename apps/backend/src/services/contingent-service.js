@@ -1,5 +1,6 @@
 const { ContingentModel } = require("../models/contingent-model");
 const { ContingentClaimModel } = require("../models/contingent-claim-model");
+const { ContingentPurchaseModel } = require("../models/contingent-purchase-model");
 const { EventModel } = require("../models/event-model");
 const { FestModel } = require("../models/fest-model");
 const { ApplicationError } = require("../helpers/application-error");
@@ -12,6 +13,9 @@ const {
   CONTINGENT_STATUSES,
   CONTINGENT_CLAIM_STATUSES,
   CONTINGENT_EVENTS_MINIMUM,
+  CONTINGENT_FLOW_TYPES,
+  CONTINGENT_PURCHASE_STATUSES,
+  resolveContingentFlowType,
 } = require("../constants/contingent-constants");
 
 async function loadFestOrThrow(festId) {
@@ -81,7 +85,17 @@ function assertParentEventHasNoFee(parentEvent) {
  * server will reach, from the same function, and an empty array is the only
  * thing that means "eligible".
  */
-function describeEventEligibilityProblems(event, parentEvent) {
+/*
+ * The solo-only rule belongs to the CLAIM-BASED flow alone: there the buyer named
+ * one attendee per seat and could not form a team for them. In the
+ * code-distribution flow each redeemer registers themselves and the team is
+ * assembled from the purchase's own codes, so team events are bundleable.
+ */
+function describeEventEligibilityProblems(
+  event,
+  parentEvent,
+  flowType = CONTINGENT_FLOW_TYPES.CODE_DISTRIBUTION
+) {
   const problems = [];
   if (parentEvent) {
     if (String(event.parentEventId) !== String(parentEvent._id)) {
@@ -96,13 +110,13 @@ function describeEventEligibilityProblems(event, parentEvent) {
   if (event.status !== EVENT_STATUSES.PUBLISHED) {
     problems.push("is not published");
   }
-  if (event.eventType !== EVENT_TYPES.SOLO) {
+  if (flowType === CONTINGENT_FLOW_TYPES.CLAIM_BASED && event.eventType !== EVENT_TYPES.SOLO) {
     problems.push("is a team event — a contingent wraps solo sub-events only");
   }
   return problems;
 }
 
-async function loadIncludedEventsOrThrow(fest, parentEvent, includedEventIds) {
+async function loadIncludedEventsOrThrow(fest, parentEvent, includedEventIds, flowType) {
   const events = await EventModel.find({ _id: { $in: includedEventIds }, festId: fest._id });
   if (events.length !== includedEventIds.length) {
     throw new ApplicationError(404, ERROR_CODES.EVENT_NOT_FOUND, "Event not found.", {
@@ -112,7 +126,7 @@ async function loadIncludedEventsOrThrow(fest, parentEvent, includedEventIds) {
 
   const details = {};
   for (const event of events) {
-    const problems = describeEventEligibilityProblems(event, parentEvent);
+    const problems = describeEventEligibilityProblems(event, parentEvent, flowType);
     if (problems.length > 0) {
       details[String(event._id)] = problems.join("; ");
     }
@@ -180,8 +194,16 @@ function assertPriceIsIntentional(pricePaise, individualTotalPaise, allowNegativ
   }
 }
 
+/*
+ * "Has anybody bought this?" across BOTH purchase models: claim rows for the
+ * legacy flow, purchase rows for code distribution. Either one freezes structure.
+ */
 async function countClaims(contingentId) {
-  return ContingentClaimModel.countDocuments({ contingentId });
+  const [claimCount, purchaseCount] = await Promise.all([
+    ContingentClaimModel.countDocuments({ contingentId }),
+    ContingentPurchaseModel.countDocuments({ contingentId }),
+  ]);
+  return claimCount + purchaseCount;
 }
 
 async function createContingent(actorUserId, festId, payload, context = {}) {
@@ -200,8 +222,19 @@ async function createContingent(actorUserId, festId, payload, context = {}) {
       throw new ApplicationError(404, ERROR_CODES.EVENT_NOT_FOUND, "Parent event not found.");
     }
   }
-  assertParentEventHasNoFee(parentEvent);
-  const includedEvents = await loadIncludedEventsOrThrow(fest, parentEvent, payload.includedEventIds);
+  /*
+   * Every contingent created now sells under code distribution. The parent-fee
+   * and negative-discount refusals were claim-flow rules: nobody registers for
+   * the parent here, and the admin flow is deliberately just events, price and
+   * description — free and paid bundles are both simply valid.
+   */
+  const flowType = CONTINGENT_FLOW_TYPES.CODE_DISTRIBUTION;
+  const includedEvents = await loadIncludedEventsOrThrow(
+    fest,
+    parentEvent,
+    payload.includedEventIds,
+    flowType
+  );
   await assertNoPublishedOverlap(fest._id, parentEvent?._id ?? null, payload.includedEventIds, null);
 
   // C.2 — recomputed server-side; a client-submitted total is never trusted.
@@ -209,12 +242,13 @@ async function createContingent(actorUserId, festId, payload, context = {}) {
     (runningTotal, event) => runningTotal + event.feeAmountPaise,
     0
   );
-  assertPriceIsIntentional(payload.pricePaise, individualTotalPaise, payload.allowNegativeDiscount);
 
   const contingent = await ContingentModel.create({
     festId: fest._id,
     parentEventId: parentEvent ? parentEvent._id : null,
-    contingentName: payload.contingentName,
+    // The admin form no longer asks for a name; the bundle reads as its scope.
+    contingentName: payload.contingentName ?? (parentEvent ? parentEvent.eventName : fest.festName),
+    flowType,
     description: payload.description,
     includedEventIds: payload.includedEventIds,
     pricePaise: payload.pricePaise,
@@ -289,7 +323,12 @@ async function updateContingent(actorUserId, festId, contingentId, payload, cont
     ? await EventModel.findById(contingent.parentEventId)
     : null;
   if (payload.includedEventIds !== undefined) {
-    const includedEvents = await loadIncludedEventsOrThrow(fest, parentEvent, payload.includedEventIds);
+    const includedEvents = await loadIncludedEventsOrThrow(
+      fest,
+      parentEvent,
+      payload.includedEventIds,
+      resolveContingentFlowType(contingent)
+    );
     await assertNoPublishedOverlap(
       fest._id,
       contingent.parentEventId,
@@ -306,7 +345,10 @@ async function updateContingent(actorUserId, festId, contingentId, payload, cont
   if (payload.pricePaise !== undefined) {
     contingent.pricePaise = payload.pricePaise;
   }
-  if (payload.includedEventIds !== undefined || payload.pricePaise !== undefined) {
+  if (
+    resolveContingentFlowType(contingent) === CONTINGENT_FLOW_TYPES.CLAIM_BASED &&
+    (payload.includedEventIds !== undefined || payload.pricePaise !== undefined)
+  ) {
     assertPriceIsIntentional(
       contingent.pricePaise,
       contingent.individualTotalPaise,
@@ -356,8 +398,16 @@ async function publishContingent(actorUserId, festId, contingentId, context = {}
   const parentEvent = contingent.parentEventId
     ? await EventModel.findById(contingent.parentEventId)
     : null;
-  assertParentEventHasNoFee(parentEvent);
-  await loadIncludedEventsOrThrow(fest, parentEvent, contingent.includedEventIds.map(String));
+  const flowType = resolveContingentFlowType(contingent);
+  if (flowType === CONTINGENT_FLOW_TYPES.CLAIM_BASED) {
+    assertParentEventHasNoFee(parentEvent);
+  }
+  await loadIncludedEventsOrThrow(
+    fest,
+    parentEvent,
+    contingent.includedEventIds.map(String),
+    flowType
+  );
   await assertNoPublishedOverlap(
     fest._id,
     contingent.parentEventId,
@@ -455,15 +505,25 @@ async function getContingentScope(actorUserId, festId, parentEventId) {
     status: { $ne: CONTINGENT_STATUSES.CANCELLED },
   }).sort({ createdAt: 1 });
 
-  const claimGroups =
+  const scopeContingentIds = contingents.map((contingent) => contingent._id);
+  const [claimGroups, purchaseGroups] =
     contingents.length > 0
-      ? await ContingentClaimModel.aggregate([
-          { $match: { contingentId: { $in: contingents.map((contingent) => contingent._id) } } },
-          { $group: { _id: "$contingentId", claimCount: { $sum: 1 } } },
+      ? await Promise.all([
+          ContingentClaimModel.aggregate([
+            { $match: { contingentId: { $in: scopeContingentIds } } },
+            { $group: { _id: "$contingentId", claimCount: { $sum: 1 } } },
+          ]),
+          ContingentPurchaseModel.aggregate([
+            { $match: { contingentId: { $in: scopeContingentIds } } },
+            { $group: { _id: "$contingentId", purchaseCount: { $sum: 1 } } },
+          ]),
         ])
-      : [];
+      : [[], []];
   const claimCountByContingentId = new Map(
     claimGroups.map((group) => [String(group._id), group.claimCount])
+  );
+  const purchaseCountByContingentId = new Map(
+    purchaseGroups.map((group) => [String(group._id), group.purchaseCount])
   );
 
   /*
@@ -501,14 +561,15 @@ async function getContingentScope(actorUserId, festId, parentEventId) {
     };
   });
 
+  /*
+   * parentHasFee is still reported as a fact, but it no longer blocks: the form
+   * creates code-distribution bundles, where nobody registers for the parent and
+   * so nothing is charged twice.
+   */
   const hasOwnFee = parentEventHasFee(parentEvent);
   const eligibleEventCount = candidateEvents.filter((event) => event.isEligible).length;
-  let blockedReason = null;
-  if (hasOwnFee) {
-    blockedReason = "parentHasFee";
-  } else if (eligibleEventCount < CONTINGENT_EVENTS_MINIMUM) {
-    blockedReason = "notEnoughEligibleEvents";
-  }
+  const blockedReason =
+    eligibleEventCount < CONTINGENT_EVENTS_MINIMUM ? "notEnoughEligibleEvents" : null;
 
   return {
     scope: {
@@ -524,13 +585,17 @@ async function getContingentScope(actorUserId, festId, parentEventId) {
     candidateEvents,
     contingents: contingents.map((contingent) => {
       const claimCount = claimCountByContingentId.get(String(contingent._id)) ?? 0;
+      const purchaseCount = purchaseCountByContingentId.get(String(contingent._id)) ?? 0;
       return {
         ...contingent.toJSON(),
+        flowType: resolveContingentFlowType(contingent),
         includedEventIds: contingent.includedEventIds.map(String),
         claimCount,
+        purchaseCount,
         /* C.5, stated as data so the form disables the fields rather than
            letting the admin edit a price the save will refuse. */
-        isStructureLocked: contingent.status !== CONTINGENT_STATUSES.DRAFT || claimCount > 0,
+        isStructureLocked:
+          contingent.status !== CONTINGENT_STATUSES.DRAFT || claimCount + purchaseCount > 0,
       };
     }),
   };
@@ -558,14 +623,25 @@ async function getContingentDetail(actorUserId, festId, contingentId) {
   for (const group of groupedCounts) {
     claimCountsByStatus[group._id] = group.claimCount;
   }
+  const purchaseCountsByStatus = Object.fromEntries(
+    Object.values(CONTINGENT_PURCHASE_STATUSES).map((purchaseStatus) => [purchaseStatus, 0])
+  );
+  const groupedPurchaseCounts = await ContingentPurchaseModel.aggregate([
+    { $match: { contingentId: contingent._id } },
+    { $group: { _id: "$status", purchaseCount: { $sum: 1 } } },
+  ]);
+  for (const group of groupedPurchaseCounts) {
+    purchaseCountsByStatus[group._id] = group.purchaseCount;
+  }
 
   const includedEvents = await EventModel.find({ _id: { $in: contingent.includedEventIds } })
     .select("eventName eventSlug feeAmountPaise status capacity registeredCount")
     .lean();
 
   return {
-    contingent: contingent.toJSON(),
+    contingent: { ...contingent.toJSON(), flowType: resolveContingentFlowType(contingent) },
     claimCountsByStatus,
+    purchaseCountsByStatus,
     includedEvents: includedEvents.map((event) => ({ ...event, id: String(event._id) })),
   };
 }

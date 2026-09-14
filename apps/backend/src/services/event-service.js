@@ -6,6 +6,8 @@ const { FEST_STATUSES } = require("../constants/fest-constants");
 const { RegistrationModel } = require("../models/registration-model");
 const { TeamModel } = require("../models/team-model");
 const { ContingentClaimModel } = require("../models/contingent-claim-model");
+// Registered for the roster populate below, which resolves contingentPurchaseId by model name.
+require("../models/contingent-purchase-model");
 const {
   REGISTRATION_STATUSES,
   PAYMENT_STATUSES,
@@ -226,6 +228,8 @@ function buildPublicEventJson(event) {
     // render the strip from a field the allowlist withholds.
     sponsors: json.sponsors,
     requiresMedicalDeclaration: json.requiresMedicalDeclaration,
+    // Participant clients only offer a cancel control when this is true.
+    allowCancellation: json.allowCancellation,
     isLeaderboardVisible: json.isLeaderboardVisible,
     status: json.status,
   };
@@ -422,6 +426,16 @@ async function listEventParticipants(festId, eventId, { includeAll = false } = {
           { path: "buyerUserId", select: "fullName", model: "User" },
         ],
       },
+      {
+        /* Narrow select on purpose: the purchase carries every code, and a roster must not. */
+        path: "contingentPurchaseId",
+        select: "contingentId buyerUserId",
+        model: "ContingentPurchase",
+        populate: [
+          { path: "contingentId", select: "contingentName", model: "Contingent" },
+          { path: "buyerUserId", select: "fullName", model: "User" },
+        ],
+      },
     ]);
 
   const individual = [];
@@ -462,6 +476,14 @@ async function listEventParticipants(festId, eventId, { includeAll = false } = {
       plainRow.claimStatus = claim.claimStatus;
       // Accountability: who bought the seat this attendee sits in.
       plainRow.buyerFullName = claim.buyerUserId?.fullName ?? null;
+      contingent.push(plainRow);
+    } else if (registration.contingentPurchaseId) {
+      const purchase = registration.contingentPurchaseId;
+      plainRow.registrationType = "contingent";
+      plainRow.contingentName = purchase.contingentId?.contingentName ?? null;
+      // Redeemed from a code, so there is no claim and no claim status.
+      plainRow.claimStatus = null;
+      plainRow.buyerFullName = purchase.buyerUserId?.fullName ?? null;
       contingent.push(plainRow);
     } else {
       plainRow.registrationType = "individual";

@@ -67,6 +67,7 @@ const {
   inviteCodeRouter,
   contingentClaimRouter,
   contingentPurchaseRouter,
+  contingentCodeRouter,
 } = require("./routes/contingent-routes");
 const { publicEventStaffRouter } = require("./routes/public-event-staff-routes");
 const { backstageRouter } = require("./routes/backstage-routes");
@@ -203,6 +204,8 @@ application.use("/api/v1/fests/:festId/results", festResultsRouter);
 application.use("/api/v1/invite-codes", inviteCodeRouter);
 application.use("/api/v1/contingent-claims", contingentClaimRouter);
 application.use("/api/v1/contingent-purchases", contingentPurchaseRouter);
+// Code-distribution contingents: buy codes, list them, inspect and redeem one.
+application.use("/api/v1/contingents", contingentCodeRouter);
 application.use("/api/v1/fests/:festId/shifts", festShiftRouter);
 application.use("/api/v1/fests/:festId/volunteers", festVolunteerRouter);
 application.use("/api/v1/shifts", myShiftRouter);

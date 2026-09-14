@@ -33,6 +33,7 @@ const { AuditLogModel } = require("../models/audit-log-model");
 const { StaffAssignmentModel } = require("../models/staff-assignment-model");
 const { ContingentModel } = require("../models/contingent-model");
 const { ContingentClaimModel } = require("../models/contingent-claim-model");
+const { ContingentPurchaseModel } = require("../models/contingent-purchase-model");
 const { CertificateModel } = require("../models/certificate-model");
 const { VolunteerShiftModel } = require("../models/volunteer-shift-model");
 const { ApplicationError } = require("../helpers/application-error");
@@ -81,13 +82,17 @@ async function resolvePurgeScope(fest) {
   const contingentPurchaseGroupIds = await ContingentClaimModel.find({
     festId: fest._id,
   }).distinct("contingentPurchaseGroupId");
+  const codePurchaseGroupIds = await ContingentPurchaseModel.find({
+    festId: fest._id,
+    paymentGroupId: { $ne: null },
+  }).distinct("paymentGroupId");
 
   return {
     eventIds,
     passIds,
     checkpointIds,
     contingentIds,
-    paymentGroupIds: [...paymentGroupIds, ...contingentPurchaseGroupIds],
+    paymentGroupIds: [...paymentGroupIds, ...contingentPurchaseGroupIds, ...codePurchaseGroupIds],
   };
 }
 
@@ -104,6 +109,7 @@ async function countPurgeScope(fest, scope) {
     staffAssignments,
     contingents,
     contingentClaims,
+    contingentPurchases,
     certificates,
     volunteerShifts,
   ] = await Promise.all([
@@ -120,6 +126,7 @@ async function countPurgeScope(fest, scope) {
     StaffAssignmentModel.countDocuments({ festId: fest._id }),
     ContingentModel.countDocuments({ festId: fest._id }),
     ContingentClaimModel.countDocuments({ festId: fest._id }),
+    ContingentPurchaseModel.countDocuments({ festId: fest._id }),
     CertificateModel.countDocuments({ festId: fest._id }),
     VolunteerShiftModel.countDocuments({ festId: fest._id }),
   ]);
@@ -136,6 +143,7 @@ async function countPurgeScope(fest, scope) {
     staffAssignments,
     contingents,
     contingentClaims,
+    contingentPurchases,
     certificates,
     volunteerShifts,
     /*
@@ -202,6 +210,7 @@ async function purgeFest(actorUserId, festId, context = {}) {
   await PassModel.deleteMany({ festId: fest._id });
   await RegistrationModel.deleteMany({ eventId: { $in: scope.eventIds } });
   await ContingentClaimModel.deleteMany({ festId: fest._id });
+  await ContingentPurchaseModel.deleteMany({ festId: fest._id });
   await ContingentModel.deleteMany({ festId: fest._id });
   await CertificateModel.deleteMany({ festId: fest._id });
   await VolunteerShiftModel.deleteMany({ festId: fest._id });

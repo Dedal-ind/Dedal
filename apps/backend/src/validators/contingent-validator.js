@@ -10,6 +10,11 @@ const {
 const DESCRIPTION_MAX_LENGTH = 500;
 const ATTENDEE_NAME_MIN_LENGTH = 2;
 const { EMAIL_ADDRESS_PATTERN } = require("@dedal/shared");
+const {
+  INVITE_CODE_LENGTH,
+  TEAM_NAME_MIN_LENGTH,
+  TEAM_NAME_MAX_LENGTH,
+} = require("../constants/registration-constants");
 
 function buildValidationFailure(details) {
   return {
@@ -117,7 +122,12 @@ function validateCreateContingentPayload(requestBody) {
   }
   const details = {};
   const parentEventId = parseParentEventId(requestBody.parentEventId, details);
-  const contingentName = parseContingentName(requestBody.contingentName, details);
+  // Optional now: the admin flow is events, price and description. An absent
+  // name is filled from the scope by the service.
+  const contingentName =
+    requestBody.contingentName === undefined || requestBody.contingentName === null
+      ? null
+      : parseContingentName(requestBody.contingentName, details);
   const description = parseDescription(requestBody.description, details);
   const includedEventIds = parseIncludedEventIds(requestBody.includedEventIds, details);
   const pricePaise = parsePricePaise(requestBody.pricePaise, details);
@@ -244,6 +254,69 @@ function validatePurchaseContingentPayload(requestBody) {
 }
 
 /*
+ * The path segment of /contingents/codes/:code/*. Normalised to the stored form
+ * (trimmed, upper-case) and checked against the generator's alphabet and length,
+ * so a malformed string is refused without a database read.
+ */
+const CONTINGENT_CODE_PATTERN = new RegExp(`^[23456789A-HJKMNP-Z]{${INVITE_CODE_LENGTH}}$`);
+
+function validateContingentCodeParameter(rawCode) {
+  const code = String(rawCode ?? "").trim().toUpperCase();
+  if (!CONTINGENT_CODE_PATTERN.test(code)) {
+    return buildValidationFailure({
+      code: `must be a ${INVITE_CODE_LENGTH}-character contingent code`,
+    });
+  }
+  return { ok: true, value: { code } };
+}
+
+/*
+ * Redeeming a code. Every field is optional — a solo event with no add-ons is
+ * redeemed with an empty body. Whether a team name or captaincy is REQUIRED
+ * depends on the team's live state, which only the service can see.
+ */
+function validateRedeemContingentCodePayload(requestBody) {
+  const body = requestBody ?? {};
+  if (typeof body !== "object" || Array.isArray(body)) {
+    return buildValidationFailure({ body: "must be a JSON object" });
+  }
+  const details = {};
+  const value = {};
+
+  if (body.teamName !== undefined && body.teamName !== null) {
+    const trimmed = typeof body.teamName === "string" ? body.teamName.trim() : "";
+    if (trimmed.length < TEAM_NAME_MIN_LENGTH || trimmed.length > TEAM_NAME_MAX_LENGTH) {
+      details.teamName = `must be between ${TEAM_NAME_MIN_LENGTH} and ${TEAM_NAME_MAX_LENGTH} characters`;
+    } else {
+      value.teamName = trimmed;
+    }
+  }
+  if (body.claimCaptain !== undefined && typeof body.claimCaptain !== "boolean") {
+    details.claimCaptain = "must be true or false";
+  } else {
+    value.claimCaptain = body.claimCaptain === true;
+  }
+  if (body.offerSelections !== undefined && body.offerSelections !== null) {
+    if (!Array.isArray(body.offerSelections)) {
+      details.offerSelections = "must be an array";
+    } else {
+      value.offerSelections = body.offerSelections;
+    }
+  }
+  if (body.customResponses !== undefined) {
+    value.customResponses = body.customResponses;
+  }
+  if (body.hasAcceptedMedicalDeclaration !== undefined) {
+    value.hasAcceptedMedicalDeclaration = body.hasAcceptedMedicalDeclaration;
+  }
+
+  if (Object.keys(details).length > 0) {
+    return buildValidationFailure(details);
+  }
+  return { ok: true, value };
+}
+
+/*
  * ?parentEventId= names a Main Event scope; absent or empty is the fest scope.
  * An empty string is accepted as absent because that is what a select with no
  * value serialises to, and treating it as malformed would 400 the fest scope.
@@ -264,4 +337,6 @@ module.exports = {
   validateCreateContingentPayload,
   validateUpdateContingentPayload,
   validatePurchaseContingentPayload,
+  validateContingentCodeParameter,
+  validateRedeemContingentCodePayload,
 };

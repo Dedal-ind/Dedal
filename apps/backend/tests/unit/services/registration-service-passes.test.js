@@ -34,7 +34,7 @@ function activeGateAccess() {
   return EntitlementModel.countDocuments({ entitlementType: "gateAccess", status: "active" });
 }
 function makeSoloEvent(overrides = {}) {
-  return createTestEvent(fest, admin.user, openRegistrationOverrides({ eventType: "solo", ...overrides }));
+  return createTestEvent(fest, admin.user, openRegistrationOverrides({ allowCancellation: true, eventType: "solo", ...overrides }));
 }
 
 beforeAll(async () => {
@@ -83,7 +83,7 @@ describe("registration issues and revokes pass entitlements", () => {
 
   it("gives every team member an eventEntry", async () => {
     const publicFest = await createTestFest(college, admin.user, { festSlug: "pub", visibility: "public", status: "published" });
-    const event = await createTestEvent(publicFest, admin.user, openRegistrationOverrides({ eventType: "team", minimumTeamSize: 2, maximumTeamSize: 4, eventSlug: "team-e" }));
+    const event = await createTestEvent(publicFest, admin.user, openRegistrationOverrides({ allowCancellation: true, eventType: "team", minimumTeamSize: 2, maximumTeamSize: 4, eventSlug: "team-e" }));
     await service.registerParticipantTeam(participant.user._id, event.id, {
       teamName: "Byte Force",
       memberEmails: ["m1@example.com", "m2@example.com"],
@@ -103,7 +103,7 @@ describe("registration issues and revokes pass entitlements", () => {
 
   it("revokes every member's eventEntry on team cancel", async () => {
     const publicFest = await createTestFest(college, admin.user, { festSlug: "pc", visibility: "public", status: "published" });
-    const event = await createTestEvent(publicFest, admin.user, openRegistrationOverrides({ eventType: "team", minimumTeamSize: 2, maximumTeamSize: 4, eventSlug: "team-c", capacity: 10 }));
+    const event = await createTestEvent(publicFest, admin.user, openRegistrationOverrides({ allowCancellation: true, eventType: "team", minimumTeamSize: 2, maximumTeamSize: 4, eventSlug: "team-c", capacity: 10 }));
     await service.registerParticipantTeam(participant.user._id, event.id, {
       teamName: "Cancellers",
       memberEmails: ["c1@example.com", "c2@example.com"],

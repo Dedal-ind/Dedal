@@ -229,6 +229,14 @@ const eventSchema = new mongoose.Schema(
      */
     requiresMedicalDeclaration: { type: Boolean, default: false },
     /*
+     * Whether a PARTICIPANT may cancel their own registration. Default false:
+     * most college events commit the money to arrangements up front, so a seat
+     * once taken stays taken unless the organiser opts in. Staff cancellation
+     * (admin, coordinator) is not governed by this — an organiser can always
+     * remove someone from their own event.
+     */
+    allowCancellation: { type: Boolean, default: false },
+    /*
      * When false, the public leaderboard endpoint returns an empty array even
      * though scores exist — deliberation mode. Flipped to true to reveal the
      * standings. Toggled by a coordinator/admin on the event edit path.

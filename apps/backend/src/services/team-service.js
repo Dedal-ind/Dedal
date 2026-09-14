@@ -296,7 +296,12 @@ async function joinTeamByInviteCode(userId, payload, context = {}) {
   if (!team) {
     throw new ApplicationError(404, ERROR_CODES.TEAM_NOT_FOUND, "No team matches this invite code.");
   }
-  if (team.status !== TEAM_STATUSES.FORMING) {
+  /*
+   * A contingent team's seats were paid for by the buyer and are filled by
+   * redeeming that purchase's codes. Its own invite code must not become a
+   * side door onto the roster.
+   */
+  if (team.status !== TEAM_STATUSES.FORMING || team.contingentPurchaseId) {
     throw new ApplicationError(
       409,
       ERROR_CODES.TEAM_NOT_ACCEPTING_MEMBERS,

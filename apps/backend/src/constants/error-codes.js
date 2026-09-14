@@ -160,6 +160,8 @@ const ERROR_CODES = {
    * able to strike a no-show at any point. Staff must state why; a participant
    * cancelling inside their own window owes no explanation.
    */
+  // The event does not allow participants to cancel (event.allowCancellation false).
+  REGISTRATION_CANCELLATION_NOT_ALLOWED: "REGISTRATION_CANCELLATION_NOT_ALLOWED",
   REGISTRATION_CANCELLATION_WINDOW_CLOSED: "REGISTRATION_CANCELLATION_WINDOW_CLOSED",
   REGISTRATION_CANCELLATION_STATUS_LOCKED: "REGISTRATION_CANCELLATION_STATUS_LOCKED",
   CANCELLATION_REASON_REQUIRED: "CANCELLATION_REASON_REQUIRED",
@@ -312,6 +314,23 @@ const ERROR_CODES = {
   // Per-vertical contingent codes.
   INVITE_CODE_NOT_FOUND: "INVITE_CODE_NOT_FOUND",
   INVITE_CODE_EXHAUSTED: "INVITE_CODE_EXHAUSTED",
+  // The endpoint belongs to the other purchase model (claim-based vs code
+  // distribution); details.flowType names the contingent's actual flow.
+  CONTINGENT_FLOW_MISMATCH: "CONTINGENT_FLOW_MISMATCH",
+  // The caller has already redeemed this contingent code.
+  CONTINGENT_CODE_ALREADY_REDEEMED: "CONTINGENT_CODE_ALREADY_REDEEMED",
+  // Every use of the code is taken: one for a solo event, the team's maximum
+  // size for a team event.
+  CONTINGENT_CODE_FULLY_CLAIMED: "CONTINGENT_CODE_FULLY_CLAIMED",
+  // The code's fest has ended. Derived from fest.endsOn, so extending the fest
+  // makes the same code usable again.
+  CONTINGENT_CODE_EXPIRED: "CONTINGENT_CODE_EXPIRED",
+  // The code's purchase is not completed (cancelled, expired, unpaid) or its
+  // contingent is no longer published. details.reason says which.
+  CONTINGENT_CODE_INVALIDATED: "CONTINGENT_CODE_INVALIDATED",
+  // This redemption is the one that makes the team whole, and the team still
+  // has no captain or no chosen name. details lists what is missing.
+  CONTINGENT_TEAM_CAPTAIN_REQUIRED: "CONTINGENT_TEAM_CAPTAIN_REQUIRED",
   CAPTAIN_ALREADY_CLAIMED: "CAPTAIN_ALREADY_CLAIMED",
   // Add-ons may only be bought against a confirmed registration.
   REGISTRATION_NOT_CONFIRMED: "REGISTRATION_NOT_CONFIRMED",

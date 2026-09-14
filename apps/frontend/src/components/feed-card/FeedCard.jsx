@@ -19,7 +19,7 @@
 // reports nothing at all. None of that logic changed; only its container did.
 
 import { openPromotionDestination, resolvePromotionDestination } from '../../helpers/promotion-destination.js';
-import { viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
+import { resolvePromotionMedia, viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
 import { useCallback, useRef, useState } from 'react';
 import { useViewability } from '../../hooks/use-viewability/use-viewability.js';
 import { DELIVERY_EVENT_KINDS, reportDeliveryEvent } from '../../helpers/delivery-reporter.js';
@@ -258,16 +258,15 @@ export function StandaloneEventFeedCard({ event, nowTs, onOpen }) {
  *
  * WHERE A TAP GOES (helpers/promotion-destination.js):
  *   · the promotion's destination URL (linkUrl), in a new tab
- *   · a YouTube / Vimeo video promotion with no destination -> the video on its
- *     own site, in a new tab
  *   · otherwise the fest it is associated with
  *   · none of those -> NOWHERE. The card is the content, like a billboard. It
  *                renders as a plain <div>, not a disabled button: a control that
  *                announces itself and then refuses is worse than something that
  *                was never a control.
  *
- * Nothing plays inline for a linked video — the card shows its thumbnail and a
- * play mark, and the tap goes somewhere.
+ * MEDIA (helpers/promotion-media.js): an image, or an uploaded video file that
+ * autoplays muted. Anything else in videoUrl is no media — the fallback wash
+ * carrying the promotion's title.
  *
  * MEASUREMENT IS UNCHANGED. measurable / viewable / click still fire against
  * the same decision token through the same hook and the same reporter. A click
@@ -281,8 +280,7 @@ export function PromotionFeedCard({ promotion, onOpenFest }) {
   useViewability({
     elementRef: frameRef,
     decisionKey: decisionToken,
-    /* A YouTube or Vimeo creative is shown as its thumbnail, so it is
-       measured as an image; only a direct file plays. */
+    /* Only an uploaded video file plays, so only it is measured as video. */
     mediaType: viewabilityMediaTypeFor(promotion),
     onViewable: useCallback(
       (token) => reportDeliveryEvent(token, DELIVERY_EVENT_KINDS.VIEWABLE),
@@ -298,7 +296,7 @@ export function PromotionFeedCard({ promotion, onOpenFest }) {
     }
   }, [decisionToken]);
 
-  const isVideo = promotion.mediaType === 'video' && Boolean(promotion.videoUrl);
+  const media = resolvePromotionMedia(promotion);
   const sponsorName = promotion.promoterName ?? promotion.collegeName ?? null;
   /*
    * The fest this sponsor is attached to, if the payload carries one. Read
@@ -319,8 +317,9 @@ export function PromotionFeedCard({ promotion, onOpenFest }) {
   const body = (
     <>
       <FeedMedia
-        imageUrl={promotion.imageUrl}
-        videoUrl={isVideo ? promotion.videoUrl : null}
+        imageUrl={media.imageUrl}
+        videoUrl={media.videoUrl}
+        fallbackTitle={promotion.title}
         alt=""
         onMediaRendered={handleMediaRendered}
         overlay={

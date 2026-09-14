@@ -79,6 +79,7 @@ beforeEach(async () => {
    * that starts before its own registration closes.
    */
   event = await createTestEvent(fest, admin.user, {
+    allowCancellation: true,
     status: "published",
     registrationOpensAt: hoursFromNow(-12),
     registrationClosesAt: hoursFromNow(5),

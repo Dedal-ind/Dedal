@@ -134,11 +134,12 @@ describe("contingent scope read", () => {
     expect(byId.size).toBe(4);
     expect(byId.get(String(subEventA._id)).isEligible).toBe(true);
     expect(byId.get(String(subEventA._id)).ineligibleReasons).toEqual([]);
-    expect(byId.get(String(teamChild._id)).isEligible).toBe(false);
-    expect(byId.get(String(teamChild._id)).ineligibleReasons.join(" ")).toMatch(/team event/);
+    // Team events are bundleable under code distribution: each redeemer registers themselves.
+    expect(byId.get(String(teamChild._id)).isEligible).toBe(true);
     expect(byId.get(String(draftChild._id)).ineligibleReasons.join(" ")).toMatch(/not published/);
 
-    expect(response.body.data.scope.eligibleEventCount).toBe(2);
+    // finance, marketing and the team child; only the draft is out.
+    expect(response.body.data.scope.eligibleEventCount).toBe(3);
     expect(response.body.data.scope.blockedReason).toBeNull();
   });
 
@@ -168,7 +169,7 @@ describe("contingent scope read", () => {
     );
   });
 
-  it("flags a paid parent before any bundle is attempted", async () => {
+  it("reports a paid parent as a fact without blocking the scope", async () => {
     const paidParent = await createTestEvent(
       fest,
       admin.user,
@@ -187,7 +188,7 @@ describe("contingent scope read", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.data.scope.parentHasFee).toBe(true);
-    expect(response.body.data.scope.blockedReason).toBe("parentHasFee");
+    expect(response.body.data.scope.blockedReason).toBeNull();
   });
 
   it("blocks a scope with fewer than two eligible events", async () => {

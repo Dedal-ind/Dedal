@@ -12,6 +12,45 @@ const CONTINGENT_STATUSES = {
 };
 
 /*
+ * WHICH OF THE TWO PURCHASE MODELS A CONTINGENT SELLS UNDER.
+ *
+ *   claimBased       — the original flow: the buyer names one attendee per
+ *                      sub-event at checkout, seats are held at purchase, and
+ *                      each attendee accepts or declines their claim.
+ *   codeDistribution — the buyer pays for ACCESS, receives codes, and hands
+ *                      them out. Nobody is registered until a code is redeemed,
+ *                      and the redeemer registers themselves.
+ *
+ * Every contingent created from now on is codeDistribution. A document that
+ * predates the field carries no value at all and is claim-based — that is what
+ * resolveContingentFlowType encodes, so no read ever has to guess.
+ */
+const CONTINGENT_FLOW_TYPES = {
+  CLAIM_BASED: "claimBased",
+  CODE_DISTRIBUTION: "codeDistribution",
+};
+
+function resolveContingentFlowType(contingent) {
+  return contingent?.flowType === CONTINGENT_FLOW_TYPES.CODE_DISTRIBUTION
+    ? CONTINGENT_FLOW_TYPES.CODE_DISTRIBUTION
+    : CONTINGENT_FLOW_TYPES.CLAIM_BASED;
+}
+
+/*
+ * A code-distribution purchase.
+ *   pending   — a paid purchase whose Razorpay capture has not landed. No codes.
+ *   completed — paid (or free); codes minted and redeemable.
+ *   cancelled — unwound by an organiser; every UNREDEEMED code is dead.
+ *   expired   — the payment hold lapsed before capture. Never had codes.
+ */
+const CONTINGENT_PURCHASE_STATUSES = {
+  PENDING: "pending",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+  EXPIRED: "expired",
+};
+
+/*
  * One claim per (purchase × included sub-event).
  *   invited   — created at purchase; the attendee has not accepted yet.
  *   accepted  — attendee signed in, accepted the terms, Registration row exists.
@@ -50,6 +89,9 @@ const CONTINGENT_CLAIM_EXPIRY_HOURS_AFTER_FEST_START = 24;
 
 module.exports = {
   CONTINGENT_STATUSES,
+  CONTINGENT_FLOW_TYPES,
+  CONTINGENT_PURCHASE_STATUSES,
+  resolveContingentFlowType,
   CONTINGENT_CLAIM_STATUSES,
   SEAT_HOLDING_CLAIM_STATUSES,
   CONTINGENT_NAME_MAX_LENGTH,

@@ -659,7 +659,7 @@ export const ADMIN_PROMOTIONS_COPY = {
   videoPosterLabel: 'Poster image (recommended)',
   videoPosterHelp: 'Shown while the video loads. Without one the slide starts black.',
   videoRequired: 'Add a video, or switch this promotion back to an image.',
-  videoInvalid: 'That isn’t a playable video. Upload a file, or paste a YouTube or Vimeo video link.',
+  videoInvalid: 'Upload the video as an MP4, WebM or MOV file.',
   linkLabel: 'Link (optional)',
   // Deliberate non-feature: remote URLs are never health-checked. A check would
   // slow every save and could not keep a link alive after publishing anyway.
@@ -1746,6 +1746,8 @@ export const ADMIN_CREATE_EVENT_COPY = {
   prizePlaceholder: 'e.g. ₹50,000 prize pool',
   medicalLabel: 'Requires medical declaration',
   medicalDescription: 'Participants must accept a liability declaration before registering.',
+  allowCancellationLabel: 'Allow cancellation',
+  allowCancellationDescription: 'Let participants cancel after registering. Most college events keep this off.',
   weightLabel: 'Weight categories',
   genderLabel: 'Gender categories',
   ageLabel: 'Age categories',
@@ -2081,8 +2083,8 @@ export const ADMIN_CREATIVES_COPY = {
   titleLabel: 'Title',
   titleRequired: 'Give the creative a title.',
   imageRequired: 'Upload the artwork first.',
-  videoRequired: 'Upload a video, or paste a YouTube or Vimeo link.',
-  videoInvalid: 'That isn’t a playable video. Upload a file, or paste a YouTube or Vimeo video link.',
+  videoRequired: 'Upload a video file (MP4, WebM or MOV).',
+  videoInvalid: 'Upload the video as an MP4, WebM or MOV file.',
   linkUrlLabel: 'Link',
   linkUrlHelp: 'Optional. Where a tap goes. Leave empty for a display-only banner.',
   descriptionLabel: 'Description',

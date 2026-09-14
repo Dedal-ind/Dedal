@@ -26,8 +26,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useHalfVisible, useNearViewport } from '../../hooks/use-feed-observer/use-feed-observer.js';
 import { flashGlyph, prefersReducedMotion, stopMotion } from '../../design/motion.js';
-import { VIDEO_SOURCE_KINDS, describeVideoSource } from '@dedal/shared';
-import VideoLinkPreview from '../video-link-preview/VideoLinkPreview.jsx';
+import { isPlayableVideoUrl } from '../../helpers/playable-video.js';
 import { isConstrainedConnection } from '../../helpers/network-quality.js';
 
 function SpeakerIcon({ muted }) {
@@ -56,7 +55,12 @@ function SpeakerIcon({ muted }) {
   );
 }
 
-function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered }) {
+/*
+ * fallbackTitle is written into the fallback wash when there is no media. Only a
+ * surface whose title is NOT already on top of the media passes it — a fest
+ * card's name sits directly below and would be said twice.
+ */
+function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered, fallbackTitle = null }) {
   const frameRef = useRef(null);
   const videoRef = useRef(null);
   const progressRef = useRef(null);
@@ -65,24 +69,17 @@ function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered }) {
   const [isNear, setIsNear] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [hasMediaFailed, setHasMediaFailed] = useState(false);
-  /* On 2G / slow-2G a direct video shows its poster instead of attaching a
-     source: a looping preview there is a stall that spends the viewer's data.
-     Read once per card. */
+  /* On 2G / slow-2G a video shows its poster instead of attaching a source: a
+     looping preview there is a stall that spends the viewer's data. Read once
+     per card. */
   const [isConstrained] = useState(isConstrainedConnection);
 
   /*
-   * WHICH MEDIA. A direct file plays in the native <video> below. A YouTube or
-   * Vimeo link is never embedded — its player cannot be made clean — so it is
-   * shown as its thumbnail with a play mark, and a tap on the card goes to the
-   * promotion's destination or the video's own site. A video link that names
-   * nothing playable shows an "Invalid video URL" placeholder rather than
-   * silently falling back to a still.
+   * WHICH MEDIA. An uploaded video file plays in the native <video> below. Any
+   * other videoUrl is not a video and is ignored; the card falls to its image,
+   * or to the fallback.
    */
-  const videoSource = describeVideoSource(videoUrl);
-  const showsVideoLinkPreview =
-    Boolean(videoSource) && videoSource.kind !== VIDEO_SOURCE_KINDS.DIRECT;
-  const isVideo =
-    videoSource?.kind === VIDEO_SOURCE_KINDS.DIRECT && !hasMediaFailed && !isConstrained;
+  const isVideo = isPlayableVideoUrl(videoUrl) && !hasMediaFailed && !isConstrained;
   const hasImage = Boolean(imageUrl) && !hasMediaFailed;
 
   const markNear = useCallback(() => setIsNear(true), []);
@@ -170,17 +167,7 @@ function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered }) {
   }
 
   let content;
-  if (showsVideoLinkPreview) {
-    content = (
-      <VideoLinkPreview
-        videoUrl={videoUrl}
-        posterUrl={imageUrl}
-        alt={alt}
-        shouldLoad={isNear}
-        onRendered={onMediaRendered}
-      />
-    );
-  } else if (isVideo) {
+  if (isVideo) {
     content = (
       <video
         ref={videoRef}
@@ -213,12 +200,17 @@ function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered }) {
     );
   } else {
     /*
-     * No poster, no video, or a URL that 404s. A card still has to be a card,
-     * so the frame becomes the one place --accent is used at any size: a quiet
-     * violet-to-ink wash carrying nothing. The name is already directly below
-     * it, so repeating the title here would say it twice.
+     * No poster, no playable video, or a URL that 404s. A card still has to be
+     * a card, so the frame becomes a quiet violet-to-ink wash — carrying the
+     * title only when the surface asked for it (see fallbackTitle above).
      */
-    content = <div className="dsc-media__fallback" aria-hidden="true" />;
+    content = fallbackTitle ? (
+      <div className="dsc-media__fallback">
+        <span className="dsc-media__fallback-title">{fallbackTitle}</span>
+      </div>
+    ) : (
+      <div className="dsc-media__fallback" aria-hidden="true" />
+    );
   }
 
   return (

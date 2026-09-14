@@ -89,9 +89,10 @@ beforeEach(async () => {
   college = await createTestCollege();
   admin = await createTestAdministrator(college);
   fest = await createTestFest(college, admin.user, { status: "published" });
-  event = await createTestEvent(fest, admin.user, openRegistrationOverrides());
+  event = await createTestEvent(fest, admin.user, openRegistrationOverrides({ allowCancellation: true }));
   otherEvent = await createTestEvent(fest, admin.user, {
-    ...openRegistrationOverrides(),
+    allowCancellation: true,
+    ...openRegistrationOverrides({ allowCancellation: true }),
     eventName: "Other Event",
     eventSlug: "other-event",
   });
@@ -99,6 +100,66 @@ beforeEach(async () => {
 });
 
 afterAll(teardownTestDatabase);
+
+describe("an event that does not allow cancellation", () => {
+  let lockedEvent;
+
+  beforeEach(async () => {
+    // No allowCancellation in the overrides: this is the default an admin gets.
+    lockedEvent = await createTestEvent(fest, admin.user, {
+      ...openRegistrationOverrides(),
+      eventName: "No Cancellation Event",
+      eventSlug: "no-cancellation-event",
+    });
+  });
+
+  it("defaults to off and refuses a participant's cancel with a clear message", async () => {
+    expect((await EventModel.findById(lockedEvent._id)).allowCancellation).toBe(false);
+    const registration = await registerFor(lockedEvent, participant);
+
+    const byId = await cancelAs(registration.id, participant.authenticationToken);
+    expect(byId.status).toBe(403);
+    expect(byId.body.error.code).toBe("REGISTRATION_CANCELLATION_NOT_ALLOWED");
+    expect(byId.body.error.message).toBe("Cancellation is not available for this event.");
+
+    const byEvent = await request(application)
+      .post(`/api/v1/events/${lockedEvent._id}/registrations/mine/cancel`)
+      .set("Authorization", `Bearer ${participant.authenticationToken}`)
+      .send({});
+    expect(byEvent.status).toBe(403);
+    expect(byEvent.body.error.code).toBe("REGISTRATION_CANCELLATION_NOT_ALLOWED");
+
+    expect((await RegistrationModel.findById(registration.id)).status).toBe("confirmed");
+    expect(await AuditLogModel.countDocuments({ action: "registration.cancelled.bySelf" })).toBe(0);
+  });
+
+  it("still lets an administrator remove the participant", async () => {
+    const registration = await registerFor(lockedEvent, participant);
+
+    const response = await cancelAs(registration.id, admin.authenticationToken, {
+      cancellationReason: GOOD_REASON,
+    });
+    expect(response.status).toBe(200);
+    const stored = await RegistrationModel.findById(registration.id);
+    expect(stored.status).toBe("cancelled");
+    expect(stored.cancelledByRole).toBe("admin");
+  });
+
+  it("lets participants cancel once the admin turns the toggle on", async () => {
+    const registration = await registerFor(lockedEvent, participant);
+
+    const toggle = await request(application)
+      .patch(`/api/v1/fests/${fest._id}/events/${lockedEvent._id}`)
+      .set("Authorization", `Bearer ${admin.authenticationToken}`)
+      .send({ allowCancellation: true });
+    expect(toggle.status).toBe(200);
+    expect((await EventModel.findById(lockedEvent._id)).allowCancellation).toBe(true);
+
+    const response = await cancelAs(registration.id, participant.authenticationToken);
+    expect(response.status).toBe(200);
+    expect((await RegistrationModel.findById(registration.id)).status).toBe("cancelled");
+  });
+});
 
 describe("self-cancellation inside the window", () => {
   it("cancels a confirmed registration", async () => {
@@ -113,7 +174,8 @@ describe("self-cancellation inside the window", () => {
 
   it("cancels a waitlisted registration", async () => {
     const fullEvent = await createTestEvent(fest, admin.user, {
-      ...openRegistrationOverrides(),
+    allowCancellation: true,
+      ...openRegistrationOverrides({ allowCancellation: true }),
       eventSlug: "waitlist-event",
       capacity: 1,
       waitlistEnabled: true,
@@ -190,7 +252,8 @@ describe("a team registration", () => {
 
   beforeEach(async () => {
     teamEvent = await createTestEvent(fest, admin.user, {
-      ...openRegistrationOverrides(),
+    allowCancellation: true,
+      ...openRegistrationOverrides({ allowCancellation: true }),
       eventSlug: "team-cancel-event",
       eventType: "team",
       minimumTeamSize: 2,
@@ -392,7 +455,8 @@ describe("side effects of a cancellation", () => {
   /* A counted seat is one on a capped event: an unlimited event counts nothing. */
   it("frees the seat it held on a capped event", async () => {
     const cappedEvent = await createTestEvent(fest, admin.user, {
-      ...openRegistrationOverrides(),
+    allowCancellation: true,
+      ...openRegistrationOverrides({ allowCancellation: true }),
       eventSlug: "capped-event",
       capacity: 5,
     });
@@ -440,7 +504,8 @@ describe("cancelling an already-cancelled registration", () => {
 
   it("does not decrement the seat count twice", async () => {
     const cappedEvent = await createTestEvent(fest, admin.user, {
-      ...openRegistrationOverrides(),
+    allowCancellation: true,
+      ...openRegistrationOverrides({ allowCancellation: true }),
       eventSlug: "capped-twice",
       capacity: 5,
     });

@@ -36,7 +36,7 @@ async function expectError(promise, errorCode, statusCode) {
 }
 
 function makeSoloEvent(overrides = {}) {
-  return createTestEvent(fest, admin.user, openRegistrationOverrides({ eventType: "solo", ...overrides }));
+  return createTestEvent(fest, admin.user, openRegistrationOverrides({ allowCancellation: true, eventType: "solo", ...overrides }));
 }
 
 function makeTeamEvent(festForEvent, overrides = {}) {
@@ -44,6 +44,7 @@ function makeTeamEvent(festForEvent, overrides = {}) {
     festForEvent,
     admin.user,
     openRegistrationOverrides({
+      allowCancellation: true,
       eventType: "team",
       minimumTeamSize: 2,
       maximumTeamSize: 4,

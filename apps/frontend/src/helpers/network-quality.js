@@ -3,8 +3,7 @@
 //
 // On 2G or slow-2G a looping video preview is not a preview — it is a stall that
 // eats the participant's data for something they never asked to watch. So an
-// in-feed direct video file shows its poster instead of attaching a source.
-// (A YouTube / Vimeo link needs no such rule: it is only ever a thumbnail image.)
+// in-feed video file shows its poster instead of attaching a source.
 //
 // navigator.connection is Chromium-only. Where it is missing the answer is
 // "not constrained", because an unknown connection is far more often a fast one

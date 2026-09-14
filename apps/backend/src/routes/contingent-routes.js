@@ -25,6 +25,12 @@ const {
   getPurchaseVerticalCodes,
   getContingentVerticalCodes,
 } = require("../controllers/contingent-controller");
+const {
+  postPurchaseContingentCodes,
+  getMyContingentCodes,
+  getInspectContingentCode,
+  postRedeemContingentCode,
+} = require("../controllers/contingent-code-controller");
 
 /*
  * Admin CRUD plus the buyer's purchase, mounted at
@@ -149,7 +155,32 @@ contingentPurchaseRouter.post(
   asyncHandler(postCancelContingentPurchase)
 );
 
+/*
+ * The code-distribution flow, mounted at /api/v1/contingents. Every route is
+ * authentication-only: any signed-in participant may buy a bundle, read their
+ * own codes, or look up and redeem a code they were handed. "/codes/mine" is
+ * declared before "/codes/:code/*" so "mine" is never read as a code.
+ */
+const contingentCodeRouter = express.Router();
+contingentCodeRouter.get("/codes/mine", authenticationMiddleware, asyncHandler(getMyContingentCodes));
+contingentCodeRouter.get(
+  "/codes/:code/inspect",
+  authenticationMiddleware,
+  asyncHandler(getInspectContingentCode)
+);
+contingentCodeRouter.post(
+  "/codes/:code/redeem",
+  authenticationMiddleware,
+  asyncHandler(postRedeemContingentCode)
+);
+contingentCodeRouter.post(
+  "/:contingentId/purchase",
+  authenticationMiddleware,
+  asyncHandler(postPurchaseContingentCodes)
+);
+
 module.exports = {
+  contingentCodeRouter,
   inviteCodeRouter,
   festContingentRouter,
   publicContingentRouter,

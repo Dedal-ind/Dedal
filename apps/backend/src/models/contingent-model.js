@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const {
   CONTINGENT_STATUSES,
+  CONTINGENT_FLOW_TYPES,
   CONTINGENT_NAME_MAX_LENGTH,
   CONTINGENT_EVENTS_MINIMUM,
   CONTINGENT_EVENTS_MAXIMUM,
@@ -76,9 +77,27 @@ const contingentSchema = new mongoose.Schema(
     /* Denormalised bundle counter; written only through the conditional claim. */
     soldBundleCount: { type: Number, min: 0, default: 0 },
     createdByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    /*
+     * Which purchase model this bundle sells under — see CONTINGENT_FLOW_TYPES.
+     *
+     * DELIBERATELY NO SCHEMA DEFAULT. Mongoose applies defaults when it hydrates
+     * a document that lacks the path, so a default here would silently relabel
+     * every contingent that predates the field as code-distribution — and those
+     * are exactly the claim-based bundles with live claims behind them. New
+     * documents get codeDistribution from the hook below; old ones stay absent,
+     * which resolveContingentFlowType reads as claimBased.
+     */
+    flowType: { type: String, enum: Object.values(CONTINGENT_FLOW_TYPES) },
   },
   { timestamps: true }
 );
+
+contingentSchema.pre("validate", function defaultNewContingentFlowType(next) {
+  if (this.isNew && !this.flowType) {
+    this.flowType = CONTINGENT_FLOW_TYPES.CODE_DISTRIBUTION;
+  }
+  return next();
+});
 
 /*
  * The scope must be identifiable. festId is required above, so this can only

@@ -28,6 +28,8 @@ const PAYMENT_ORDER_PURPOSE_TYPES = {
   REGISTRATION: "registration",
   CONTINGENT: "contingent",
   ADD_ON: "addOn",
+  /* A code-distribution contingent purchase; its row lives in contingentPurchases. */
+  CONTINGENT_CODES: "contingentCodes",
 };
 
 /*

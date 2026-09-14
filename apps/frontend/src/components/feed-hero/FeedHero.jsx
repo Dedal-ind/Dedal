@@ -22,7 +22,7 @@
 // not a different kind of thing.
 
 import { openPromotionDestination, resolvePromotionDestination } from '../../helpers/promotion-destination.js';
-import { viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
+import { resolvePromotionMedia, viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
 import { useCallback, useRef } from 'react';
 import { useViewability } from '../../hooks/use-viewability/use-viewability.js';
 import { DELIVERY_EVENT_KINDS, reportDeliveryEvent } from '../../helpers/delivery-reporter.js';
@@ -113,9 +113,10 @@ function FestHero({ fest, isLive, nowTs, onOpen }) {
  * surface it as a resolved `festSlug` in the decide() creative block and in
  * toPublicPromotion, so the client can route without a second request.
  *
- * A tap goes to the promotion's destination URL, otherwise (for a YouTube /
- * Vimeo video) the video on its own site, otherwise its fest, otherwise nowhere
- * — the same rule as the sponsor feed card (helpers/promotion-destination.js).
+ * A tap goes to the promotion's destination URL, otherwise its fest, otherwise
+ * nowhere — the same rule as the sponsor feed card (helpers/promotion-destination.js).
+ * Media is an image or an uploaded video file; anything else is the fallback
+ * wash, with the title already carried by the scrim.
  */
 function PromotionHero({ promotion, onOpenFest }) {
   const frameRef = useRef(null);
@@ -124,8 +125,7 @@ function PromotionHero({ promotion, onOpenFest }) {
   useViewability({
     elementRef: frameRef,
     decisionKey: decisionToken,
-    /* A YouTube or Vimeo creative is shown as its thumbnail, so it is
-       measured as an image; only a direct file plays. */
+    /* Only an uploaded video file plays, so only it is measured as video. */
     mediaType: viewabilityMediaTypeFor(promotion),
     onViewable: useCallback(
       (token) => reportDeliveryEvent(token, DELIVERY_EVENT_KINDS.VIEWABLE),
@@ -139,7 +139,7 @@ function PromotionHero({ promotion, onOpenFest }) {
     }
   }, [decisionToken]);
 
-  const isVideo = promotion.mediaType === 'video' && Boolean(promotion.videoUrl);
+  const media = resolvePromotionMedia(promotion);
   const sponsorName = promotion.promoterName ?? promotion.collegeName ?? null;
   const destination = resolvePromotionDestination(promotion);
 
@@ -163,8 +163,8 @@ function PromotionHero({ promotion, onOpenFest }) {
    */
   const body = (
     <FeedMedia
-      imageUrl={promotion.imageUrl}
-      videoUrl={isVideo ? promotion.videoUrl : null}
+      imageUrl={media.imageUrl}
+      videoUrl={media.videoUrl}
       alt=""
       onMediaRendered={handleMediaRendered}
       overlay={
