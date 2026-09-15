@@ -17,10 +17,25 @@ describe('resolvePromotionMedia', () => {
     ).toEqual({ imageUrl: POSTER, videoUrl: 'https://cdn.example.com/clip.mp4', hasMedia: true });
   });
 
-  it('gives a video creative with a YouTube link no media — not even its image', () => {
+  it('shows a video creative with a YouTube link as its YouTube thumbnail, never an embed', () => {
+    const thumbnail = 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg';
+    for (const videoUrl of [
+      'https://youtu.be/dQw4w9WgXcQ',
+      'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      'https://youtube.com/shorts/dQw4w9WgXcQ',
+    ]) {
+      expect(resolvePromotionMedia({ mediaType: 'video', videoUrl, imageUrl: POSTER })).toEqual({
+        imageUrl: thumbnail,
+        videoUrl: null,
+        hasMedia: true,
+      });
+    }
+  });
+
+  it('falls back to the creative image when a video link is neither a file nor YouTube', () => {
     expect(
-      resolvePromotionMedia({ mediaType: 'video', videoUrl: 'https://youtu.be/dQw4w9WgXcQ', imageUrl: POSTER }),
-    ).toEqual({ imageUrl: null, videoUrl: null, hasMedia: false });
+      resolvePromotionMedia({ mediaType: 'video', videoUrl: 'https://example.com/page', imageUrl: POSTER }),
+    ).toEqual({ imageUrl: POSTER, videoUrl: null, hasMedia: true });
   });
 
   it('gives a video creative with no file no media', () => {

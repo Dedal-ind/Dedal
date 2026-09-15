@@ -7,10 +7,9 @@
 //
 //   solo + free   one screen, no step bar, one button: "Register".
 //   solo + paid   the same screen; the button carries the price.
-//   team          two steps — describe the team, then review and commit —
-//                 with the shared .drg-steps bar, because here there genuinely
-//                 is a second step. A progress bar that only ever reads 1 of 1
-//                 invents a journey out of a single tap, so solo gets none.
+//   team          bare minimum: optional team name, custom questions, one
+//                 button. Nobody else is named here — the captain gets an
+//                 invite code and teammates join themselves with it.
 //
 // Everything visual comes from design/dedal-tokens.css → design/registration.css
 // (the `drg-` furniture shared with checkout, success and contingent purchase)
@@ -20,13 +19,12 @@
 //
 // SUBMIT PATHS, unchanged from the version this replaces:
 //   solo            POST /events/:eventId/registrations/solo
-//   team, roster    POST /events/:eventId/registrations/team  { memberEmails }
-//   team, by code   POST /teams  { eventId, teamName } → a forming team whose
+//   team            POST /teams  { eventId, teamName } → a forming team whose
 //                   invite code the captain shares; members self-join later.
 // A nonzero total is handed to /checkout, which owns the gateway. Nothing on
 // this screen talks to Razorpay.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import apiClient from '../../api-client/api-client.js';
@@ -43,6 +41,9 @@ import {
   formatPaiseAsRupees,
 } from '../../helpers/fee-math.js';
 import EventContextCard from '../../components/event-context-card/EventContextCard.jsx';
+import InviteCodeShare from '../../components/invite-code-share/InviteCodeShare.jsx';
+import DrawnCheck from '../../components/drawn-check/DrawnCheck.jsx';
+import EventCrewContacts from '../../components/event-crew-contacts/EventCrewContacts.jsx';
 import { BackIcon, OfflineIcon, RetryIcon } from '../../components/detail-icons/DetailIcons.jsx';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
@@ -75,10 +76,6 @@ const CHOICES_AS_SELECT_ABOVE = 6;
    the field refuses locally exactly what the API would refuse remotely rather
    than inventing a stricter rule of its own. */
 const CONTACT_PHONE_PATTERN = /^\+?[0-9][0-9 -]{3,18}[0-9]$/;
-/* Deliberately loose. The server runs validator.isEmail; anything narrower here
-   would reject addresses the API accepts, and this check exists to catch typing
-   mistakes, not to police the RFC. */
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const FOOD_PREFERENCES = [
   { value: 'veg', label: 'Vegetarian' },
@@ -200,27 +197,11 @@ function RegistrationFormScreen() {
   const [fest, setFest] = useState(null);
   const [loadState, setLoadState] = useState('loading');
 
-  const [step, setStep] = useState(1);
-  /*
-   * THE TEAM TRADE-OFF, made visible rather than argued away.
-   *
-   * The screen this replaces used ONLY the invite-code path: the captain names
-   * a team, the server returns a code, members join themselves. That is a real
-   * product decision — it never asks the captain for addresses they may not
-   * have, and each joiner passes their own profile checks. Replacing it with a
-   * roster is a reversal, not a restyle.
-   *
-   * So both live here. Roster is the default because the brief asks for member
-   * slots, and the code path is one tap away on step 1. They post to different
-   * endpoints and produce different teams (LOCKED vs FORMING), which is why
-   * this is a mode and not a rendering detail.
-   */
-  const [teamMode, setTeamMode] = useState('roster');
-
   const [answers, setAnswers] = useState({});
   const [contactPhone, setContactPhone] = useState(() => currentUser?.phoneNumber ?? '');
   const [teamName, setTeamName] = useState('');
-  const [memberEmails, setMemberEmails] = useState([]);
+  /* The team created on a free registration; its invite code is the success view. */
+  const [createdTeam, setCreatedTeam] = useState(null);
   const [categories, setCategories] = useState({ weight: '', gender: '', age: '' });
   const [acceptedMedical, setAcceptedMedical] = useState(false);
   const [isFoodSelected, setIsFoodSelected] = useState(false);
@@ -262,21 +243,7 @@ function RegistrationFormScreen() {
   }, [loadEvent]);
 
   const isTeam = event?.eventType === 'team';
-  const minimumTeamSize = event?.minimumTeamSize ?? 1;
   const maximumTeamSize = event?.maximumTeamSize ?? 1;
-
-  /* Open with exactly the slots the event requires. Fewer would make the first
-     thing the form says be "add more"; more would make it "delete some". */
-  const slotsPrimed = useRef(false);
-  useEffect(() => {
-    if (!isTeam || slotsPrimed.current) {
-      return;
-    }
-    slotsPrimed.current = true;
-    setMemberEmails(Array.from({ length: Math.max(0, minimumTeamSize - 1) }, () => ''));
-  }, [isTeam, minimumTeamSize]);
-
-  const captainEmail = (currentUser?.emailAddress ?? '').trim().toLowerCase();
 
   const questions = useMemo(
     () =>
@@ -301,13 +268,8 @@ function RegistrationFormScreen() {
     ({ offer }) => offer.offerKey === 'accommodation',
   );
 
-  const filledEmails = memberEmails.map((value) => value.trim()).filter(Boolean);
-  /*
-   * Seats billed. The roster endpoint charges the WHOLE team (captain + roster)
-   * so a perPerson event multiplies by the full count; the invite-code path
-   * registers the captain alone and each joiner pays their own share later.
-   */
-  const teamSize = isTeam && teamMode === 'roster' ? 1 + filledEmails.length : 1;
+  /* Seats billed: the captain alone. Each joiner pays their own share later. */
+  const teamSize = 1;
 
   function readChoice(scopedKey) {
     return offerChoices[scopedKey] ?? { selected: false, numberOfPeople: 1, numberOfDays: 1 };
@@ -406,40 +368,13 @@ function RegistrationFormScreen() {
       ? 'Enter a phone number — digits, spaces or dashes, with an optional leading +.'
       : '';
 
+  /* Optional. The API requires 2–60 characters, so a blank name is sent as a
+     default built from the captain's name; only a one-character name errors. */
   const trimmedTeamName = teamName.trim();
-  const teamNameError = !isTeam
-    ? ''
-    : trimmedTeamName.length === 0
-      ? 'Your team needs a name.'
-      : trimmedTeamName.length < 2 || trimmedTeamName.length > 60
-        ? 'Use between 2 and 60 characters.'
-        : '';
-
-  /* Per-slot errors. Duplicates are flagged on the LATER slot so the first
-     occurrence stays the one that looks correct. */
-  const memberErrors = memberEmails.map((raw, index) => {
-    const value = raw.trim().toLowerCase();
-    const isRequiredSlot = index < minimumTeamSize - 1;
-    if (!value) {
-      return isRequiredSlot ? 'Add an email address for this member.' : '';
-    }
-    if (!EMAIL_PATTERN.test(value)) {
-      return 'That does not look like an email address.';
-    }
-    if (value === captainEmail) {
-      return 'You are already on the team as captain.';
-    }
-    if (memberEmails.slice(0, index).some((other) => other.trim().toLowerCase() === value)) {
-      return 'This address is already on the roster.';
-    }
-    return '';
-  });
-
-  const rosterSize = 1 + filledEmails.length;
-  const rosterSizeError =
-    isTeam && teamMode === 'roster' && rosterSize > maximumTeamSize
-      ? `This event allows at most ${maximumTeamSize} people per team.`
-      : '';
+  const teamNameError =
+    isTeam && trimmedTeamName.length === 1 ? 'Use at least 2 characters, or leave it blank.' : '';
+  const submittedTeamName =
+    trimmedTeamName || `${currentUser?.fullName?.trim() || 'My'}'s team`.slice(0, 60);
 
   const medicalError =
     event?.requiresMedicalDeclaration && !acceptedMedical
@@ -450,26 +385,14 @@ function RegistrationFormScreen() {
       ? 'Pick one — including "no meal needed", which is a real answer.'
       : '';
 
-  const stepOneValid =
-    !teamNameError &&
-    !rosterSizeError &&
-    (teamMode === 'code' || memberErrors.every((message) => !message));
-
   const formValid =
     Object.keys(questionErrors).length === 0 &&
-    !phoneError &&
     !medicalError &&
-    !foodError &&
-    (!isTeam || stepOneValid);
+    (isTeam ? !teamNameError : !phoneError && !foodError);
 
   const isSending = submitState === 'sending';
   const isDone = submitState === 'done';
-  /* Team step 1 does not submit, so it is gated on step-1 fields alone —
-     holding the whole form to account before the person has seen the rest of it
-     would disable the button for reasons not yet on screen. */
-  const isStepOne = isTeam && teamMode === 'roster' && step === 1;
-  const canAct =
-    isOnline && !isBlocked && !isSending && !isDone && (isStepOne ? stepOneValid : formValid);
+  const canAct = isOnline && !isBlocked && !isSending && !isDone && formValid;
 
   /* ── Submitting ────────────────────────────────────────────────────────── */
 
@@ -524,17 +447,11 @@ function RegistrationFormScreen() {
 
     try {
       let result;
-      if (isTeam && teamMode === 'roster') {
-        result = await apiClient.post(`/events/${event.id}/registrations/team`, {
-          ...sharedPayload,
-          teamName: trimmedTeamName,
-          memberEmails: filledEmails,
-        });
-      } else if (isTeam) {
+      if (isTeam) {
         result = await apiClient.post('/teams', {
           ...sharedPayload,
           eventId: event.id,
-          teamName: trimmedTeamName,
+          teamName: submittedTeamName,
         });
       } else {
         result = await apiClient.post(`/events/${event.id}/registrations/solo`, sharedPayload);
@@ -555,6 +472,9 @@ function RegistrationFormScreen() {
             payment: result.payment,
           },
         });
+      } else if (isTeam && result.team?.inviteCode) {
+        setCreatedTeam(result.team);
+        window.scrollTo({ top: 0 });
       } else if (isTeam) {
         navigate('/my-teams', { replace: true });
       } else if (typeof created?.id === 'string' && created.id !== '') {
@@ -586,11 +506,6 @@ function RegistrationFormScreen() {
     if (!canAct) {
       return;
     }
-    if (isStepOne) {
-      setStep(2);
-      window.scrollTo({ top: 0 });
-      return;
-    }
     submitRegistration();
   }
 
@@ -619,14 +534,8 @@ function RegistrationFormScreen() {
     if (gate) {
       return gate.label;
     }
-    if (isStepOne) {
-      return 'Review team';
-    }
-    if (isTeam && teamMode === 'roster') {
-      return isPaid ? `Pay ${totalLabel} for ${rosterSize} members` : 'Register team';
-    }
     if (isTeam) {
-      return isPaid ? `Pay ${totalLabel} and get a code` : 'Create team and get a code';
+      return isPaid ? `Register for ${totalLabel}` : 'Register';
     }
     return isPaid ? `Pay ${totalLabel}` : 'Register';
   }
@@ -643,7 +552,7 @@ function RegistrationFormScreen() {
         ? `Closed on ${formatShortDate(event.registrationClosesAt)}.`
         : 'This event is no longer taking registrations.';
     }
-    if (isStepOne ? !stepOneValid : !formValid) {
+    if (!formValid) {
       return 'Fill all required fields.';
     }
     return null;
@@ -683,8 +592,39 @@ function RegistrationFormScreen() {
     );
   }
 
+  if (createdTeam) {
+    return (
+      <div className="drg-screen drf-screen drg-screen--team">
+        <div className="drg-col">
+          <section className="drg-section">
+            <DrawnCheck label="Team created" />
+            <h1 className="drg-section__title">{createdTeam.teamName}</h1>
+            <div className="dcc-invite">
+              <InviteCodeShare
+                code={createdTeam.inviteCode}
+                label={event.eventName}
+                shareTitle={createdTeam.teamName}
+              />
+              <p className="dcc-message">Share this code with your teammates.</p>
+            </div>
+          </section>
+        </div>
+        <div className="drg-actions">
+          <div className="drg-actions__inner">
+            <button
+              type="button"
+              className="drg-button"
+              onClick={() => navigate('/my-teams', { replace: true })}
+            >
+              <span className="drg-button__label">Done</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const disabledReason = readDisabledReason();
-  const isRosterFlow = isTeam && teamMode === 'roster';
   const fieldsDisabled = !isOnline || isBlocked || isSending || isDone;
   const hasCategories =
     (event.weightCategories?.length ?? 0) > 0 ||
@@ -704,8 +644,8 @@ function RegistrationFormScreen() {
         <button
           type="button"
           className="drf-back"
-          onClick={() => (isStepOne || !isRosterFlow ? navigateBack(navigate, '/') : setStep(1))}
-          aria-label={isRosterFlow && step === 2 ? 'Back to team details' : 'Back'}
+          onClick={() => navigateBack(navigate, '/')}
+          aria-label="Back"
         >
           <BackIcon size="lg" />
         </button>
@@ -727,20 +667,6 @@ function RegistrationFormScreen() {
           handleAction();
         }}
       >
-        {/* The step bar exists only where there genuinely are two steps. */}
-        {isRosterFlow ? (
-          <div className="drg-steps" aria-label={`Step ${step} of 2`}>
-            <span className={`drg-steps__item ${step >= 1 ? 'drg-steps__item--active' : ''}`}>
-              <span className="drg-steps__bar" />
-              <span className="drg-steps__label">Team details</span>
-            </span>
-            <span className={`drg-steps__item ${step === 2 ? 'drg-steps__item--active' : ''}`}>
-              <span className="drg-steps__bar" />
-              <span className="drg-steps__label">Review</span>
-            </span>
-          </div>
-        ) : null}
-
         {isBlocked ? (
           <div className="drg-state" role="status">
             <p className="drg-state__text">{gate.headline}</p>
@@ -748,13 +674,16 @@ function RegistrationFormScreen() {
           </div>
         ) : null}
 
-        {/* ── Step 1 (team) or the single solo screen ─────────────────────── */}
-        {!isBlocked && (!isRosterFlow || step === 1) ? (
+        {!isBlocked ? (
           <>
             {isTeam ? (
               <section className="drg-section">
-                <h2 className="drg-section__title">Your team</h2>
-                <Field id="team-name" label="Team name" error={touched.teamName ? teamNameError : ''}>
+                <Field
+                  id="team-name"
+                  label="Team name"
+                  optional
+                  error={touched.teamName ? teamNameError : ''}
+                >
                   {(describedBy) => (
                     <input
                       id="team-name"
@@ -770,134 +699,9 @@ function RegistrationFormScreen() {
                     />
                   )}
                 </Field>
-
-                {/* The captain is the signed-in user and cannot be edited here:
-                    an editable name would imply it changes who is registering. */}
-                <dl className="drf-facts">
-                  <div className="drf-fact">
-                    <dt className="drf-fact__key">Captain</dt>
-                    <dd className="drf-fact__value">{currentUser?.fullName ?? 'You'}</dd>
-                  </div>
-                  <div className="drf-fact">
-                    <dt className="drf-fact__key">Email</dt>
-                    <dd className="drf-fact__value">{currentUser?.emailAddress ?? '—'}</dd>
-                  </div>
-                </dl>
               </section>
             ) : null}
 
-            {isRosterFlow ? (
-              <section className="drg-section">
-                <h2 className="drg-section__title">Members</h2>
-                {/*
-                  EMAIL ONLY, AND SAID PLAINLY.
-                  The server's roster endpoint takes memberEmails and nothing
-                  else — there is no name field on a team member. A name box
-                  here would be typed, validated, and then dropped on the way
-                  out, which is worse than not asking. The address is what
-                  identifies the person and what the invitation is sent to.
-                */}
-                <p className="drg-field__hint">
-                  {minimumTeamSize === maximumTeamSize
-                    ? `This event needs teams of exactly ${minimumTeamSize}, including you.`
-                    : `Teams are ${minimumTeamSize} to ${maximumTeamSize} people, including you.`}{' '}
-                  We invite each member by email; they do not need an account yet.
-                </p>
-
-                <div className="drf-slots">
-                  {memberEmails.map((value, index) => {
-                    const slotId = `member-${index}`;
-                    const error = touched[slotId] ? memberErrors[index] : '';
-                    return (
-                      <Field
-                        key={slotId}
-                        id={slotId}
-                        label={`Member ${index + 2}`}
-                        optional={index >= minimumTeamSize - 1}
-                        error={error}
-                      >
-                        {(describedBy) => (
-                          <span className="drf-slot__row">
-                            <input
-                              id={slotId}
-                              className="drg-input"
-                              type="email"
-                              inputMode="email"
-                              autoComplete="off"
-                              placeholder="teammate@college.edu"
-                              value={value}
-                              disabled={fieldsDisabled}
-                              aria-invalid={Boolean(error)}
-                              aria-describedby={describedBy}
-                              onChange={(changeEvent) =>
-                                setMemberEmails((previous) =>
-                                  previous.map((entry, position) =>
-                                    position === index ? changeEvent.target.value : entry,
-                                  ),
-                                )
-                              }
-                              onBlur={() =>
-                                setTouched((previous) => ({ ...previous, [slotId]: true }))
-                              }
-                            />
-                            <button
-                              type="button"
-                              className="drf-remove"
-                              aria-label={`Remove member ${index + 2}`}
-                              disabled={fieldsDisabled || memberEmails.length <= minimumTeamSize - 1}
-                              onClick={() =>
-                                setMemberEmails((previous) =>
-                                  previous.filter((_, position) => position !== index),
-                                )
-                              }
-                            />
-                          </span>
-                        )}
-                      </Field>
-                    );
-                  })}
-
-                  <button
-                    type="button"
-                    className="drf-add"
-                    disabled={fieldsDisabled || rosterSize >= maximumTeamSize}
-                    onClick={() => setMemberEmails((previous) => [...previous, ''])}
-                  >
-                    Add another member
-                  </button>
-
-                  {rosterSizeError ? (
-                    <span className="drg-field__error" role="alert">
-                      {rosterSizeError}
-                    </span>
-                  ) : null}
-                </div>
-              </section>
-            ) : null}
-
-            {isTeam ? (
-              <section className="drg-section">
-                {/* The old flow, kept reachable. See the teamMode comment. */}
-                <button
-                  type="button"
-                  className="drg-button drg-button--quiet"
-                  disabled={fieldsDisabled}
-                  onClick={() => {
-                    setTeamMode(isRosterFlow ? 'code' : 'roster');
-                    setStep(1);
-                  }}
-                >
-                  <span className="drg-button__label">
-                    {isRosterFlow ? 'Invite by code instead' : 'Enter member emails instead'}
-                  </span>
-                </button>
-                <p className="drg-field__hint" style={{ marginTop: 'var(--s2)' }}>
-                  {isRosterFlow
-                    ? 'Creates the team once everyone is listed. Choose the code if you do not have their addresses yet.'
-                    : 'You get an invite code to share; members join themselves and each pays their own share.'}
-                </p>
-              </section>
-            ) : null}
 
             {/* Custom questions. Nothing at all is rendered when the event
                 defines none — no heading, no empty section, no gap. */}
@@ -1023,6 +827,9 @@ function RegistrationFormScreen() {
               </section>
             ) : null}
 
+            {/* Teams get only the name and the questions; nobody else's details
+                and no extras are collected here. */}
+            {isTeam ? null : (
             <section className="drg-section">
               <h2 className="drg-section__title">Contact</h2>
               <Field
@@ -1049,8 +856,9 @@ function RegistrationFormScreen() {
                 )}
               </Field>
             </section>
+            )}
 
-            {hasCategories ? (
+            {!isTeam && hasCategories ? (
               <section className="drg-section">
                 <h2 className="drg-section__title">Category</h2>
                 {/*
@@ -1116,7 +924,7 @@ function RegistrationFormScreen() {
               </section>
             ) : null}
 
-            {activeOffers.length > 0 ? (
+            {!isTeam && activeOffers.length > 0 ? (
               <section className="drg-section">
                 <h2 className="drg-section__title">Add-ons</h2>
                 {activeOffers.map(({ offer, scope }) => {
@@ -1282,7 +1090,7 @@ function RegistrationFormScreen() {
               </section>
             ) : null}
 
-            {isPaid ? (
+            {!isTeam && isPaid ? (
               <section className="drg-section">
                 <h2 className="drg-section__title">What you pay</h2>
                 {/* Display only — the backend recomputes this authoritatively on
@@ -1311,45 +1119,9 @@ function RegistrationFormScreen() {
           </>
         ) : null}
 
-        {/* ── Step 2: review ─────────────────────────────────────────────── */}
-        {!isBlocked && isRosterFlow && step === 2 ? (
-          <section className="drg-section">
-            <h2 className="drg-section__title">Check this over</h2>
-            <dl className="drf-facts">
-              <div className="drf-fact">
-                <dt className="drf-fact__key">Event</dt>
-                <dd className="drf-fact__value">{event.eventName}</dd>
-              </div>
-              {event.festName ? (
-                <div className="drf-fact">
-                  <dt className="drf-fact__key">Fest</dt>
-                  <dd className="drf-fact__value">{event.festName}</dd>
-                </div>
-              ) : null}
-              <div className="drf-fact">
-                <dt className="drf-fact__key">Team</dt>
-                <dd className="drf-fact__value">{trimmedTeamName}</dd>
-              </div>
-              <div className="drf-fact">
-                <dt className="drf-fact__key">Captain</dt>
-                <dd className="drf-fact__value">{currentUser?.emailAddress ?? '—'}</dd>
-              </div>
-              {filledEmails.map((email, index) => (
-                <div className="drf-fact" key={email}>
-                  <dt className="drf-fact__key">Member {index + 2}</dt>
-                  <dd className="drf-fact__value">{email}</dd>
-                </div>
-              ))}
-              <div className="drf-fact">
-                <dt className="drf-fact__key">Total</dt>
-                <dd className="drf-fact__value">{isPaid ? totalLabel : 'Free'}</dd>
-              </div>
-            </dl>
-            <p className="drg-field__hint" style={{ marginTop: 'var(--s3)' }}>
-              Everyone listed is invited by email and holds a place as soon as this goes through.
-            </p>
-          </section>
-        ) : null}
+        {/* Who runs this event, right above the button. Renders nothing when
+            no crew is assigned. */}
+        {!isBlocked ? <EventCrewContacts eventId={event.id} festId={fest?.id ?? event.festId} /> : null}
       </form>
 
       <div className="drg-actions">

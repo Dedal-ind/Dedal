@@ -33,6 +33,8 @@ import { isFestLive } from '../../helpers/feed-format.js';
  * to put there — which is also the only situation in which someone opening
  * this app would rather see an advertisement than an empty space.
  */
+import { resolvePromotionMedia } from '../../helpers/promotion-media.js';
+
 export function selectHero(fests, promotions, nowTs) {
   const live = fests.filter((fest) => isFestLive(fest.startsOn, fest.endsOn, nowTs));
   if (live.length > 0) {
@@ -44,15 +46,31 @@ export function selectHero(fests, promotions, nowTs) {
     return { kind: 'fest', fest: mostRecentlyStarted, isLive: true };
   }
 
+  /* A promotion that can actually show something — a playable video first,
+     then any image (including a YouTube thumbnail). */
+  const withMedia = promotions.filter((promotion) => resolvePromotionMedia(promotion).hasMedia);
+  const bestPromotion =
+    withMedia.find((promotion) => resolvePromotionMedia(promotion).videoUrl) ??
+    withMedia[0] ??
+    null;
+
   const upcoming = fests
     .filter((fest) => new Date(fest.startsOn).getTime() > nowTs)
     .sort((a, b) => new Date(a.startsOn).getTime() - new Date(b.startsOn).getTime());
   if (upcoming.length > 0) {
-    return { kind: 'fest', fest: upcoming[0], isLive: false };
+    /* An upcoming fest with no poster and no video would fill the largest
+       element on the screen with a blank wash. A sponsor with real media is the
+       better use of it; the fest still leads the feed below. */
+    const nextFest = upcoming[0];
+    const festHasMedia = Boolean(nextFest.bannerImageUrl || nextFest.bannerVideoUrl || nextFest.videoUrl);
+    if (!festHasMedia && bestPromotion) {
+      return { kind: 'promotion', promotion: bestPromotion };
+    }
+    return { kind: 'fest', fest: nextFest, isLive: false };
   }
 
   if (promotions.length > 0) {
-    return { kind: 'promotion', promotion: promotions[0] };
+    return { kind: 'promotion', promotion: bestPromotion ?? promotions[0] };
   }
   return null;
 }

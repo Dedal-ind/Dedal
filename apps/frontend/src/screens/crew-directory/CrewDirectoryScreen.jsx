@@ -44,15 +44,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Mail, Phone, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
+import CrewRow from '../../components/crew-row/CrewRow.jsx';
+import { STAFF_ROLES } from '../../components/crew-row/staff-roles.js';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import apiClient from '../../api-client/api-client.js';
 import InlineError from '../../components/inline-error/InlineError.jsx';
 import { CREW_DIRECTORY_COPY } from '../../brand/brand-copy.js';
 import './crew-directory.css';
-
-const STAFF_ROLES = { COORDINATOR: 'coordinator', VOLUNTEER: 'volunteer' };
 
 const COPY = {
   title: 'Crew & contacts',
@@ -67,60 +67,6 @@ const COPY = {
   notRegisteredAction: 'Browse events',
   noMatch: (query) => `Nothing matches “${query}”.`,
 };
-
-/*
- * One person. The contact actions are the point of the screen — a name with no
- * way to reach it is a list of strangers — so they are 44px targets rather than
- * the 24px glyphs they were.
- *
- * THE NUMBER AND THE ADDRESS ARE NEVER RENDERED AS TEXT, only as the icon that
- * opens them. A phone number on screen is a phone number that gets screenshotted
- * and forwarded; a `tel:` link does the one thing the reader actually wants and
- * leaves the value in the markup where it belongs. The volunteer gave us a
- * number so participants could reach them, not so it could be published.
- *
- * An action is HIDDEN when its field is null, not disabled. A greyed-out call
- * button advertises a capability that does not exist. With neither, the row is
- * just a name and a role — still worth showing, because knowing who is running
- * the event is useful even when you cannot ring them.
- */
-function CrewRow({ person }) {
-  const hasPhone = Boolean(person.phoneNumber);
-  const hasEmail = Boolean(person.emailAddress);
-  const roleLabel = person.role === STAFF_ROLES.COORDINATOR ? COPY.coordinator : COPY.volunteer;
-
-  return (
-    <div className="dcw-card">
-      <span className="dcw-card__body">
-        <span className="dcw-card__name">{person.fullName ?? '—'}</span>
-        <span className="dcw-role">{roleLabel}</span>
-      </span>
-
-      {hasEmail || hasPhone ? (
-        <span className="dcw-card__actions">
-          {hasEmail ? (
-            <a
-              className="dcw-action"
-              href={`mailto:${person.emailAddress}`}
-              aria-label={`Email ${person.fullName ?? 'this crew member'}`}
-            >
-              <Mail size={20} aria-hidden="true" />
-            </a>
-          ) : null}
-          {hasPhone ? (
-            <a
-              className="dcw-action"
-              href={`tel:${person.phoneNumber}`}
-              aria-label={`Call ${person.fullName ?? 'this crew member'}`}
-            >
-              <Phone size={20} aria-hidden="true" />
-            </a>
-          ) : null}
-        </span>
-      ) : null}
-    </div>
-  );
-}
 
 function EventSection({ group }) {
   return (

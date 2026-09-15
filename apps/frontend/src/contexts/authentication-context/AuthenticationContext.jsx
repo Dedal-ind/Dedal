@@ -1,13 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 // AuthenticationContext.jsx
 // Holds the signed-in participant's JWT token and user object for the whole app.
-// The token is mirrored to storage (via the api-client helpers) — sessionStorage
-// on desktop (re-login each visit) and localStorage on mobile (remembers). The axios
-// interceptor can attach it and so a refresh keeps the session. Screens read and
+// The token is mirrored to localStorage (via the api-client helpers) on every
+// screen size, so all tabs and windows share one login. The axios interceptor can
+// attach it and so a refresh keeps the session. Screens read and
 // mutate auth state through the useAuthentication hook.
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import apiClient, {
+  getAuthStorage,
   getStoredAuthToken,
   storeAuthToken,
   clearStoredAuthToken,
@@ -77,8 +78,8 @@ export function AuthenticationProvider({ children }) {
   const [staffAssignments, setStaffAssignments] = useState([]);
 
   useEffect(() => {
-    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-    const storage = isDesktop ? window.sessionStorage : window.localStorage;
+    // The same storage as the token, so the cached user is shared across tabs too.
+    const storage = getAuthStorage();
     // Clear both to avoid duplicates
     window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
     window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);

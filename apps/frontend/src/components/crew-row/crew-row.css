@@ -1,0 +1,37 @@
+/*
+ * crew-row.css — the compact crew row used inside a form (registration form's
+ * "Event contacts"). The full-size row lives in crew-directory.css.
+ *
+ * Compact is about vertical space, not touch targets: the name and pill sit on
+ * one line and the card padding shrinks, but each icon keeps its 44px target.
+ */
+
+.dcw-card--compact {
+  min-height: 52px;
+  padding: var(--s1) var(--s1) var(--s1) var(--s3);
+}
+
+.dcw-card--compact .dcw-card__body {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.dcw-card--compact .dcw-card__name {
+  min-width: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dcw-card--compact .dcw-role {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 1px var(--s2);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.dcw-card--compact .dcw-card__actions {
+  gap: 0;
+}

@@ -297,3 +297,16 @@
   font-size: var(--body-m-size);
   line-height: var(--body-m-line);
 }
+
+/* Inside the "Join with code" popup: the sheet owns the frame, padding and
+   scroll, so the page chrome falls away. */
+.djc-sheet {
+  display: block;
+}
+
+.djc-page--sheet {
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}

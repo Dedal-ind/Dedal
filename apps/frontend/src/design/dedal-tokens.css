@@ -285,3 +285,11 @@
     --s8: 46px;
   }
 }
+
+/* Code and OTP boxes: a --primary to --accent gradient border, so the row of
+   boxes is clearly visible on every surface. Painted as two background layers
+   (card fill inside, gradient on the border) so the radius is kept. */
+:root {
+  --code-box-border-width: 1.5px;
+  --code-box-border: linear-gradient(135deg, var(--primary), var(--accent));
+}

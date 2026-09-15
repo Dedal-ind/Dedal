@@ -867,3 +867,25 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* Visible, brand-coloured box border — see --code-box-border in dedal-tokens.css. */
+.dsi-otp__box {
+  border: var(--code-box-border-width) solid transparent;
+  background:
+    linear-gradient(var(--surface-card), var(--surface-card)) padding-box,
+    var(--code-box-border) border-box;
+}
+
+.dsi-otp--error .dsi-otp__box {
+  background:
+    linear-gradient(var(--surface-card), var(--surface-card)) padding-box,
+    linear-gradient(var(--primary), var(--primary)) border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsi-otp--shake .dsi-otp__box {
+    background:
+      linear-gradient(rgb(255 59 48 / 8%), rgb(255 59 48 / 8%)) padding-box,
+      linear-gradient(var(--primary), var(--primary)) border-box;
+  }
+}

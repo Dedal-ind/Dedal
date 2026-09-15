@@ -128,7 +128,12 @@ function MedicalCheck({ checked, onChange }) {
   );
 }
 
-function JoinCodeScreen() {
+/*
+ * `inSheet`: rendered inside a BottomSheet (the "Join with code" popup on an
+ * event page). The sheet supplies the title and the close control, so the page
+ * back bar and heading are dropped; the flow itself is identical.
+ */
+function JoinCodeScreen({ inSheet = false }) {
   const navigate = useNavigate();
   const isOnline = useOnlineStatus();
 
@@ -402,14 +407,16 @@ function JoinCodeScreen() {
   const onBack = step === 'preview' || step === 'teamInvite' ? startOver : () => navigateBack(navigate, '/');
 
   return (
-    <div className="djc-screen">
-      <div className="djc-backbar">
-        <button type="button" className="djc-backbar__button" onClick={onBack} aria-label="Go back">
-          <BackIcon size="lg" />
-        </button>
-      </div>
+    <div className={inSheet ? 'djc-sheet' : 'djc-screen'}>
+      {inSheet ? null : (
+        <div className="djc-backbar">
+          <button type="button" className="djc-backbar__button" onClick={onBack} aria-label="Go back">
+            <BackIcon size="lg" />
+          </button>
+        </div>
+      )}
 
-      <main className="djc-page">
+      <main className={inSheet ? 'djc-page djc-page--sheet' : 'djc-page'}>
         {!isOnline ? (
           <p className="djc-offline" role="status">
             <OfflineIcon size="sm" />
@@ -420,7 +427,7 @@ function JoinCodeScreen() {
         {step === 'entry' ? (
           <>
             <header className="djc-head">
-              <h1 className="djc-title">{COPY.title}</h1>
+              {inSheet ? null : <h1 className="djc-title">{COPY.title}</h1>}
               <p className="djc-lede">{COPY.lede}</p>
             </header>
             <TeamCodeEntry

@@ -61,7 +61,7 @@ function ContingentCodeList({ codes, shareTitle = '', showMessage = true }) {
 
       <ul className="dcc-cards">
         {codes.map((entry) => (
-          <ContingentCodeCard key={entry.code} entry={entry} />
+          <ContingentCodeCard key={entry.code} entry={entry} shareTitle={shareTitle} />
         ))}
       </ul>
     </div>

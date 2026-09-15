@@ -146,3 +146,17 @@
 .dtc-code--invalid {
   border-color: var(--primary);
 }
+
+/* Visible, brand-coloured box border — see --code-box-border in dedal-tokens.css. */
+.dtc-code {
+  border: var(--code-box-border-width) solid transparent;
+  background:
+    linear-gradient(var(--surface-card), var(--surface-card)) padding-box,
+    var(--code-box-border) border-box;
+}
+
+.dtc-code--invalid {
+  background:
+    linear-gradient(var(--surface-card), var(--surface-card)) padding-box,
+    linear-gradient(var(--primary), var(--primary)) border-box;
+}

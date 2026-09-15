@@ -28,6 +28,7 @@ import gsap from 'gsap';
 import apiClient from '../../api-client/api-client.js';
 import BottomSheet from '../../components/bottom-sheet/BottomSheet.jsx';
 import AddOnShop from '../../components/add-on-shop/AddOnShop.jsx';
+import JoinCodeScreen from '../join-code/JoinCodeScreen.jsx';
 import {
   isLiveRegistrationStatus,
   canPurchaseAddOns,
@@ -221,6 +222,7 @@ function EventDetailScreen() {
   // One FAQ open at a time — an accordion, not a set of independent toggles.
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [isAddOnSheetOpen, setIsAddOnSheetOpen] = useState(false);
+  const [isJoinCodeSheetOpen, setIsJoinCodeSheetOpen] = useState(false);
 
   const descriptionRef = useRef(null);
   const aboutBodyRef = useRef(null);
@@ -575,20 +577,19 @@ function EventDetailScreen() {
   }
 
   /*
-   * "Join with code" opens the join screen, which takes EVERY kind of code — a
-   * contingent code a group shared, or a team's own invite code — and shows the
-   * event before anything is written. The inline team-code panel it replaces
-   * could only join teams.
+   * "Join with code" opens a popup over this page with the join flow, which
+   * takes EVERY kind of code — a contingent code a group shared, or a team's own
+   * invite code — and shows the event before anything is written. The same flow
+   * still answers /join-code for shared links.
    */
   function handleOpenJoinWithCode() {
-    const target = event ? `/join-code?event=${event.id}` : '/join-code';
     if (!isAuthenticated) {
-      // Same stash as handleRegister, so sign-in lands on the join screen.
-      saveIntendedRoute(target);
+      // Same stash as handleRegister, so sign-in lands back on this event.
+      saveIntendedRoute(location.pathname);
       navigate('/');
       return;
     }
-    navigate(target);
+    setIsJoinCodeSheetOpen(true);
   }
 
   function handleOpenBundle(bundle) {
@@ -1383,6 +1384,18 @@ function EventDetailScreen() {
                       returnTo={location.pathname}
                       hideTitle
                     />
+                  </BottomSheet>
+                ) : null}
+
+                {/* The "Join with code" popup. Mounted only while open, so each
+                    opening starts at an empty code. */}
+                {isJoinCodeSheetOpen ? (
+                  <BottomSheet
+                    isOpen
+                    onClose={() => setIsJoinCodeSheetOpen(false)}
+                    title="Join with code"
+                  >
+                    <JoinCodeScreen inSheet />
                   </BottomSheet>
                 ) : null}
 

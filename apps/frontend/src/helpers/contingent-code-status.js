@@ -8,7 +8,7 @@
 // to a group, and how progress is counted.
 
 export const SHARE_CODES_MESSAGE =
-  'Share these codes with your group. Each person enters a code to join that event.';
+  'Share these codes with your group.';
 
 function spotsText(count) {
   return `${count} ${count === 1 ? 'spot' : 'spots'} remaining`;

@@ -28,12 +28,8 @@ import { navigateBack } from '../../helpers/navigate-back.js';
 const COPY = {
   kicker: 'Contingent',
   includedTitle: (count) => `${count} ${count === 1 ? 'event' : 'events'} included`,
-  oneCode: 'One shareable code',
-  howItWorks:
-    'You get one code for each event. Share them with your group — each person enters a code to join that event themselves. Buying doesn’t register you; use one of the codes if you’re competing too.',
   total: 'Total',
   free: 'Free',
-  saving: (amount) => `You save ${amount} on individual fees`,
   getCodes: 'Get codes',
   buyFor: (amount) => `Buy for ${amount}`,
   working: 'Getting your codes…',
@@ -79,7 +75,6 @@ function ContingentPurchaseScreen() {
   const [loadState, setLoadState] = useState(stateContingent && stateFestId ? 'ready' : 'loading');
   const [unavailable, setUnavailable] = useState(false);
   const [fest, setFest] = useState(null);
-  const [parentEvent, setParentEvent] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -160,8 +155,7 @@ function ContingentPurchaseScreen() {
     fetchContingent();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* The fest's name, and the main event's when the bundle hangs under one.
-     A failure here degrades the heading, never the purchase. */
+  /* The fest's name. A failure here degrades the heading, never the purchase. */
   useEffect(() => {
     if (!festId) {
       return undefined;
@@ -176,25 +170,11 @@ function ContingentPurchaseScreen() {
       } catch {
         // Heading only.
       }
-      const parentEventId = contingent?.parentEventId;
-      if (!parentEventId) {
-        return;
-      }
-      try {
-        const events = await apiClient.get(`/public/fests/${festId}/events`);
-        const list = Array.isArray(events) ? events : (events?.events ?? []);
-        const match = list.find((candidate) => candidate.id === parentEventId) ?? null;
-        if (!cancelled && mountedRef.current) {
-          setParentEvent(match);
-        }
-      } catch {
-        // Heading only.
-      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [festId, contingent?.parentEventId]);
+  }, [festId]);
 
   async function handleBuy() {
     if (isSubmitting || !isOnline || !contingent) {
@@ -273,11 +253,9 @@ function ContingentPurchaseScreen() {
   const includedEvents = contingent.includedEvents ?? [];
   const isFree = (contingent.pricePaise ?? 0) === 0;
   const priceLabel = formatPaiseAmount(contingent.pricePaise ?? 0);
-  const savingPaise = (contingent.individualTotalPaise ?? 0) - (contingent.pricePaise ?? 0);
   const isSoldOut =
     contingent.maximumBundleClaims != null &&
     (contingent.soldBundleCount ?? 0) >= contingent.maximumBundleClaims;
-  const heading = parentEvent?.eventName ?? contingent.contingentName;
 
   let reasonText = '';
   if (!isOnline) {
@@ -303,8 +281,7 @@ function ContingentPurchaseScreen() {
             {COPY.kicker}
             {fest?.festName ? ` · ${fest.festName}` : ''}
           </p>
-          <h1 className="dcp-head__title">{heading}</h1>
-          {contingent.description ? <p className="dcp-head__lede">{contingent.description}</p> : null}
+          <h1 className="dcp-head__title">{contingent.contingentName}</h1>
         </header>
 
         <section className="drg-section">
@@ -313,14 +290,9 @@ function ContingentPurchaseScreen() {
             {includedEvents.map((included) => (
               <li className="dcp-events__item" key={included.id}>
                 <span className="dcp-events__name">{included.eventName}</span>
-                <span className="dcp-events__meta">{COPY.oneCode}</span>
               </li>
             ))}
           </ul>
-        </section>
-
-        <section className="drg-section">
-          <p className="dcp-how">{COPY.howItWorks}</p>
         </section>
 
         <section className="drg-section">
@@ -328,9 +300,6 @@ function ContingentPurchaseScreen() {
             <span className="dcp-total__label">{COPY.total}</span>
             <span className="dcp-total__amount">{isFree ? COPY.free : priceLabel}</span>
           </div>
-          {!isFree && savingPaise > 0 ? (
-            <p className="dcp-total__saving">{COPY.saving(formatPaiseAmount(savingPaise))}</p>
-          ) : null}
           {submitError ? (
             <div className="drg-state--error" role="alert">
               <p className="drg-state__text">{submitError}</p>

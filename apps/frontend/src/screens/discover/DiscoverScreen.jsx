@@ -323,9 +323,12 @@ function DiscoverScreen() {
   const heroKey = heroSelection?.kind === 'fest' ? `fest-${heroSelection.fest.festSlug}` : null;
 
   const feedItems = useMemo(() => {
-    const withoutHero = heroKey
+    /* ...unless it is the only thing there is: removing it would leave an
+       empty feed under the chips with no message at all. */
+    const withoutHeroCandidates = heroKey
       ? filteredEntries.filter((entry) => entry.key !== heroKey)
       : filteredEntries;
+    const withoutHero = withoutHeroCandidates.length > 0 ? withoutHeroCandidates : filteredEntries;
     return injectPromotions(sortForFeed(withoutHero, nowTs), promotions);
   }, [filteredEntries, heroKey, promotions, nowTs]);
 

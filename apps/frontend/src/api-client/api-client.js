@@ -7,10 +7,11 @@
 import axios from 'axios';
 import { saveIntendedRoute } from '../helpers/post-sign-in-redirect.js';
 
-// The sessionStorage key the JWT is stored under. Kept here so both the client and
-// the auth flow read and write the same key.
-// Desktop (≥768px): sessionStorage — login does not persist across browser close.
-// Mobile  (<768px): localStorage  — login is remembered across sessions.
+// The storage key the JWT is stored under. Kept here so both the client and the
+// auth flow read and write the same key.
+// Every screen size: localStorage — the login is shared by every tab and window
+// and remembered until sign-out (or a 401). It used to be sessionStorage on
+// desktop, which made each new tab look signed out and show the sign-in page.
 export const AUTH_TOKEN_STORAGE_KEY = 'festpass.authToken';
 
 // The cached-user key AuthenticationContext mirrors the signed-in user under.
@@ -24,10 +25,9 @@ export const AUTH_USER_STORAGE_KEY = 'festpass.authUser';
 // here, not to the generic feed. Matched by prefix on the CURRENT path.
 const PAYMENT_FLOW_PATH_PREFIXES = ['/checkout/', '/payment-processing/', '/payment-failed/'];
 
-// Desktop uses sessionStorage (re-login on close), mobile uses localStorage (remembers).
-function getStorage() {
-  const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-  return isDesktop ? window.sessionStorage : window.localStorage;
+// One login for every tab and window, on every screen size.
+export function getAuthStorage() {
+  return window.localStorage;
 }
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -40,14 +40,30 @@ export const apiClient = axios.create({
 });
 
 export function getStoredAuthToken() {
-  // Check both storages — user might have switched between mobile/desktop
-  return window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY)
-    || window.sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  const sharedToken = window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  if (sharedToken) {
+    return sharedToken;
+  }
+  /* A desktop session signed in before the move to localStorage lives in this
+     tab's sessionStorage only, so every other tab would still look signed out.
+     Move it (and its cached user) across the first time it is read, without
+     asking anyone to sign in again. */
+  const tabToken = window.sessionStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  if (tabToken) {
+    window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, tabToken);
+    window.sessionStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    const tabUser = window.sessionStorage.getItem(AUTH_USER_STORAGE_KEY);
+    if (tabUser && !window.localStorage.getItem(AUTH_USER_STORAGE_KEY)) {
+      window.localStorage.setItem(AUTH_USER_STORAGE_KEY, tabUser);
+    }
+    window.sessionStorage.removeItem(AUTH_USER_STORAGE_KEY);
+  }
+  return tabToken;
 }
 
 export function storeAuthToken(authToken) {
-  const storage = getStorage();
-  // Clear the other storage to avoid duplicates
+  const storage = getAuthStorage();
+  // Clear both first so a token never lives in two places
   window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
   window.sessionStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
   storage.setItem(AUTH_TOKEN_STORAGE_KEY, authToken);

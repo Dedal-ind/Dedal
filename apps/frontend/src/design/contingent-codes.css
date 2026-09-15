@@ -360,3 +360,14 @@
     animation: none;
   }
 }
+
+/* The share button sits beside copy; only the first of the pair pushes right. */
+.dcc-copy--share {
+  margin-left: 0;
+}
+
+.dcc-invite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}

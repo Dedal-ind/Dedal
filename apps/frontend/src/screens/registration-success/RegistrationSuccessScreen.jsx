@@ -17,6 +17,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import apiClient from '../../api-client/api-client.js';
 import DrawnCheck from '../../components/drawn-check/DrawnCheck.jsx';
+import InviteCodeShare from '../../components/invite-code-share/InviteCodeShare.jsx';
 import { formatShortDate, formatClockTime, formatPaiseAmount } from '../../helpers/event-format.js';
 import { REGISTRATION_SUCCESS_COPY } from '../../brand/brand-copy.js';
 import { buildGoogleCalendarUrl, buildIcsUrl } from '../../helpers/calendar-links.js';
@@ -335,16 +336,18 @@ function RegistrationSuccessScreen() {
                 <span className="drs-fact__icon">
                   <TeamIcon size="sm" />
                 </span>
-                <span>
-                  {team.teamName}
-                  {team.inviteCode ? (
-                    <>
-                      {', invite code '}
-                      <span className="drs-mono">{team.inviteCode}</span>
-                    </>
-                  ) : null}
-                </span>
+                <span>{team.teamName}</span>
               </p>
+            ) : null}
+            {team?.inviteCode ? (
+              <div className="dcc-invite">
+                <InviteCodeShare
+                  code={team.inviteCode}
+                  label={event.eventName}
+                  shareTitle={team.teamName}
+                />
+                <p className="dcc-message">Share this code with your teammates.</p>
+              </div>
             ) : null}
           </div>
 

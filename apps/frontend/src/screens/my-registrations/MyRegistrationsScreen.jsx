@@ -41,7 +41,6 @@ import { useTransitionNavigate } from '../../components/route-transition/use-tra
 import gsap from 'gsap';
 import apiClient from '../../api-client/api-client.js';
 import BottomSheet from '../../components/bottom-sheet/BottomSheet.jsx';
-import ContingentVerticalCodes from '../../components/contingent-vertical-codes/ContingentVerticalCodes.jsx';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
 import { prefersReducedMotion, seconds } from '../../design/motion.js';
@@ -634,9 +633,6 @@ function ContingentPurchases({ purchases, onChanged }) {
                   </li>
                 ))}
               </ul>
-              {/* The buyer's per-vertical join codes. Renders nothing until the
-                  payment captures, which is when the codes are minted. */}
-              <ContingentVerticalCodes contingentPurchaseGroupId={groupId} />
 
               {hasLiveClaims ? (
                 confirmingGroupId === groupId ? (

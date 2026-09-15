@@ -7,31 +7,12 @@
 // for 1.5s and a polite live region says it happened, because a swapped glyph
 // is silent to a screen reader.
 
-import { useEffect, useRef, useState } from 'react';
-import { CheckIcon, CopyIcon } from '../detail-icons/DetailIcons.jsx';
+import InviteCodeShare from '../invite-code-share/InviteCodeShare.jsx';
 import { describeContingentCode } from '../../helpers/contingent-code-status.js';
-import { copyToClipboard } from '../../helpers/clipboard.js';
 import '../../design/contingent-codes.css';
 
-const COPIED_HOLD_MS = 1500;
-
-function ContingentCodeCard({ entry }) {
+function ContingentCodeCard({ entry, shareTitle = '' }) {
   const described = describeContingentCode(entry);
-  const [copyState, setCopyState] = useState('idle'); // idle | copied | failed
-  const resetTimerRef = useRef(null);
-
-  useEffect(() => () => window.clearTimeout(resetTimerRef.current), []);
-
-  async function handleCopy() {
-    window.clearTimeout(resetTimerRef.current);
-    const didCopy = await copyToClipboard(described.code);
-    setCopyState(didCopy ? 'copied' : 'failed');
-    if (didCopy) {
-      resetTimerRef.current = window.setTimeout(() => setCopyState('idle'), COPIED_HOLD_MS);
-    }
-  }
-
-  const isCopied = copyState === 'copied';
 
   return (
     <li className="dcc-card">
@@ -40,25 +21,12 @@ function ContingentCodeCard({ entry }) {
         <span className={`dcc-status dcc-status--${described.tone}`}>{described.statusText}</span>
       </div>
 
-      <div className="dcc-card__code-row">
-        <span className="dcc-card__code-label">CODE</span>
-        <code className={described.tone === 'dead' ? 'dcc-card__code dcc-card__code--dead' : 'dcc-card__code'}>
-          {described.code}
-        </code>
-        {described.canCopy ? (
-          <button
-            type="button"
-            className={isCopied ? 'dcc-copy dcc-copy--done' : 'dcc-copy'}
-            onClick={handleCopy}
-            aria-label={`Copy the code for ${described.label}`}
-          >
-            {/* Keyed so the glyph remounts and plays its pop on each change. */}
-            <span className="dcc-copy__glyph" key={isCopied ? 'check' : 'copy'} aria-hidden="true">
-              {isCopied ? <CheckIcon size="sm" /> : <CopyIcon size="sm" />}
-            </span>
-          </button>
-        ) : null}
-      </div>
+      <InviteCodeShare
+        code={described.code}
+        label={described.label}
+        shareTitle={shareTitle}
+        isDead={!described.canCopy}
+      />
 
       <p className="dcc-card__hint">{described.hint}</p>
 
@@ -78,14 +46,6 @@ function ContingentCodeCard({ entry }) {
         </div>
       ) : null}
 
-      <span className="dcc-sr" role="status" aria-live="polite">
-        {isCopied ? 'Code copied.' : ''}
-      </span>
-      {copyState === 'failed' ? (
-        <p className="dcc-card__failed" role="alert">
-          Couldn’t reach the clipboard. Select the code and copy it.
-        </p>
-      ) : null}
     </li>
   );
 }
