@@ -1,0 +1,362 @@
+/*
+ * contingent-codes.css — shareable contingent codes.
+ *
+ *   dcc-  the code card and the code list (components/contingent-code-card)
+ *   dmc-  the My codes screen (screens/my-codes)
+ *
+ * Tokens only. The code itself is the loudest thing on a card — it is what the
+ * buyer is here to hand out — so it gets size and weight, not a colour. --primary
+ * is spent only on the copied tick, the one moment that confirms an action.
+ */
+
+/* ── The list ─────────────────────────────────────────────────────────────── */
+
+.dcc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.dcc-message {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcc-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--body-m-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dcc-share:hover {
+  background: var(--ink-dim-2);
+}
+
+.dcc-notice {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dcc-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ── The card ─────────────────────────────────────────────────────────────── */
+
+.dcc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+}
+
+.dcc-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.dcc-card__event {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dcc-status {
+  flex-shrink: 0;
+  padding: 2px var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--ink-dim-4);
+  color: var(--ink);
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dcc-status--progress {
+  color: var(--accent);
+}
+
+.dcc-status--done {
+  background: var(--ink);
+  color: var(--surface-card);
+}
+
+.dcc-status--dead {
+  color: var(--muted);
+}
+
+.dcc-card__code-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.dcc-card__code-label {
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.dcc-card__code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  user-select: all;
+}
+
+.dcc-card__code--dead {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.dcc-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background var(--d-quick) var(--ease-enter);
+}
+
+.dcc-copy:hover {
+  background: var(--ink-dim-4);
+}
+
+.dcc-copy--done {
+  color: var(--primary);
+}
+
+.dcc-copy__glyph {
+  display: inline-flex;
+  animation: dcc-pop var(--d-move) var(--ease-enter);
+}
+
+@keyframes dcc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.dcc-card__hint,
+.dcc-card__failed {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcc-card__failed {
+  color: var(--primary);
+}
+
+/* The team roster — how the buyer sees whether the team has assembled. */
+.dcc-roster {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  padding-top: var(--s2);
+  border-top: 1px solid var(--divider);
+}
+
+.dcc-roster__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dcc-roster__member {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.dcc-roster__role {
+  color: var(--muted);
+}
+
+.dcc-roster__spots {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dcc-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ── The My codes screen ──────────────────────────────────────────────────── */
+
+.dmc-screen {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.dmc-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  padding: calc(var(--header-h) + var(--s4)) var(--gutter) var(--s8);
+}
+
+.dmc-offline {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--body-s-size);
+  color: var(--muted);
+}
+
+.dmc-celebrate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  text-align: center;
+}
+
+.dmc-title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+}
+
+.dmc-purchase {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.dmc-purchase + .dmc-purchase {
+  padding-top: var(--s6);
+  border-top: 1px solid var(--divider);
+}
+
+.dmc-purchase__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+}
+
+.dmc-purchase__fest {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.dmc-note {
+  margin: 0;
+  padding: var(--s3);
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+}
+
+.dmc-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s3);
+  padding-block: var(--s8);
+  text-align: center;
+}
+
+.dmc-state__text {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  color: var(--muted);
+}
+
+.dmc-button {
+  min-height: 44px;
+  padding: 0 var(--s5);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dmc-skel {
+  height: 132px;
+  border-radius: var(--r-card);
+  background: var(--ink-dim-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcc-copy__glyph {
+    animation: none;
+  }
+}

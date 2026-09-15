@@ -49,10 +49,8 @@ import { formatCategoryLabel } from '../../helpers/category-format.js';
 import { buildMapsUrl } from '../../helpers/venue-map-link.js';
 import { buildGoogleCalendarUrl, buildIcsUrl } from '../../helpers/calendar-links.js';
 import { buildChildrenByParent, childrenOf, isRegisterableEvent } from '../../helpers/event-tree.js';
-import { formatTeamErrorMessage } from '../../helpers/team-error-messages.js';
 import { eventPageSponsor } from '../../helpers/sponsor-hierarchy.js';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
-import TeamCodeEntry from '../../components/team-code-entry/TeamCodeEntry.jsx';
 import {
   BackIcon,
   BookmarkIcon,
@@ -67,7 +65,7 @@ import {
   OfflineIcon,
   PassIcon,
 } from '../../components/detail-icons/DetailIcons.jsx';
-import { TEAMS_COPY, CONNECTION_COPY, CALENDAR_COPY } from '../../brand/brand-copy.js';
+import { CONNECTION_COPY, CALENDAR_COPY } from '../../brand/brand-copy.js';
 import '../../design/detail-page.css';
 import './event-detail.css';
 
@@ -220,9 +218,6 @@ function EventDetailScreen() {
   const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
   // One FAQ open at a time — an accordion, not a set of independent toggles.
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
-  const [isJoinPanelOpen, setIsJoinPanelOpen] = useState(false);
-  const [joinError, setJoinError] = useState('');
-  const [isJoining, setIsJoining] = useState(false);
 
   const descriptionRef = useRef(null);
   const aboutBodyRef = useRef(null);
@@ -576,47 +571,21 @@ function EventDetailScreen() {
     navigate(`/register/${event.id}`);
   }
 
-  function handleOpenJoinPanel() {
+  /*
+   * "Join with code" opens the join screen, which takes EVERY kind of code — a
+   * contingent code a group shared, or a team's own invite code — and shows the
+   * event before anything is written. The inline team-code panel it replaces
+   * could only join teams.
+   */
+  function handleOpenJoinWithCode() {
+    const target = event ? `/join-code?event=${event.id}` : '/join-code';
     if (!isAuthenticated) {
-      // Same stash as handleRegister. Joining needs this screen's panel, so
-      // return here, not to the register form.
-      saveIntendedRoute(location.pathname);
+      // Same stash as handleRegister, so sign-in lands on the join screen.
+      saveIntendedRoute(target);
       navigate('/');
       return;
     }
-    setIsJoinPanelOpen((wasOpen) => !wasOpen);
-  }
-
-  async function handleJoinWithCode(inviteCode, hasAcceptedMedicalDeclaration) {
-    if (isJoining) {
-      return;
-    }
-    setJoinError('');
-    setIsJoining(true);
-    try {
-      const result = await apiClient.post('/registrations/mine/join-team', {
-        inviteCode,
-        ...(hasAcceptedMedicalDeclaration !== undefined ? { hasAcceptedMedicalDeclaration } : {}),
-      });
-      const registrationId = result?.registration?.id;
-      if (result?.payment?.paymentGroupId) {
-        // A paid event: the joiner pays their own share before the seat confirms.
-        navigate(`/checkout/${result.payment.paymentGroupId}`, {
-          state: { registrationId: registrationId ?? null, event, team: result.team ?? null },
-        });
-      } else if (typeof registrationId === 'string' && registrationId !== '') {
-        // A joined member lands on their registration and pass, not on a list.
-        navigate(`/my-registrations/${registrationId}`, { replace: true });
-      } else {
-        // Never navigate to a half-built path — the team screen shows an
-        // explicit success state instead.
-        navigate('/my-teams', { state: { justJoined: true } });
-      }
-    } catch (error) {
-      setJoinError(formatTeamErrorMessage(error, TEAMS_COPY.joinFailed));
-    } finally {
-      setIsJoining(false);
-    }
+    navigate(target);
   }
 
   function handleOpenBundle(bundle) {
@@ -886,30 +855,37 @@ function EventDetailScreen() {
    * `display: none`, so it is out of the accessibility tree too).
    */
   function renderActions() {
-    if (showTeamPair) {
-      return (
-        <div className="ded-cta__pair">
-          <button
-            type="button"
-            className="ddp-button ddp-button--quiet"
-            onClick={handleOpenJoinPanel}
-            aria-expanded={isJoinPanelOpen}
-          >
-            Join with code
-          </button>
-          <button type="button" className="ddp-button" onClick={handleRegister}>
-            Create team
-          </button>
-        </div>
-      );
-    }
-    return (
+    const primaryAction = showTeamPair ? (
+      <button type="button" className="ddp-button" onClick={handleRegister}>
+        Create team
+      </button>
+    ) : (
       <button type="button" className="ddp-button" onClick={ctaAction} disabled={ctaDisabled}>
         {existingRegistrationId && !isCancelled ? (
           <PassIcon size="sm" className="ddp-icon ddp-icon--sm" />
         ) : null}
         {ctaLabel}
       </button>
+    );
+
+    /*
+     * "JOIN WITH CODE" SITS BESIDE REGISTER on every event that can still be
+     * joined — for anyone, not only people who bought a contingent, because the
+     * person holding a code is usually not the person who bought it. It is left
+     * off where it could only fail: a cancelled event, or for somebody who
+     * already holds a seat (their action is the pass).
+     */
+    const offersJoinWithCode = !isCancelled && !existingRegistrationId;
+    if (!offersJoinWithCode) {
+      return primaryAction;
+    }
+    return (
+      <div className="ded-cta__pair">
+        <button type="button" className="ddp-button ddp-button--quiet" onClick={handleOpenJoinWithCode}>
+          Join with code
+        </button>
+        {primaryAction}
+      </div>
     );
   }
 
@@ -1239,26 +1215,6 @@ function EventDetailScreen() {
                   </p>
                 ) : null}
 
-                {/*
-                  The join-code panel. Pinned above the bar on a phone (the
-                  control that opens it is at the foot of the screen, so a panel
-                  three screens up is a panel nobody sees respond); plain flow
-                  content inside the sidebar on desktop, where the control that
-                  opens it is right above.
-                */}
-                {showTeamPair && isJoinPanelOpen ? (
-                  <div className="ded-joinsheet">
-                    <div className="ded-joinsheet__inner">
-                      <p className="ded-joinsheet__title">Enter your team code</p>
-                      <TeamCodeEntry
-                        onSubmit={handleJoinWithCode}
-                        isJoining={isJoining}
-                        errorMessage={joinError}
-                        showMedicalDeclaration={Boolean(event.requiresMedicalDeclaration)}
-                      />
-                    </div>
-                  </div>
-                ) : null}
               </div>
 
               <div className="ded-main">

@@ -13,10 +13,10 @@
 // side-load of the fest pass from GET /passes/mine. That side-load is allowed
 // to fail and its failure means nothing — see the pass line below.
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import gsap from 'gsap';
 import apiClient from '../../api-client/api-client.js';
+import DrawnCheck from '../../components/drawn-check/DrawnCheck.jsx';
 import { formatShortDate, formatClockTime, formatPaiseAmount } from '../../helpers/event-format.js';
 import { REGISTRATION_SUCCESS_COPY } from '../../brand/brand-copy.js';
 import { buildGoogleCalendarUrl, buildIcsUrl } from '../../helpers/calendar-links.js';
@@ -30,98 +30,6 @@ import {
 } from '../../components/detail-icons/DetailIcons.jsx';
 import '../../design/registration.css';
 import './registration-success.css';
-
-/*
- * THE CHECKMARK — the one animated thing on the screen.
- *
- * Hand-built as an inline <svg> rather than taken from DetailIcons, because a
- * lucide component renders a finished glyph: there is no way to reach its two
- * subpaths and give the circle and the tick separate lengths, and the whole
- * point here is that the mark DRAWS. Circle over 400ms, tick starting 200ms
- * later, once, then static forever. Nothing loops — a success page that keeps
- * moving reads as a page still working.
- *
- * The mark is rendered COMPLETE in the markup, and the animation, if it runs at
- * all, rewinds it to zero and plays it forward inside a layout effect. That
- * ordering is deliberate: under prefers-reduced-motion, and equally if gsap
- * fails or JS throws before the effect, what is on screen is a finished
- * checkmark rather than an empty circle. The mark is information — it is the
- * sentence "this worked" — so it may be unanimated but must never be absent.
- */
-function DrawnCheck() {
-  const rootRef = useRef(null);
-
-  useLayoutEffect(() => {
-    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      return undefined;
-    }
-    const root = rootRef.current;
-    if (!root) {
-      return undefined;
-    }
-    const circle = root.querySelector('.drs-check__circle');
-    const tick = root.querySelector('.drs-check__tick');
-
-    // Measured, not guessed: getTotalLength is exact for the rendered geometry,
-    // so the dash covers the path exactly however the SVG is scaled.
-    const circleLength = circle.getTotalLength();
-    const tickLength = tick.getTotalLength();
-
-    const timeline = gsap.timeline();
-    timeline
-      .fromTo(
-        circle,
-        { strokeDasharray: circleLength, strokeDashoffset: circleLength },
-        { strokeDashoffset: 0, duration: 0.4, ease: 'power2.out' },
-      )
-      .fromTo(
-        tick,
-        { strokeDasharray: tickLength, strokeDashoffset: tickLength },
-        { strokeDashoffset: 0, duration: 0.28, ease: 'power2.out' },
-        // 200ms after the circle STARTS, so the tick lands while the ring is
-        // still closing and the two read as one gesture rather than two.
-        0.2,
-      );
-
-    /*
-     * progress(1) BEFORE kill(), and this is not a formality.
-     *
-     * gsap.kill() stops a tween exactly where it is and leaves the inline
-     * styles at that frozen value. Measured in the browser: two seconds after
-     * load the circle sat at strokeDashoffset 63 of 156 and the tick at 31 of
-     * 31 — a permanently half-drawn ring and no tick at all. React StrictMode
-     * mounts, cleans up and mounts again in development, and the pass side-load
-     * re-renders this subtree on top of that, so a teardown mid-tween is the
-     * normal case rather than an edge one.
-     *
-     * Jumping to the end first means every teardown path leaves a COMPLETE
-     * mark, which is what this component promises above: the checkmark is the
-     * sentence "this worked", so it may arrive unanimated but must never be
-     * left unfinished.
-     */
-    return () => {
-      timeline.progress(1);
-      timeline.kill();
-    };
-  }, []);
-
-  return (
-    <svg
-      ref={rootRef}
-      className="drs-check"
-      viewBox="0 0 56 56"
-      width="56"
-      height="56"
-      fill="none"
-      role="img"
-      aria-label="Registration confirmed"
-    >
-      <circle className="drs-check__circle" cx="28" cy="28" r="25" />
-      <path className="drs-check__tick" d="M17 28.5 L24.5 36 L39 21.5" />
-    </svg>
-  );
-}
 
 /*
  * The copy control's glyph, both halves of the morph in one 16px box. Not from
@@ -357,7 +265,7 @@ function RegistrationSuccessScreen() {
         */}
         <div className="drs-celebrate">
           <div className="drs-mark">
-            <DrawnCheck />
+            <DrawnCheck className="drs-check" label="Registration confirmed" />
           </div>
 
           <h1 className="drs-headline">You&rsquo;re in</h1>

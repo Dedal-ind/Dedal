@@ -12,9 +12,11 @@ import {
   TeamIcon,
   CredentialIcon,
   CrewIcon,
+  KeypadIcon,
   PersonIcon,
   SettingsIcon,
 } from '../../components/detail-icons/DetailIcons.jsx';
+import MyCodesScreen from '../my-codes/MyCodesScreen.jsx';
 import MyRegistrationsScreen from '../my-registrations/MyRegistrationsScreen.jsx';
 import MyPassesScreen from '../my-passes/MyPassesScreen.jsx';
 import SavedEventsScreen from '../saved-events/SavedEventsScreen.jsx';
@@ -85,6 +87,15 @@ export const SECTIONS = [
     path: '/my-teams',
     Icon: TeamIcon,
     Screen: TeamManagementScreen,
+  },
+  /* Contingent codes this participant bought — solo codes and team codes, who
+     has used each, and how far each team has assembled. */
+  {
+    key: 'my-codes',
+    label: 'Codes',
+    path: '/my-codes',
+    Icon: KeypadIcon,
+    Screen: MyCodesScreen,
   },
   {
     key: 'saved',

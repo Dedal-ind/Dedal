@@ -26,6 +26,15 @@ import { TEAMS_COPY, REGISTRATION_FORM_COPY } from '../../brand/brand-copy.js';
    busy state of one button and nothing else reads it. */
 const JOINING_LABEL = 'Joining…';
 
+/* The code generator's alphabet (backend generate-invite-code.js): no 0, O, 1, I or L. */
+const CODE_CHARACTER_PATTERN = /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]$/;
+
+function describeInvalidCharacter(character) {
+  return /[0O1IL]/.test(character)
+    ? 'Codes never use 0, O, 1, I or L — check that character.'
+    : 'Codes use letters and numbers only.';
+}
+
 function TeamCodeEntry({
   onSubmit,
   isJoining = false,
@@ -43,10 +52,20 @@ function TeamCodeEntry({
   /* Joining is a write. Offline it cannot succeed, so the submit is disabled
      with the reason stated rather than failing after the tap. */
   disabledReason = '',
+  /* Fires onSubmit the moment the last box is filled, once per distinct code —
+     the join-with-code screen has nothing else to ask before looking it up. */
+  autoSubmit = false,
+  /* Overrides the button label; null keeps the team-join wording. */
+  submitLabel = null,
+  /* An auto-submitting caller owns its own action further down the screen. */
+  hideSubmit = false,
 }) {
   const [codeCharacters, setCodeCharacters] = useState(() => Array(INVITE_CODE_LENGTH).fill(''));
   const [hasAcceptedMedicalDeclaration, setHasAcceptedMedicalDeclaration] = useState(false);
   const inputReferences = useRef([]);
+  /* { index, message } for the box holding a character codes never use. */
+  const [invalidEntry, setInvalidEntry] = useState(null);
+  const lastAutoSubmittedReference = useRef('');
 
   const inviteCode = codeCharacters.join('');
   const isMedicalSatisfied = !showMedicalDeclaration || hasAcceptedMedicalDeclaration;
@@ -67,8 +86,43 @@ function TeamCodeEntry({
     }
   }, [inviteCode, onCodeChange]);
 
+  /* Auto-submit once per distinct complete code; editing a box re-arms it. */
+  useEffect(() => {
+    if (!autoSubmit) {
+      return;
+    }
+    if (inviteCode.length < INVITE_CODE_LENGTH) {
+      lastAutoSubmittedReference.current = '';
+      return;
+    }
+    if (isSubmitBlocked || inviteCode === lastAutoSubmittedReference.current) {
+      return;
+    }
+    lastAutoSubmittedReference.current = inviteCode;
+    onSubmit(inviteCode, showMedicalDeclaration ? hasAcceptedMedicalDeclaration : undefined);
+  }, [
+    autoSubmit,
+    inviteCode,
+    isSubmitBlocked,
+    onSubmit,
+    showMedicalDeclaration,
+    hasAcceptedMedicalDeclaration,
+  ]);
+
   function handleCharacterChange(index, rawValue) {
-    const character = rawValue.replace(/[^A-Za-z0-9]/g, '').slice(-1).toUpperCase();
+    const typed = rawValue.slice(-1).toUpperCase();
+    /*
+     * Inline validation, per box. A character the code alphabet never uses —
+     * punctuation, or one of the confusable 0 O 1 I L — is refused in place,
+     * with the box marked and the reason stated, instead of being dropped
+     * silently or discovered only when the lookup fails.
+     */
+    if (typed && !CODE_CHARACTER_PATTERN.test(typed)) {
+      setInvalidEntry({ index, message: describeInvalidCharacter(typed) });
+      return;
+    }
+    setInvalidEntry(null);
+    const character = typed;
     setCodeCharacters((previous) => {
       const next = [...previous];
       next[index] = character;
@@ -90,8 +144,8 @@ function TeamCodeEntry({
   function handlePaste(pasteEvent) {
     const pasted = pasteEvent.clipboardData
       .getData('text')
-      .replace(/[^A-Za-z0-9]/g, '')
       .toUpperCase()
+      .replace(/[^23456789ABCDEFGHJKMNPQRSTUVWXYZ]/g, '')
       .slice(0, INVITE_CODE_LENGTH);
     if (!pasted) {
       return;
@@ -130,10 +184,17 @@ function TeamCodeEntry({
             aria-label={`Character ${index + 1}`}
             onChange={(changeEvent) => handleCharacterChange(index, changeEvent.target.value)}
             onKeyDown={(keyboardEvent) => handleKeyDown(index, keyboardEvent)}
-            className="dtc-code"
+            className={invalidEntry?.index === index ? 'dtc-code dtc-code--invalid' : 'dtc-code'}
+            aria-invalid={invalidEntry?.index === index || undefined}
           />
         ))}
       </div>
+
+      {invalidEntry ? (
+        <p className="dtc-error" role="alert">
+          {invalidEntry.message}
+        </p>
+      ) : null}
 
       {showMedicalDeclaration ? (
         <label className="dtc-check">
@@ -158,9 +219,11 @@ function TeamCodeEntry({
 
       {disabledReason ? <p className="dtc-hint">{disabledReason}</p> : null}
 
-      <button type="button" onClick={handleSubmit} disabled={isSubmitBlocked} className="dtc-submit">
-        {isJoining ? JOINING_LABEL : TEAMS_COPY.joinSubmit}
-      </button>
+      {hideSubmit ? null : (
+        <button type="button" onClick={handleSubmit} disabled={isSubmitBlocked} className="dtc-submit">
+          {isJoining ? JOINING_LABEL : (submitLabel ?? TEAMS_COPY.joinSubmit)}
+        </button>
+      )}
     </div>
   );
 }

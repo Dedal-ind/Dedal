@@ -141,3 +141,8 @@
   cursor: not-allowed;
   transform: none;
 }
+
+/* A box holding a character codes never use; the reason is stated under the row. */
+.dtc-code--invalid {
+  border-color: var(--primary);
+}

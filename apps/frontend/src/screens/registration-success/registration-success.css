@@ -58,15 +58,6 @@
   justify-content: center;
 }
 
-.drs-check__circle,
-.drs-check__tick {
-  fill: none;
-  stroke: var(--primary);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .drs-headline {
   margin: 0;
   font-size: var(--display-l-size);

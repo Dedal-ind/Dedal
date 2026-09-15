@@ -1,0 +1,299 @@
+/*
+ * join-code.css — the join-with-code screen (screens/join-code, prefix djc-).
+ *
+ * One narrow centred column (400px) on every width: entering a code and
+ * confirming one event is a short, focused task, and a wide layout would only
+ * spread it thin. The code boxes come from team-code-entry.css and the add-on
+ * rows from post-join-addons.css, so this file holds only the screen's own
+ * furniture. Tokens only; --primary is spent on the one action and on errors.
+ */
+
+.djc-screen {
+  min-height: 100dvh;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+.djc-backbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  padding: var(--s2) var(--gutter);
+}
+
+.djc-backbar__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.djc-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  width: 100%;
+  max-width: 400px;
+  margin-inline: auto;
+  padding: var(--s2) var(--gutter) var(--s8);
+}
+
+.djc-offline {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--body-s-size);
+  color: var(--muted);
+}
+
+.djc-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.djc-title {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+}
+
+.djc-lede {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.djc-checking {
+  margin: 0;
+  font-size: var(--body-s-size);
+  color: var(--muted);
+}
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+
+.djc-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+}
+
+.djc-kicker {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.djc-event {
+  margin: 0;
+  font-size: var(--display-m-size);
+  line-height: var(--display-m-line);
+  font-weight: 700;
+}
+
+.djc-fest {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.djc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  margin: var(--s1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--ink);
+}
+
+.djc-meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+/* ── Team choices ─────────────────────────────────────────────────────────── */
+
+.djc-team__head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+}
+
+.djc-team__count {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.djc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin-top: var(--s2);
+}
+
+.djc-field__label {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+}
+
+.djc-field__hint {
+  margin: 0;
+  font-size: var(--micro-size);
+  line-height: var(--micro-line);
+  color: var(--muted);
+}
+
+.djc-input {
+  min-height: 48px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--body-m-size);
+}
+
+.djc-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s3);
+  margin-top: var(--s2);
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  cursor: pointer;
+}
+
+.djc-check input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: var(--ink);
+}
+
+.djc-check__hint {
+  display: block;
+  color: var(--muted);
+}
+
+/* ── Add-ons ──────────────────────────────────────────────────────────────── */
+
+.djc-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.djc-section__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+}
+
+.djc-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+}
+
+/* ── Actions and outcomes ─────────────────────────────────────────────────── */
+
+.djc-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.djc-button {
+  min-height: 48px;
+  padding: 0 var(--s4);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--body-m-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.djc-button--primary {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--surface-card);
+}
+
+.djc-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.djc-reason {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+  text-align: center;
+}
+
+.djc-error {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}
+
+.djc-celebrate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  text-align: center;
+}
+
+.djc-roster {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+}

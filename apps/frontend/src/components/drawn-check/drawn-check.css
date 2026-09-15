@@ -1,0 +1,19 @@
+/*
+ * drawn-check.css — the shared celebration mark (components/drawn-check).
+ * --primary on the stroke: success is the one moment the signature colour is
+ * the whole message.
+ */
+
+.dxc-check {
+  display: block;
+  flex-shrink: 0;
+}
+
+.dxc-check__circle,
+.dxc-check__tick {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

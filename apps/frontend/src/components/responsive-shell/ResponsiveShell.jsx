@@ -177,6 +177,10 @@ const DESKTOP_READY_PARTICIPANT_PATTERNS = [
   /^\/payment-processing\/[^/]+$/,
   /^\/payment-failed\/[^/]+$/,
   /^\/contingents\/[^/]+\/purchase$/,
+  /* Joining with a code, and the codes a buyer hands out — both part of the
+     same registration journey, so both work on a laptop. */
+  /^\/join-code$/,
+  /^\/my-codes(\/[^/]+)?$/,
   /*
    * The pass. It earns desktop for a different reason from every other route
    * here: nobody scans a laptop at a gate, so the wide layout is not the phone

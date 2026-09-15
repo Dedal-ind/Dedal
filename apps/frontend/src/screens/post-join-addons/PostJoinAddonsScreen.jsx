@@ -24,101 +24,18 @@ import apiClient from '../../api-client/api-client.js';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
-import {
-  CaptainIcon,
-  OfflineIcon,
-  StepDownIcon,
-  StepUpIcon,
-} from '../../components/detail-icons/DetailIcons.jsx';
+import { CaptainIcon, OfflineIcon } from '../../components/detail-icons/DetailIcons.jsx';
+import AddOnStepper from '../../components/add-on-stepper/AddOnStepper.jsx';
 import { formatPaiseAmount } from '../../helpers/event-format.js';
+import {
+  ADD_ON_QUANTITY_CEILING as QUANTITY_CEILING,
+  buildOfferSelectionsPayload,
+  computeSelectionPaise,
+  offerKeyOf,
+} from '../../helpers/add-on-pricing.js';
 import { POST_JOIN_ADDONS_COPY as COPY } from '../../brand/brand-copy.js';
 import { TEAM_CAPTAIN_COPY, CONNECTION_COPY } from '../../brand/brand-copy.js';
 import '../../design/post-join-addons.css';
-
-const QUANTITY_CEILING = 20;
-
-/*
- * Price of one selection, mirroring computeOfferTotalPaise on the server: rate x
- * people x days, where an axis the offer does not collect contributes 1. This is
- * a DISPLAY estimate only — the server reprices from the live offer before
- * charging anything, so a stale rate here cannot become a wrong charge.
- */
-function computeSelectionPaise(offer, selection) {
-  if (!offer.isPaid) {
-    return 0;
-  }
-  const people = offer.collectsNumberOfPeople ? selection.numberOfPeople : 1;
-  const days = offer.collectsNumberOfDays ? selection.numberOfDays : 1;
-  return offer.ratePaise * people * days;
-}
-
-function offerKeyOf(offer) {
-  return `${offer.scope}:${offer.offerKey}`;
-}
-
-/*
- * The stepper, local to this screen.
- *
- * The shared QuantityStepper is still on the Heritage palette and draws its
- * plus and minus as Material Symbols ligatures, so it cannot be used here and
- * is not mine to rewrite. Its BEHAVIOUR is reproduced exactly, because that is
- * the part worth keeping: the buttons disable at the bounds rather than
- * clamping silently, the value is announced through role="status" +
- * aria-live, and the field is type="text" with inputMode="numeric" — NOT
- * type="number", which screen readers do not announce as numeric and which
- * brings a spinner nobody wants.
- */
-function Stepper({ label, value, minimum, maximum, onChange, disabled = false }) {
-  function handleTypedValue(rawValue) {
-    const digitsOnly = rawValue.replace(/[^0-9]/g, '');
-    if (digitsOnly === '') {
-      onChange(minimum);
-      return;
-    }
-    const parsed = Number.parseInt(digitsOnly, 10);
-    if (parsed >= minimum && parsed <= maximum) {
-      onChange(parsed);
-    }
-  }
-
-  return (
-    <div className="dpj-stepper">
-      <span className="dpj-stepper__label">{label}</span>
-      <div className="dpj-stepper__controls">
-        <button
-          type="button"
-          className="dpj-stepper__button"
-          onClick={() => onChange(value - 1)}
-          disabled={disabled || value <= minimum}
-          aria-label={`Fewer ${label.toLowerCase()}`}
-        >
-          <StepDownIcon size="sm" />
-        </button>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          role="status"
-          aria-live="polite"
-          aria-label={label}
-          className="dpj-stepper__value"
-          value={value}
-          onChange={(changeEvent) => handleTypedValue(changeEvent.target.value)}
-          disabled={disabled}
-        />
-        <button
-          type="button"
-          className="dpj-stepper__button"
-          onClick={() => onChange(value + 1)}
-          disabled={disabled || value >= maximum}
-          aria-label={`More ${label.toLowerCase()}`}
-        >
-          <StepUpIcon size="sm" />
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function PostJoinAddonsScreen() {
   const { registrationId } = useParams();
@@ -198,17 +115,7 @@ function PostJoinAddonsScreen() {
     setSubmitError('');
     setIsSubmitting(true);
     try {
-      const offerSelections = offers
-        .filter((offer) => selections[offerKeyOf(offer)])
-        .map((offer) => {
-          const selection = selections[offerKeyOf(offer)];
-          return {
-            offerKey: offer.offerKey,
-            scope: offer.scope,
-            ...(offer.collectsNumberOfPeople ? { numberOfPeople: selection.numberOfPeople } : {}),
-            ...(offer.collectsNumberOfDays ? { numberOfDays: selection.numberOfDays } : {}),
-          };
-        });
+      const offerSelections = buildOfferSelectionsPayload(offers, selections);
 
       const result = await apiClient.post(`/registrations/${registrationId}/add-ons`, {
         offerSelections,
@@ -322,7 +229,7 @@ function PostJoinAddonsScreen() {
                           (offer.collectsNumberOfPeople || offer.collectsNumberOfDays) ? (
                             <div className="dpj-offer__axes">
                               {offer.collectsNumberOfPeople ? (
-                                <Stepper
+                                <AddOnStepper
                                   label={COPY.people}
                                   value={selection.numberOfPeople}
                                   minimum={offer.numberOfPeopleMinimum ?? 1}
@@ -333,7 +240,7 @@ function PostJoinAddonsScreen() {
                                 />
                               ) : null}
                               {offer.collectsNumberOfDays ? (
-                                <Stepper
+                                <AddOnStepper
                                   label={COPY.days}
                                   value={selection.numberOfDays}
                                   minimum={offer.numberOfDaysMinimum ?? 1}

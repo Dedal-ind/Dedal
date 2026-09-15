@@ -41,6 +41,8 @@ import RegistrationSuccessScreen from './screens/registration-success/Registrati
 import PaymentProcessingScreen from './screens/payment-processing/PaymentProcessingScreen.jsx';
 import PaymentFailedScreen from './screens/payment-failed/PaymentFailedScreen.jsx';
 import MyRegistrationsScreen from './screens/my-registrations/MyRegistrationsScreen.jsx';
+import MyCodesScreen from './screens/my-codes/MyCodesScreen.jsx';
+import JoinCodeScreen from './screens/join-code/JoinCodeScreen.jsx';
 import RegistrationDetailScreen from './screens/registration-detail/RegistrationDetailScreen.jsx';
 import MyPassesScreen from './screens/my-passes/MyPassesScreen.jsx';
 import QrPassScreen from './screens/qr-pass/QrPassScreen.jsx';
@@ -446,6 +448,9 @@ function App() {
               <Route path="/backstage" element={<BackstageScreen />} />
               <Route path="/crew-select" element={<CrewSelectScreen />} />
               <Route path="/my-registrations" element={<MyRegistrationsScreen />} />
+              {/* Contingent codes the participant bought, and one purchase's codes. */}
+              <Route path="/my-codes" element={<MyCodesScreen />} />
+              <Route path="/my-codes/:purchaseId" element={<MyCodesScreen />} />
               <Route path="/profile" element={<ProfileScreen />} />
               {/* The account page. Two routes for one screen: /account is the
                   menu (and, on desktop, the menu with its first section open),
@@ -518,6 +523,8 @@ function App() {
 
             {/* Registration and checkout */}
             <Route path="/register/:eventId" element={<RegistrationFormScreen />} />
+            {/* Join an event with a contingent or team code. */}
+            <Route path="/join-code" element={<JoinCodeScreen />} />
             <Route
               path="/contingents/:contingentId/purchase"
               element={<ContingentPurchaseScreen />}

@@ -75,6 +75,18 @@ function PaymentProcessingScreen() {
       // A contingent purchase has no single registration to land on: the
       // attendees' claims are the outcome, so success ends on /my-registrations
       // where the buyer's purchases panel shows them.
+      // A code-distribution contingent purchase lands on the codes it bought.
+      if (
+        isConfirmed &&
+        status?.purposeType === 'contingentCodes' &&
+        typeof status.contingentPurchaseId === 'string'
+      ) {
+        navigate(`/my-codes/${status.contingentPurchaseId}`, {
+          replace: true,
+          state: { justPurchased: true },
+        });
+        return true;
+      }
       if (isConfirmed && status?.purposeType === 'contingent') {
         navigate('/my-registrations', {
           replace: true,
