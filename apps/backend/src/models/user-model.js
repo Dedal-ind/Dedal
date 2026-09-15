@@ -21,6 +21,13 @@ const userSchema = new mongoose.Schema(
     },
     fullName: { type: String, trim: true, default: null },
     collegeId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    /*
+     * A college not yet on the platform, typed by the student ("Other" in the
+     * picker). Mutually exclusive with collegeId: exactly one of the two is set
+     * on a complete profile. Surfaces in demographics under the typed name —
+     * the list of colleges worth onboarding next.
+     */
+    otherCollegeName: { type: String, trim: true, maxlength: 120, default: null },
     usn: { type: String, trim: true, uppercase: true, default: null },
     yearOfStudy: { type: Number, min: 1, max: 6, default: null },
     department: { type: String, trim: true, default: null },
@@ -188,7 +195,9 @@ userSchema.index(
  * from the fields it summarises.
  */
 userSchema.methods.recomputeIsProfileComplete = function recomputeIsProfileComplete() {
-  this.isProfileComplete = Boolean(this.fullName && this.collegeId && this.usn && this.phoneNumber);
+  this.isProfileComplete = Boolean(
+    this.fullName && (this.collegeId || this.otherCollegeName) && this.usn && this.phoneNumber
+  );
   return this.isProfileComplete;
 };
 

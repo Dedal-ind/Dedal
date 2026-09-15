@@ -20,6 +20,7 @@ import AdminExecutiveChip from '../../components-admin/admin-executive-chip/Admi
 import AdminSegmentedToggle from '../../components-admin/admin-segmented-toggle/AdminSegmentedToggle.jsx';
 import AdminErrorBanner from '../../components-admin/admin-error-banner/AdminErrorBanner.jsx';
 import AdminModal from '../../components-admin/admin-modal/AdminModal.jsx';
+import AdminDeleteConfirm from '../../components-admin/admin-delete-confirm/AdminDeleteConfirm.jsx';
 import AdminScreenState from '../../components-admin/admin-screen-state/AdminScreenState.jsx';
 import AdminTargetingEditor from '../../components-admin/admin-targeting-editor/AdminTargetingEditor.jsx';
 import { normaliseTargeting, EMPTY_TARGETING } from '../../components-admin/admin-targeting-editor/targeting-helpers.js';
@@ -185,6 +186,8 @@ function AdminCampaignDetailScreen() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [promoters, setPromoters] = useState([]);
   const [promoterCreatives, setPromoterCreatives] = useState([]);
@@ -365,6 +368,19 @@ function AdminCampaignDetailScreen() {
     }
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    setServerError('');
+    try {
+      await campaignsApi.remove(campaign.id ?? campaignId);
+      navigate(campaignListPath());
+    } catch (error) {
+      setServerError(error?.message || COPY.actionFailed);
+      setDeleting(false);
+      setDeleteOpen(false);
+    }
+  }
+
   async function handleAttach() {
     if (!attachCreativeId) return;
     setAttachError('');
@@ -455,6 +471,16 @@ function AdminCampaignDetailScreen() {
             <AdminExecutiveButton variant="secondary" loading={saving} onClick={saveDraft}>
               {saving ? COPY.saving : COPY.saveDraft}
             </AdminExecutiveButton>
+          ) : null}
+          {/* Draft-only, last, and text rather than filled: destructive. */}
+          {campaign && campaign.status === 'draft' ? (
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(true)}
+              className="px-2 font-admin-body text-[14px] font-medium text-admin-status-error-red hover:underline"
+            >
+              {COPY.deleteAction}
+            </button>
           ) : null}
         </div>
       </div>
@@ -856,6 +882,14 @@ function AdminCampaignDetailScreen() {
           />
         </div>
       </AdminModal>
+
+      <AdminDeleteConfirm
+        target={deleteOpen && campaign ? { name: campaign.name } : null}
+        note={deleteOpen && campaign ? COPY.deleteModalBody(campaign.name) : ''}
+        isBusy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
     </div>
   );
 }

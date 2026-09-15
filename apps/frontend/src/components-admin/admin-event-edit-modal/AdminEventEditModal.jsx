@@ -25,7 +25,8 @@ import AdminExecutiveInput from '../admin-executive-input/AdminExecutiveInput.js
 import AdminExecutiveTextarea from '../admin-executive-textarea/AdminExecutiveTextarea.jsx';
 import AdminCategorySelect from '../admin-category-select/AdminCategorySelect.jsx';
 import AdminErrorBanner from '../admin-error-banner/AdminErrorBanner.jsx';
-import { ADMIN_EVENT_EDIT_MODAL_COPY as COPY } from '../../brand-admin/brand-copy.js';
+import AdminDeleteConfirm from '../admin-delete-confirm/AdminDeleteConfirm.jsx';
+import { ADMIN_EVENT_EDIT_MODAL_COPY as COPY, ADMIN_DELETE_COPY } from '../../brand-admin/brand-copy.js';
 
 const PAISE_PER_RUPEE = 100;
 
@@ -75,6 +76,26 @@ function buildFormFromEvent(event) {
 
 function AdminEventEditModal({ festId, event, onClose, onSaved, onOpenFullEditor }) {
   const [form, setForm] = useState(() => buildFormFromEvent(event));
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const isDraft = event?.status === 'draft';
+  const subEventCount = (event?.children ?? []).length;
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    setErrorMessage('');
+    try {
+      await apiClient.delete(`/fests/${festId}/events/${event.id}`);
+      setIsDeleteOpen(false);
+      await onSaved?.();
+      onClose();
+    } catch (deleteError) {
+      setIsDeleteOpen(false);
+      setErrorMessage(deleteError?.message || ADMIN_DELETE_COPY.failed);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -354,9 +375,27 @@ function AdminEventEditModal({ festId, event, onClose, onSaved, onOpenFullEditor
             <AdminExecutiveButton onClick={handleSave} loading={isSaving}>
               {COPY.save}
             </AdminExecutiveButton>
+            {/* Draft-only, last, and text rather than filled: destructive. */}
+            {isDraft ? (
+              <button
+                type="button"
+                onClick={() => setIsDeleteOpen(true)}
+                disabled={isSaving || isDeleting}
+                className="font-admin-body text-[14px] font-medium text-admin-status-error-red hover:underline disabled:opacity-50"
+              >
+                {ADMIN_DELETE_COPY.action}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
+      <AdminDeleteConfirm
+        target={isDeleteOpen ? { name: form.eventName || event?.eventName } : null}
+        blockedReason={subEventCount > 0 ? ADMIN_DELETE_COPY.subEventsBlocked(subEventCount) : ''}
+        isBusy={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setIsDeleteOpen(false)}
+      />
     </div>
   );
 }

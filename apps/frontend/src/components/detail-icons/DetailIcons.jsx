@@ -15,7 +15,6 @@
 // marks, so the two do not read as two different icon sets on one screen.
 
 import {
-  AlarmClock,
   ArrowLeft,
   Award,
   BedDouble,
@@ -32,7 +31,6 @@ import {
   DoorOpen,
   FileText,
   Flashlight,
-  Globe,
   GraduationCap,
   IdCard,
   Info,
@@ -41,16 +39,13 @@ import {
   LogOut,
   Mail,
   MapPin,
-  Moon,
   Package,
   Phone,
   QrCode,
   RefreshCw,
-  ScrollText,
   Search,
   Send,
   Settings,
-  ShieldCheck,
   Share2,
   Shirt,
   ShoppingBag,
@@ -59,7 +54,6 @@ import {
   Sun,
   Ticket,
   TriangleAlert,
-  Trash2,
   Trophy,
   Upload,
   UserRound,
@@ -69,7 +63,6 @@ import {
   UtensilsCrossed,
   Volume2,
   VolumeX,
-  Wifi,
   WifiOff,
   X,
 } from 'lucide-react';
@@ -170,22 +163,15 @@ export const SignOutIcon = icon(LogOut);
 export const AvatarEditIcon = icon(Camera);
 export const UploadIcon = icon(Upload);
 export const LockIcon = icon(Lock);
-export const TrashIcon = icon(Trash2);
 export const BellIcon = icon(Bell);
-export const AlarmIcon = icon(AlarmClock);
 export const SettingsIcon = icon(Settings);
 export const PersonIcon = icon(UserRound);
 export const RegistrationIcon = icon(FileText);
 export const CertificateIcon = icon(Award);
 export const CredentialIcon = icon(IdCard);
 export const QrIcon = icon(QrCode);
-export const TermsIcon = icon(ScrollText);
-export const PrivacyIcon = icon(ShieldCheck);
 export const InfoIcon = icon(Info);
 export const CollegeIcon = icon(GraduationCap);
-export const LanguageIcon = icon(Globe);
-export const DarkModeIcon = icon(Moon);
-export const WifiIcon = icon(Wifi);
 
 /*
  * THE CERTIFICATES SET. Three marks, one per tone in
@@ -318,13 +304,10 @@ export const ClockIcon = icon(Clock);
  * that can be held by different people on the same roster. Two roles on one
  * card need two marks or the card is lying.
  *
- * Compass for the empty state's way out: it leads to browsing, not to a
- * search box, and the magnifier already means search in the app header.
  */
-import { BookmarkX, Compass, Crown, Plus, UserRoundPlus } from 'lucide-react';
+import { BookmarkX, Crown, Plus, UserRoundPlus } from 'lucide-react';
 
 export const UnsaveIcon = icon(BookmarkX);
-export const BrowseIcon = icon(Compass);
 export const CreateTeamIcon = icon(Plus);
 export const JoinTeamIcon = icon(UserRoundPlus);
 export const CaptainIcon = icon(Crown);

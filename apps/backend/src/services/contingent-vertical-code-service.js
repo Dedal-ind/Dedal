@@ -164,7 +164,18 @@ async function inspectCode(userId, rawCode) {
   // Teams first: team codes predate this feature and must keep resolving.
   const team = await TeamModel.findOne({ inviteCode }).select("_id eventId teamName").lean();
   if (team) {
-    return { kind: "team", teamId: String(team._id), eventId: String(team.eventId) };
+    /* Slugs too: the public event lookups resolve by slug, not id. */
+    const event = await EventModel.findById(team.eventId)
+      .select("eventSlug festId")
+      .populate("festId", "festSlug")
+      .lean();
+    return {
+      kind: "team",
+      teamId: String(team._id),
+      eventId: String(team.eventId),
+      eventSlug: event?.eventSlug ?? null,
+      festSlug: event?.festId?.festSlug ?? null,
+    };
   }
 
   const code = await ContingentVerticalCodeModel.findOne({ inviteCode }).lean();

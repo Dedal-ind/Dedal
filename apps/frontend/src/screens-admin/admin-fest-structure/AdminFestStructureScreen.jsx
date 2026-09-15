@@ -47,6 +47,7 @@ import AdminExecutiveSelect from '../../components-admin/admin-executive-select/
 import AdminStatusPill from '../../components-admin/admin-status-pill/AdminStatusPill.jsx';
 import AdminErrorBanner from '../../components-admin/admin-error-banner/AdminErrorBanner.jsx';
 import AdminModal from '../../components-admin/admin-modal/AdminModal.jsx';
+import AdminDeleteConfirm from '../../components-admin/admin-delete-confirm/AdminDeleteConfirm.jsx';
 import AdminEventOrgChart, {
   AdminEventOrgChartEmpty,
   AdminEventOrgChartError,
@@ -63,7 +64,7 @@ import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status
 import AdminContingentScopeManager from '../../components-admin/admin-contingent-scope-manager/AdminContingentScopeManager.jsx';
 import AdminEventEditModal from '../../components-admin/admin-event-edit-modal/AdminEventEditModal.jsx';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
-import { ADMIN_FEST_STRUCTURE_COPY as COPY } from '../../brand-admin/brand-copy.js';
+import { ADMIN_FEST_STRUCTURE_COPY as COPY, ADMIN_DELETE_COPY } from '../../brand-admin/brand-copy.js';
 import { compareBySiblingRank } from '../../helpers/sibling-rank-sort.js';
 
 /*
@@ -428,7 +429,7 @@ function AdminFestStructureScreen() {
       return;
     }
     try {
-      await apiClient.delete(`/fests/${festId}/events/${target.id}/soft`);
+      await apiClient.delete(`/fests/${festId}/events/${target.id}`);
       await loadStructure();
     } catch (error) {
       setErrorMessage(error?.message ?? COPY.loadError);
@@ -481,12 +482,18 @@ function AdminFestStructureScreen() {
                 onSelect: () => setEditTarget(node),
               },
               ...(isEligibleForContingent ? [contingentAction] : []),
-              {
-                key: 'delete',
-                label: COPY.deleteEvent,
-                tone: 'danger',
-                onSelect: () => setDeleteTarget(node),
-              },
+              /* Hard delete is for drafts only (the server enforces it too),
+                 and always the last item. */
+              ...(node.status === 'draft'
+                ? [
+                    {
+                      key: 'delete',
+                      label: COPY.deleteEvent,
+                      tone: 'danger',
+                      onSelect: () => setDeleteTarget(node),
+                    },
+                  ]
+                : []),
             ]
           : []),
       ];
@@ -731,19 +738,18 @@ function AdminFestStructureScreen() {
         />
       ) : null}
 
-      <AdminModal
-        isOpen={Boolean(deleteTarget)}
-        title={COPY.deleteConfirmTitle}
-        confirmLabel={COPY.deleteConfirmAction}
-        cancelLabel={COPY.cancel}
-        tone="danger"
+      <AdminDeleteConfirm
+        target={deleteTarget ? { name: deleteTarget.eventName } : null}
+        /* The server refuses a parent with sub-events rather than cascading,
+           so the dialog says so instead of offering a confirm that will fail. */
+        blockedReason={
+          (deleteTarget?.children ?? []).length > 0
+            ? ADMIN_DELETE_COPY.subEventsBlocked(deleteTarget.children.length)
+            : ''
+        }
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
-      >
-        <p className="font-admin-body text-[14px] text-admin-slate-600">
-          {deleteTarget ? COPY.deleteConfirmBody(deleteTarget.eventName) : ''}
-        </p>
-      </AdminModal>
+      />
     </div>
   );
 }

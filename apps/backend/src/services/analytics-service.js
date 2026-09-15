@@ -329,6 +329,7 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
         {
           $project: {
             collegeId: "$user.collegeId",
+            otherCollegeName: "$user.otherCollegeName",
             department: "$user.department",
             yearOfStudy: "$user.yearOfStudy",
             genderCategory: 1,
@@ -350,11 +351,32 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
       .sort((left, right) => right.count - left.count);
   }
 
-  const collegeBuckets = bucketBy((row) => (row.collegeId ? String(row.collegeId) : "unspecified"));
+  /*
+   * A typed "Other" college buckets under its own name (case-folded), so the
+   * students from a not-yet-onboarded college count together and show up as
+   * that college rather than vanishing into "Unspecified".
+   */
+  const otherCollegeNameByKey = new Map();
+  function collegeKeyOf(row) {
+    if (row.collegeId) {
+      return String(row.collegeId);
+    }
+    const typedName = typeof row.otherCollegeName === "string" ? row.otherCollegeName.trim() : "";
+    if (typedName) {
+      const key = `other:${typedName.toLowerCase()}`;
+      if (!otherCollegeNameByKey.has(key)) {
+        otherCollegeNameByKey.set(key, typedName);
+      }
+      return key;
+    }
+    return "unspecified";
+  }
+  const isListedCollegeKey = (key) => key !== "unspecified" && !key.startsWith("other:");
+  const collegeBuckets = bucketBy(collegeKeyOf);
   const collegeNames = await CollegeModel.find({
     _id: {
       $in: collegeBuckets
-        .filter((bucket) => bucket.key !== "unspecified")
+        .filter((bucket) => isListedCollegeKey(bucket.key))
         .map((bucket) => new mongoose.Types.ObjectId(bucket.key)),
     },
   })
@@ -366,7 +388,7 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
   const paidByCollege = new Map();
   for (const row of demographicRows) {
     if (row.paidPaise > 0) {
-      const key = row.collegeId ? String(row.collegeId) : "unspecified";
+      const key = collegeKeyOf(row);
       paidByCollege.set(key, (paidByCollege.get(key) ?? 0) + 1);
     }
   }
@@ -374,8 +396,10 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
   const demographics = {
     totalConfirmedParticipants: distinctConfirmedParticipants,
     byCollege: collegeBuckets.map((bucket) => ({
-      collegeId: bucket.key === "unspecified" ? null : bucket.key,
-      collegeName: collegeNameById.get(bucket.key) ?? "Unspecified",
+      collegeId: isListedCollegeKey(bucket.key) ? bucket.key : null,
+      collegeName:
+        collegeNameById.get(bucket.key) ?? otherCollegeNameByKey.get(bucket.key) ?? "Unspecified",
+      isOtherCollege: bucket.key.startsWith("other:"),
       count: bucket.count,
     })),
     // Free text; the frontend collapses legacy slugs via formatDepartmentLabel.
@@ -392,8 +416,9 @@ async function getFestAnalyticsSummary(festId, scope = null, options = {}) {
     })),
     topCollegesByPaidCount: [...paidByCollege.entries()]
       .map(([key, count]) => ({
-        collegeId: key === "unspecified" ? null : key,
-        collegeName: collegeNameById.get(key) ?? "Unspecified",
+        collegeId: isListedCollegeKey(key) ? key : null,
+        collegeName: collegeNameById.get(key) ?? otherCollegeNameByKey.get(key) ?? "Unspecified",
+        isOtherCollege: key.startsWith("other:"),
         count,
       }))
       .sort((left, right) => right.count - left.count)

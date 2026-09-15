@@ -57,12 +57,12 @@ class AppErrorBoundary extends Component {
     }
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
-        <div className="w-full max-w-[420px] rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-subtle">
-          <h1 className="font-display text-[24px] font-bold leading-[32px] text-on-surface">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--surface)] px-6 text-center">
+        <div className="w-full max-w-[420px] rounded-xl border border-[var(--divider)] bg-[var(--surface-card)] p-6 shadow-[var(--e1)]">
+          <h1 className="font-[family-name:var(--font)] text-[24px] font-bold leading-[32px] text-[var(--ink)]">
             {COPY.title}
           </h1>
-          <p className="mt-2 font-body text-[14px] leading-[22px] text-on-surface-variant">
+          <p className="mt-2 font-[family-name:var(--font)] text-[14px] leading-[22px] text-[var(--muted)]">
             {COPY.subtext}
           </p>
           {/*
@@ -73,11 +73,11 @@ class AppErrorBoundary extends Component {
           <button
             type="button"
             onClick={() => window.location.reload()}
-            className="mt-5 flex h-[48px] w-full items-center justify-center rounded-pill bg-olive-accent font-body text-[13px] font-bold uppercase tracking-label-caps text-on-tertiary transition-transform active:scale-[0.98]"
+            className="mt-5 flex h-[48px] w-full items-center justify-center rounded-pill bg-[var(--primary)] font-[family-name:var(--font)] text-[13px] font-bold text-white transition-transform active:scale-[0.98]"
           >
             {COPY.reload}
           </button>
-          <p className="mt-3 font-body text-[12px] font-bold uppercase leading-4 tracking-label-caps text-on-surface-variant">
+          <p className="mt-3 font-[family-name:var(--font)] text-[12px] font-bold leading-4 text-[var(--muted)]">
             {COPY.reportedNote}
           </p>
         </div>

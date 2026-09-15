@@ -60,6 +60,7 @@ import {
 
 import '../../design/detail-page.css';
 import './fest-detail.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 const ALL_TAB = 'all';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -819,7 +820,7 @@ function FestDetailScreen() {
           <button
             type="button"
             className="ddp-hero__control"
-            onClick={() => navigate(-1)}
+            onClick={() => navigateBack(navigate, '/')}
             aria-label="Go back"
           >
             <BackIcon size="lg" />

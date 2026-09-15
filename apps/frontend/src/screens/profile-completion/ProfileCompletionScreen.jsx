@@ -40,6 +40,12 @@ import {
   validateDateOfBirthInput,
 } from '../../helpers/policy-documents.js';
 import CollegeSelect from '../../components/college-select/CollegeSelect.jsx';
+import {
+  OTHER_COLLEGE_NAME_MAX_LENGTH,
+  OTHER_COLLEGE_OPTION,
+  buildCollegePayload,
+  isCollegeChoiceComplete,
+} from '../../helpers/college-options.js';
 import DepartmentSelect from '../../components/department-select/DepartmentSelect.jsx';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { AlertIcon, DismissIcon } from '../../components/detail-icons/DetailIcons.jsx';
@@ -196,6 +202,8 @@ function ProfileCompletionScreen() {
   const [pinCode, setPinCode] = useState('');
   const [gender, setGender] = useState('');
   const [collegeId, setCollegeId] = useState('');
+  /* Typed when the college is not in the list ("Other"). */
+  const [otherCollegeName, setOtherCollegeName] = useState('');
   const [usn, setUsn] = useState('');
   const [department, setDepartment] = useState('');
   const [professionalEmail, setProfessionalEmail] = useState('');
@@ -373,7 +381,7 @@ function ProfileCompletionScreen() {
       label: phoneNumber.trim() === '' ? LOCAL_COPY.phone : 'A valid 10-digit phone number',
       isMet: isPhoneValid,
     },
-    { label: LOCAL_COPY.college, isMet: collegeId !== '' },
+    { label: LOCAL_COPY.college, isMet: isCollegeChoiceComplete(collegeId, otherCollegeName) },
     {
       /* The server requires >= 5 characters; catching it here names the field
          instead of the generic "one or more fields are invalid" a 400 produces. */
@@ -428,7 +436,7 @@ function ProfileCompletionScreen() {
       const savedProfile = await apiClient.patch('/users/me', {
         fullName,
         phoneNumber: phoneNumber.trim(),
-        collegeId,
+        ...buildCollegePayload(collegeId, otherCollegeName),
         usn: usn.trim().toUpperCase(),
         department: department || undefined,
         professionalEmail: professionalEmail.trim() || null,
@@ -621,6 +629,24 @@ function ProfileCompletionScreen() {
                 />
               </div>
             </div>
+
+            {collegeId === OTHER_COLLEGE_OPTION ? (
+              <div className="dpc-field">
+                <FieldLabel htmlFor="profile-other-college" required>
+                  Enter your college name
+                </FieldLabel>
+                <input
+                  id="profile-other-college"
+                  className="dpc-input"
+                  type="text"
+                  autoComplete="organization"
+                  required
+                  maxLength={OTHER_COLLEGE_NAME_MAX_LENGTH}
+                  value={otherCollegeName}
+                  onChange={(changeEvent) => setOtherCollegeName(changeEvent.target.value)}
+                />
+              </div>
+            ) : null}
 
             <div className="dpc-field">
               <FieldLabel htmlFor="profile-usn" required>{LOCAL_COPY.usn}</FieldLabel>

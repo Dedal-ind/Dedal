@@ -7,8 +7,7 @@
  * utility classes. When a token changes in src/brand, change it here too.
  */
 @theme {
-  /* Fonts -> font-display / font-body / font-mono */
-  --font-display: "Playfair Display", serif;
+  /* Fonts -> font-body / font-mono */
   --font-body: "Inter", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
@@ -240,27 +239,6 @@ body {
 }
 
 /*
- * Material Symbols Outlined. Icons are written as
- * <span className="material-symbols-outlined">icon_name</span>; without this
- * rule the ligature never forms and the raw icon name shows as text.
- */
-.material-symbols-outlined {
-  font-family: "Material Symbols Outlined";
-  font-weight: normal;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
-  -webkit-font-feature-settings: "liga";
-  -webkit-font-smoothing: antialiased;
-}
-
-/*
  * The text-selection highlight, app-wide.
  *
  * It was the brutalist orange #FF4B1F on white — the last thing in the app
@@ -481,14 +459,8 @@ a {
  * everywhere else, so Android falls through to Roboto. The cascade alone does
  * the switch — no user-agent sniffing, and nothing to download.
  * Scoped to a class rather than --font-body so the rest of the app keeps Inter. */
-/*
- * :not(.material-symbols-outlined) is load-bearing. The descendant selector
- * overrode the icon font on every glyph inside this screen, so `arrow_back` and
- * `notifications_none` rendered as their literal ligature text — the icon font
- * is selected BY font-family, so restyling all descendants silently unstyles it.
- */
 .font-platform,
-.font-platform *:not(.material-symbols-outlined) {
+.font-platform * {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", "Inter", sans-serif;
 }

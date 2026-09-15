@@ -1000,6 +1000,16 @@ async function reopenCancelledEvent(userId, festId, eventId, schedule = {}, cont
 async function deleteEvent(userId, festId, eventId, context = {}) {
   const { event } = await findEventForAdministrator(userId, festId, eventId);
 
+  /* Hard delete is for drafts only — anything that was ever live is archived,
+     cancelled or soft-deleted instead, so its history stays readable. */
+  if (event.status !== EVENT_STATUSES.DRAFT) {
+    throw new ApplicationError(
+      409,
+      ERROR_CODES.INVALID_EVENT_STATE,
+      "Only a draft event can be deleted. Cancel or withdraw it instead."
+    );
+  }
+
   const registrationCount = await RegistrationModel.countDocuments({ eventId: event._id });
   if (registrationCount > 0) {
     throw new ApplicationError(
@@ -1283,6 +1293,13 @@ async function setFestRegistrationClosed(userId, festId, shouldClose, context = 
  */
 async function deleteFest(userId, festId, context = {}) {
   const { fest } = await assertAdministratorOfFest(userId, festId);
+  if (fest.status !== FEST_STATUSES.DRAFT) {
+    throw new ApplicationError(
+      409,
+      ERROR_CODES.INVALID_FEST_STATE ?? ERROR_CODES.INVALID_EVENT_STATE,
+      "Only a draft fest can be deleted. Archive or cancel it instead."
+    );
+  }
   const events = await EventModel.find({ festId: fest._id }).select("_id eventName").lean();
   const registrationCount = events.length
     ? await RegistrationModel.countDocuments({ eventId: { $in: events.map((e) => e._id) } })

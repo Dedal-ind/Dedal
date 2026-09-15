@@ -20,6 +20,7 @@
 // mark in its own fixed box, vertically centred against the label, is what
 // actually fixes the alignment; nudging the font-size never would have.
 
+import { ExternalLink, MapPin } from 'lucide-react';
 import { buildMapsUrl } from '../../helpers/venue-map-link.js';
 
 function VenueLink({
@@ -49,36 +50,33 @@ function VenueLink({
       <a
         {...sharedProps}
         className={[
-          'press-card group flex w-full items-center gap-3 rounded-2xl border border-outline-variant',
-          'bg-surface-container-lowest p-3 text-left no-underline',
-          'hover:border-olive-accent/60 hover:bg-surface-container',
+          'press-card group flex w-full items-center gap-3 rounded-2xl border border-[var(--divider)]',
+          'bg-[var(--surface-card)] p-3 text-left no-underline',
+          'hover:border-[var(--ink-dim-2)] hover:bg-[var(--ink-dim-4)]',
           className,
         ].join(' ')}
       >
         <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-olive-accent/12"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--ink-dim-4)]"
           aria-hidden="true"
         >
-          <span className="material-symbols-outlined text-[20px] text-olive-accent">
-            location_on
-          </span>
+          <MapPin size={20} className="text-[var(--primary)]" />
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block font-body text-[11px] leading-4 text-on-surface-variant">
+          <span className="block font-[family-name:var(--font)] text-[11px] leading-4 text-[var(--muted)]">
             Venue
           </span>
-          <span className="block truncate font-body text-[15px] font-medium leading-5 text-on-surface">
+          <span className="block truncate font-[family-name:var(--font)] text-[15px] font-medium leading-5 text-[var(--ink)]">
             {venue}
           </span>
         </span>
 
-        <span
-          className="material-symbols-outlined shrink-0 text-[18px] text-outline transition-transform duration-200 group-hover:translate-x-0.5"
+        <ExternalLink
+          size={18}
+          className="shrink-0 text-[var(--muted)] transition-transform duration-200 group-hover:translate-x-0.5"
           aria-hidden="true"
-        >
-          arrow_outward
-        </span>
+        />
       </a>
     );
   }
@@ -88,17 +86,11 @@ function VenueLink({
       {...sharedProps}
       className={[
         'inline-flex items-center gap-1 underline underline-offset-2',
-        'text-secondary active:opacity-70',
+        'text-[var(--ink)] active:opacity-70',
         className,
       ].join(' ')}
     >
-      <span
-        className="material-symbols-outlined shrink-0"
-        style={{ fontSize: `${iconSize + 2}px` }}
-        aria-hidden="true"
-      >
-        location_on
-      </span>
+      <MapPin size={iconSize + 2} className="shrink-0" aria-hidden="true" />
       <span>{venue}</span>
     </a>
   );

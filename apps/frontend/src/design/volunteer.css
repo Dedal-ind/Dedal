@@ -203,16 +203,13 @@
   color: var(--muted);
 }
 
-/*
- * THREE COLUMNS, fixed, because there are exactly three of these. auto-fit at
- * a 130px floor fitted two per row on a 412px phone and left the third alone
- * on a row of its own — the orphan that made this block look misaligned.
- * Three short numbers fit 108px each at that width comfortably.
- */
-.dvl-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--card-gap);
+/* The check-in block: the shared OperatorStatGrid owns the columns (2×2 on a
+   phone, 4 across from 768px); this wrapper only stacks it above its alert. */
+.dvl-checkin {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
 }
 
 .dvl-stat {

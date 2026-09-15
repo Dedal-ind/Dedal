@@ -150,8 +150,10 @@ function AppHeader() {
           <div className="dhd-actions">
             <button
               type="button"
-              className="dhd-iconbutton dhd-iconbutton--search"
-              onClick={() => setIsSearchOpen(true)}
+              /* Every width: a modal on desktop, the full /search page on a
+                 phone, where a modal would cover the screen it opened from. */
+              className="dhd-iconbutton"
+              onClick={() => (isDesktop ? setIsSearchOpen(true) : navigate('/search'))}
               aria-label={COPY.openSearch}
               aria-haspopup="dialog"
             >

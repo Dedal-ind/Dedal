@@ -34,6 +34,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import apiClient from '../../api-client/api-client.js';
+import { useAddOnPurchase } from '../../hooks/use-add-on-purchase/use-add-on-purchase.js';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import {
   formatClockTime,
@@ -398,6 +399,14 @@ export function RegistrationDetail({
      bought. See the fetch below for why both are needed. */
   const [buyableAddOns, setBuyableAddOns] = useState([]);
   const [offerCatalog, setOfferCatalog] = useState({});
+  /* Buying from this sheet, through the same hook the pass and event page use.
+     The arrow defers the reference, so loadRegistration (declared below) is
+     read only when a purchase completes. */
+  const addOnPurchase = useAddOnPurchase({
+    registrationId,
+    returnTo: `/my-registrations/${registrationId}`,
+    onApplied: () => loadRegistration(),
+  });
 
   /* Inside the sheet and the panel the section titles sit under a title the
      parent already rendered, so they are h3 there and h2 on the page. */
@@ -441,7 +450,8 @@ export function RegistrationDetail({
        * never cost somebody the pass and cancel controls on this screen.
        */
       const festSlug = detail?.eventId?.festId?.festSlug;
-      const eventId = detail?.eventId?.id;
+      /* The public event lookup resolves by slug, not id. */
+      const eventSlug = detail?.eventId?.eventSlug;
 
       apiClient
         .get(`/registrations/${registrationId}/add-ons`)
@@ -450,7 +460,9 @@ export function RegistrationDetail({
 
       Promise.all([
         festSlug ? apiClient.get(`/public/fests/${festSlug}`).catch(() => null) : null,
-        eventId ? apiClient.get(`/public/events/${eventId}`).catch(() => null) : null,
+        festSlug && eventSlug
+          ? apiClient.get(`/public/fests/${festSlug}/events/${eventSlug}`).catch(() => null)
+          : null,
       ])
         .then(([festPayload, eventPayload]) => {
           const catalog = {};
@@ -469,7 +481,6 @@ export function RegistrationDetail({
   }, [registrationId]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadRegistration();
   }, [loadRegistration]);
 
@@ -905,14 +916,20 @@ export function RegistrationDetail({
                   <button
                     type="button"
                     className="drd-addon__action"
-                    onClick={() => navigate(`/registrations/${registrationId}/add-ons`)}
+                    onClick={() => addOnPurchase.buy(offer)}
+                    disabled={Boolean(addOnPurchase.busyKey)}
                   >
-                    Buy
+                    {addOnPurchase.busyKey === `${offer.scope}:${offer.offerKey}` ? 'Adding…' : 'Buy'}
                   </button>
                 </span>
               </li>
             ))}
           </ul>
+          {addOnPurchase.error ? (
+            <p className="drd-confirm__error" role="alert">
+              {addOnPurchase.error}
+            </p>
+          ) : null}
         </Section>
       ) : null}
 

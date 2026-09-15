@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchDecision, toPromotionSlide } from '../../helpers/decision-session.js';
 import { useViewability } from '../../hooks/use-viewability/use-viewability.js';
+import { useNearViewport } from '../../hooks/use-feed-observer/use-feed-observer.js';
 import { reportDeliveryEvent, DELIVERY_EVENT_KINDS } from '../../helpers/delivery-reporter.js';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { resolvePromotionDestination } from '../../helpers/promotion-destination.js';
@@ -21,6 +22,9 @@ function PromotionSlot({ placementKey }) {
   const [hasImageFailed, setHasImageFailed] = useState(false);
   const frameRef = useRef(null);
   const requestedRef = useRef(false);
+  /* Nothing loads until the slot is near the viewport: preload none, no src. */
+  const [isNear, setIsNear] = useState(false);
+  const markNear = useCallback(() => setIsNear(true), []);
 
   useEffect(() => {
     if (!isAuthenticated || requestedRef.current) return;
@@ -35,6 +39,7 @@ function PromotionSlot({ placementKey }) {
   }, [isAuthenticated, placementKey]);
 
   const decisionToken = slide?.decisionToken ?? null;
+  useNearViewport(frameRef, markNear, Boolean(slide) && !isNear);
 
   useViewability({
     elementRef: frameRef,
@@ -65,14 +70,14 @@ function PromotionSlot({ placementKey }) {
 
   const artwork = isVideo ? (
     <video
-      src={media.videoUrl}
+      src={isNear ? media.videoUrl : undefined}
       poster={media.imageUrl || undefined}
       autoPlay
       muted
       loop
-      controls
       playsInline
-      preload="metadata"
+      controls
+      preload={isNear ? 'metadata' : 'none'}
       onLoadedData={handleMediaRendered}
       className="h-full w-full object-cover"
     >
@@ -89,8 +94,8 @@ function PromotionSlot({ placementKey }) {
     />
   ) : (
     /* Not the sponsor's artwork, so it reports no measurable impression. */
-    <div className="flex h-full w-full items-end bg-gradient-to-br from-olive-accent to-black p-4">
-      <span className="font-body text-[16px] font-semibold leading-snug text-white">{slide.title}</span>
+    <div className="flex h-full w-full items-end bg-[var(--ink)] p-4">
+      <span className="font-[family-name:var(--font)] text-[16px] font-semibold leading-snug text-white">{slide.title}</span>
     </div>
   );
 
@@ -103,7 +108,7 @@ function PromotionSlot({ placementKey }) {
   const destinationUrl = destination?.kind === 'external' ? destination.url : null;
 
   return (
-    <div ref={frameRef} className="overflow-hidden rounded-heritage bg-surface-container">
+    <div ref={frameRef} className="overflow-hidden rounded-[var(--r-card)] bg-[var(--ink-dim-4)]">
       <div className="h-[200px] w-full">
         {destinationUrl ? (
           <a
@@ -125,7 +130,7 @@ function PromotionSlot({ placementKey }) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleClick}
-          className="block px-3 py-2 font-body text-[12px] font-semibold text-olive-accent underline"
+          className="block px-3 py-2 font-[family-name:var(--font)] text-[12px] font-semibold text-[var(--primary)] underline"
         >
           Learn more
         </a>

@@ -24,7 +24,7 @@ function PublicOnlyRoute() {
   }
   if (authorizationState === 'unknown') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--surface)]">
         <span
           aria-label="Loading"
           className="h-6 w-6 animate-spin rounded-full border-2 border-ink-gray-200 border-t-ink-black"

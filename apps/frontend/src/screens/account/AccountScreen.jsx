@@ -48,6 +48,7 @@ import {
 } from '../../components/detail-icons/DetailIcons.jsx';
 import { SECTIONS } from './account-sections.js';
 import { useIsDesktopLayout } from './use-desktop-layout.js';
+import { navigateBack } from '../../helpers/navigate-back.js';
 /* account.css is loaded from main.jsx alongside the other design-system
    sheets, not imported here — see the note there. */
 
@@ -164,7 +165,7 @@ function AccountScreen() {
       navigate('/account', { replace: true });
       return;
     }
-    navigate(-1);
+    navigateBack(navigate, '/');
   }
 
   const ActiveScreen = activeSection?.Screen ?? null;

@@ -30,6 +30,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useNavigate, useParams } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import apiClient from '../../api-client/api-client.js';
+import AddOnShop from '../../components/add-on-shop/AddOnShop.jsx';
 import {
   BackIcon,
   BrightnessIcon,
@@ -45,11 +46,14 @@ import {
 } from '../../components/detail-icons/DetailIcons.jsx';
 import { sortedByTier } from '../../helpers/sponsor-hierarchy.js';
 import { maskEmailAddress } from '../../helpers/mask-email-address.js';
+import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
 import PassCard, { PassEventList } from './PassCard.jsx';
 import { buildPassEventRows, formatPassDateRange } from './pass-format.js';
 import './qr-pass.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 const COPY = {
+  offline: 'Offline — your pass still works',
   title: 'My pass',
   back: 'Go back',
   loadFailedTitle: 'We could not load your pass',
@@ -308,6 +312,7 @@ function CampusAccess({ gateStatus }) {
 
 function QrPassScreen() {
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
   const { festId } = useParams();
 
   const [passData, setPassData] = useState(null);
@@ -351,6 +356,16 @@ function QrPassScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadPass();
   }, [loadPass]);
+
+  /* A quiet re-read after an add-on is applied: the new entitlement appears on
+     the same pass without the whole screen dropping back to its skeleton. */
+  const refreshPass = useCallback(async () => {
+    try {
+      setPassData(await apiClient.get(`/passes/mine?festId=${festId}`));
+    } catch {
+      // The pass on screen stays valid; it refreshes on the next visit.
+    }
+  }, [festId]);
 
   // The other passes, for the switcher. A failure leaves the list empty, which
   // hides the switcher — correct, and quiet.
@@ -485,6 +500,10 @@ function QrPassScreen() {
   }
 
   const passUrl = `${window.location.origin}/my-passes/${festId}`;
+  /* Add-ons are bought against a confirmed registration; any one at this fest
+     carries the fest-wide offers. */
+  const addOnRegistrationId =
+    festRegistrations.find((row) => row.status === 'confirmed')?.id ?? null;
 
   function handleShare() {
     if (navigator.share) {
@@ -530,7 +549,7 @@ function QrPassScreen() {
         <button
           type="button"
           className="dqp-bar__back"
-          onClick={() => navigate(-1)}
+          onClick={() => navigateBack(navigate, '/')}
           aria-label={COPY.back}
         >
           <BackIcon size="lg" />
@@ -650,6 +669,16 @@ function QrPassScreen() {
                 phone: it is the precondition for every entitlement on the card,
                 so it reads immediately after them. */}
             <CampusAccess gateStatus={gateStatus} />
+
+            {/* Buy food, merch or a stay right here at the gate. The purchase
+                lands on THIS pass — same QR, updated entitlements. */}
+            {addOnRegistrationId ? (
+              <AddOnShop
+                registrationId={addOnRegistrationId}
+                returnTo={`/my-passes/${festId}`}
+                onApplied={refreshPass}
+              />
+            ) : null}
           </div>
 
           {/*
@@ -738,6 +767,10 @@ function QrPassScreen() {
           </aside>
         </div>
       ) : null}
+
+      {/* The pass is a QR drawn on the device, so it works with no network.
+          Quiet on purpose: this screen is already ink, so no ink strip. */}
+      {!isOnline ? <p className="dqp-offline">{COPY.offline}</p> : null}
     </div>
   );
 }

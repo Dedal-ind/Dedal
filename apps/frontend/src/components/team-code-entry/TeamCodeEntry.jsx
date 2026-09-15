@@ -9,12 +9,7 @@
 // add their own offers (add-ons) here; the client will decide whether joiners
 // get an add-ons step later. Mirrors the TODO in joinTeamByInviteCode.
 //
-// ── THE FORK IS GONE ──────────────────────────────────────────────────────
-// screens/team-management/TeamJoinCodeEntry.jsx was a copy of this file, made
-// because restyling this one onto the design system would have restyled the
-// then-unmigrated Heritage event-detail screen from underneath it. Event detail
-// is migrated, so that reason expired: the copy's dedal markup was folded back
-// in here, the copy was deleted, and both screens render this component again.
+// Event detail and /my-teams both render this one component; there is no copy.
 // Its styling is design/team-code-entry.css (prefix `dtc-`), which is the
 // component's own sheet — it does not borrow from a screen's stylesheet.
 

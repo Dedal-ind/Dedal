@@ -198,26 +198,24 @@ function VolunteerEventScreen() {
           </div>
         ) : data ? (
           <>
-            <section className="dvl-post">
-              <div className="dvl-post__head">
-                {data.eventType ? (
-                  <span className="dvl-eyebrow">
-                    {data.eventType === 'team' ? COPY.team : COPY.solo}
-                  </span>
-                ) : null}
-                <h2 className="dvl-post__name">{data.checkpointName ?? 'Checkpoint'}</h2>
-                {data.eventName ? (
-                  <p className="dvl-meta">
-                    <span className="dvl-meta__text">{data.eventName}</span>
-                  </p>
-                ) : null}
-              </div>
+            {/* The heading sits above the numbers, not inside a card, and the
+                separate "checked in" headline is gone — the grid already says
+                it — so the four stats and the scanner fit on one phone screen. */}
+            <div className="dvl-post__head">
+              {data.eventType ? (
+                <span className="dvl-eyebrow">
+                  {data.eventType === 'team' ? COPY.team : COPY.solo}
+                </span>
+              ) : null}
+              <h2 className="dvl-post__name">{data.checkpointName ?? 'Checkpoint'}</h2>
+              {data.eventName ? (
+                <p className="dvl-meta">
+                  <span className="dvl-meta__text">{data.eventName}</span>
+                </p>
+              ) : null}
+            </div>
 
-              <div className="dvl-headline">
-                <span className="dvl-headline__value">{checkedIn}</span>
-                <span className="dvl-headline__label">{COPY.checkedInOf(checkedIn, total)}</span>
-              </div>
-
+            <section className="dvl-checkin">
               <OperatorStatGrid
                 stats={buildCheckInStats({
                   checkedIn,

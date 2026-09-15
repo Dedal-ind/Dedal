@@ -5,18 +5,18 @@
 // a badge saying "Participant" is noise on a screen that is already theirs.
 //
 // It lives in both design systems, so the `variant` picks which one: 'participant'
-// is Heritage Institutional (rounded pill, Inter label-caps, olive/navy tokens)
+// is the dedal participant system (pill, ink and primary tokens)
 // and 'admin' is Executive Precision (rounded, tinted, sentence case). Neither
 // palette carries a purple or a per-role hue, so the tones below map each role
 // to the CLOSEST token that already exists rather than introducing new colours:
-// the Heritage system leans on its navy primary for authority and olive for the
-// operational roles, and the admin system on its blue/amber/green status trio.
+// the participant system uses ink for authority and primary for the
+// operational roles, and the admin system its blue/amber/green status trio.
 
 const PARTICIPANT_TONES = {
-  platformAdmin: 'bg-primary-container text-on-primary',
-  administrator: 'bg-primary-container text-on-primary',
-  coordinator: 'bg-olive-accent text-on-tertiary',
-  volunteer: 'border border-olive-accent text-olive-accent',
+  platformAdmin: 'bg-[var(--ink)] text-white',
+  administrator: 'bg-[var(--ink)] text-white',
+  coordinator: 'bg-[var(--primary)] text-white',
+  volunteer: 'border border-[var(--primary)] text-[var(--primary)]',
 };
 
 const ADMIN_TONES = {
@@ -55,7 +55,7 @@ function RoleBadge({ roleIdentity, variant = 'participant', className = '' }) {
   return (
     <span
       className={[
-        'inline-flex max-w-full items-center truncate rounded-pill px-2.5 py-0.5 font-body text-[10px] font-bold uppercase leading-4 tracking-label-caps',
+        'inline-flex max-w-full items-center truncate rounded-pill px-2.5 py-0.5 font-[family-name:var(--font)] text-[10px] font-bold leading-4',
         PARTICIPANT_TONES[kind] ?? PARTICIPANT_TONES.administrator,
         className,
       ]

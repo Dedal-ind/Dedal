@@ -43,6 +43,7 @@ import {
   setScannerAudioMuted,
 } from '../../helpers/scan-beep.js';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
+import { navigateBack } from '../../helpers/navigate-back.js';
 import {
   BackIcon,
   CheckIcon,
@@ -589,7 +590,7 @@ function VolunteerScannerScreen() {
         <button
           type="button"
           className="dvs-iconbutton dvs-topbar__back"
-          onClick={() => navigate(-1)}
+          onClick={() => navigateBack(navigate, '/backstage/volunteer-hub')}
           aria-label="Back"
         >
           <BackIcon size="lg" />

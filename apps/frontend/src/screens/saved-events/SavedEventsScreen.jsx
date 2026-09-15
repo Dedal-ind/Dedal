@@ -250,7 +250,7 @@ function SavedEventsScreen() {
           <EmptyState
             line="Events you save will show up here."
             actionLabel="Browse fests"
-            onAction={() => navigate('/explore')}
+            onAction={() => navigate('/')}
           />
         ) : null}
 

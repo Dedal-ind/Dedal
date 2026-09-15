@@ -3,15 +3,6 @@
 // domain. If it appears in the UI as literal text and is not user-generated,
 // it belongs in this file so copy can be reviewed and changed in one place.
 
-export const GLOBAL_COPY = {
-  appName: 'dedal',
-  tagline: 'Your pass to every fest',
-  comingSoon: 'This screen is coming soon',
-  loading: 'Loading…',
-  retry: 'Try again',
-  somethingWentWrong: 'Something went wrong. Please try again.',
-};
-
 // The account dropdown behind the top-right avatar, and the sign-out escape
 // hatches that let someone leave an account they are stuck in.
 export const IDENTITY_MENU_COPY = {
@@ -26,14 +17,6 @@ export const IDENTITY_MENU_COPY = {
 
 export const INLINE_ERROR_COPY = {
   retry: 'RETRY',
-};
-
-export const SECTION_HEADERS = {
-  quickAccess: 'QUICK ACCESS',
-  operativeFile: 'OPERATIVE FILE',
-  backstage: 'BACKSTAGE',
-  happeningNow: 'HAPPENING NOW',
-  savedByYou: 'SAVED BY YOU',
 };
 
 export const AUTH_COPY = {
@@ -238,71 +221,6 @@ export const DEPARTMENT_OPTIONS = [
 // Year-of-study choices shown as the 1–6 square toggle row.
 export const YEAR_OF_STUDY_OPTIONS = [1, 2, 3, 4, 5, 6];
 
-export const REGISTRATION_COPY = {
-  registerButton: 'Register',
-  registeredBadge: 'REGISTERED',
-  emptyTitle: 'No registrations yet',
-  emptySubtext: 'Events you register for will show up here.',
-  successHeadline: 'YOU ARE IN',
-  successSubtext: 'Your registration is confirmed. Your pass is ready.',
-};
-
-export const PASSES_COPY = {
-  title: 'My passes',
-  emptyTitle: 'No passes yet',
-  emptySubtext: 'Register for a fest and your pass appears here.',
-  showAtGate: 'SHOW THIS AT THE GATE',
-};
-
-export const CERTIFICATES_COPY = {
-  title: 'My certificates',
-  emptyTitle: 'No certificates yet',
-  emptySubtext: 'Certificates you earn will be collected here.',
-  verifyTitle: 'Verify certificate',
-};
-
-export const DISCOVERY_COPY = {
-  /*
-   * Promotion carousels (they replaced the featured-fest hero). Two sections,
-   * two types: paid/sponsor banners, and fests that colleges asked the platform
-   * to promote. Each has its own heading so a participant can tell an advert
-   * from an event they might actually attend.
-   */
-  promotionsSectionTitle: 'PROMOTIONS',
-  promotionsRegionLabel: 'Promotions',
-  collegeEventsSectionTitle: 'UPCOMING COLLEGE EVENTS',
-  collegeEventsRegionLabel: 'Upcoming college events',
-  promotionSlideLabel: (slideNumber, slideCount) => `Slide ${slideNumber} of ${slideCount}`,
-  // The previous/next controls: the single-pointer, keyboard-reachable
-  // alternative to swiping that WCAG 2.5.7 requires.
-  promotionPrevious: 'Previous promotion',
-  promotionNext: 'Next promotion',
-  // Prefixes the badge for a screen reader, which has no bottom-left corner to
-  // read the context from.
-  promotionLearnMore: 'Learn more',
-  promotionCollegePrefix: 'Promoted by',
-  brandName: 'dedal',
-  searchPlaceholder: 'Search fests, events, colleges...',
-  notificationsLabel: 'Notifications',
-  categoryAll: 'All',
-  featuredBadge: 'FEATURED',
-  publicBadge: 'PUBLIC',
-  grabPass: 'GRAB PASS',
-  seeAll: 'VIEW ALL',
-  sectionMyPasses: 'My Passes',
-  passStatusLive: 'LIVE',
-  passStatusUpcoming: 'UPCOMING',
-  passQrHint: 'Pass QR code',
-  sectionUpcoming: 'Upcoming Fests',
-  sectionThisWeek: 'This Week',
-  sectionCategories: 'CATEGORIES',
-  categoryBrowseAll: 'ALL CATEGORIES →',
-  sectionOpenFests: 'OPEN FESTS',
-  emptyTitle: 'No fests yet',
-  emptySubtext: 'Published fests will show up here. Check back soon.',
-  errorMessage: 'Could not load fests.',
-};
-
 /*
  * SUGGESTION LIST ONLY. Mirrors constants/event-constants.js EVENT_CATEGORIES,
  * which is no longer a backend enum: `category` is free text, so an event may
@@ -345,27 +263,6 @@ export const EVENT_CATEGORIES = [
   { label: 'Workshop', value: 'workshop' },
 ];
 
-/*
- * The chips. Thirty chips is not a filter row, it is a wall — so the quick
- * filters stay the handful participants actually browse by, ordered by how they
- * browse (the big three first) rather than alphabetically. Everything outside
- * this subset, including categories an organiser invented, is reachable through
- * the category search beside the chips. "All" is not in this list: it is the
- * reset chip each screen renders ahead of it.
- */
-export const COMMON_EVENT_CATEGORIES = [
-  { label: 'Technical', value: 'technical' },
-  { label: 'Cultural', value: 'cultural' },
-  { label: 'Sports', value: 'sports' },
-  { label: 'Management', value: 'management' },
-  { label: 'Arts', value: 'arts' },
-  { label: 'Commerce', value: 'commerce' },
-  { label: 'Workshop', value: 'workshop' },
-  { label: 'Gaming', value: 'gaming' },
-  { label: 'Literary', value: 'literary' },
-  { label: 'Other', value: 'other' },
-];
-
 // scoringFormat enum -> the human label shown in the event detail format tile.
 export const SCORING_FORMAT_LABELS = {
   bracketSingleElimination: 'Bracket',
@@ -373,120 +270,6 @@ export const SCORING_FORMAT_LABELS = {
   timeTrial: 'Time trial',
   judged: 'Judged',
   none: 'Standard',
-};
-
-export const CATEGORY_EVENTS_COPY = {
-  browseByCategory: 'Browse by Category',
-  allFestsHeading: 'All Fests',
-  allTitle: 'ALL FESTS',
-  categoryAll: 'All',
-  // The escape hatch from the chip row: any category, including ones an
-  // organiser invented that no chip will ever show.
-  categorySearchPlaceholder: 'Search categories...',
-  categorySearchLabel: 'Search event categories',
-  categorySearchHint: 'PRESS ENTER TO FILTER BY WHAT YOU TYPED',
-  categoryClear: 'CLEAR CATEGORY',
-  eventCountSuffix: 'EVENTS',
-  // The /search grid lists fests; the card shows how many events each holds.
-  festCountSuffix: 'FESTS',
-  festEventsSuffix: 'EVENTS',
-  sortLabel: 'SORT',
-  sortByDate: 'By date',
-  sortByName: 'By name',
-  fillingFast: 'FILLING FAST',
-  full: 'FULL',
-  free: 'FREE',
-  loadingMore: 'Loading more fests',
-  emptyTitle: 'No fests found',
-  emptySubtext: 'Try a different category or search.',
-  errorMessage: 'Could not load fests.',
-};
-
-export const SEARCH_COPY = {
-  placeholder: 'Search fests and events',
-  festTag: 'FEST',
-  eventTag: 'EVENT',
-  emptyTitle: 'Nothing matches',
-  emptySubtext: 'Try a different fest, event, or college.',
-  errorMessage: 'Could not run the search.',
-};
-
-// The shared rectangular event card (fest detail tree + event detail group view).
-export const EVENT_CARD_COPY = {
-  groupTag: 'GROUP',
-  eventsSuffix: 'EVENTS',
-  openLabel: (eventName) => `Open ${eventName}`,
-  expandLabel: (eventName) => `Expand ${eventName}`,
-  collapseLabel: (eventName) => `Collapse ${eventName}`,
-};
-
-export const FEST_DETAIL_COPY = {
-  // Group (contingent) registration, offered above the event list.
-  groupRegistrationTitle: 'Group Registration Available',
-  groupRegistrationBody: (eventName) =>
-    `Register your entire group for ${eventName} and get a join code for each sub-event.`,
-  groupRegistrationAction: 'Register as group',
-
-  crewDirectory: 'CREW DIRECTORY',
-  shareFest: 'SHARE FEST',
-  foodAvailable: 'FOOD AVAILABLE',
-  accommodationAvailable: 'STAY AVAILABLE',
-  eventsSuffix: 'EVENTS',
-  contactPrefix: 'CONTACT:',
-  errorMessage: 'Could not load this fest.',
-  emptyEvents: 'No events published yet.',
-  festivalBadge: 'FESTIVAL',
-  highlightsTitle: 'Fest Highlights',
-  highlightEvents: 'EVENTS',
-  highlightDays: 'DAYS',
-  highlightCategories: 'CATEGORIES',
-  featuredTitle: 'Featured Events',
-  viewAll: 'VIEW ALL',
-  filterAll: 'All',
-  organizedByTitle: 'Organized By',
-  organizerRole: 'Host college',
-  entryFeeLabel: 'Entry fee',
-  freeEntry: 'Free Entry',
-  registerCta: 'REGISTER FOR FEST',
-  registrationsClosed: 'Closed',
-};
-
-export const EVENT_DETAIL_COPY = {
-  faqsTitle: 'FAQs',
-  labelSchedule: 'SCHEDULE',
-  labelVenue: 'Venue',
-  labelFormat: 'Format',
-  labelCapacity: 'Capacity',
-  capacityUnlimited: 'UNLIMITED',
-  slotsSuffix: 'slots',
-  registrationPrefix: 'Registration',
-  registrationClosed: 'Registration closed',
-  missionBrief: 'About this event',
-  readFullRules: 'READ FULL RULES',
-  hideRules: 'HIDE RULES',
-  labelPrizePool: 'PRIZE POOL',
-  labelRegistrationQuestions: 'Registration',
-  questionsSuffix: 'questions during registration',
-  labelMedical: 'MEDICAL',
-  medicalRequired: 'Medical declaration required',
-  // The CONTACT block — who to call about this event.
-  contactHeading: 'Contact',
-  contactEmpty: 'No contact listed yet. Check back closer to the event.',
-  contactRoleCoordinator: 'COORDINATOR',
-  contactRoleVolunteer: 'VOLUNTEER',
-  registerNow: 'Register',
-  createTeamButton: 'CREATE TEAM →',
-  joinWithCodeButton: 'JOIN WITH CODE',
-  joinPanelTitle: 'ENTER YOUR TEAM CODE',
-  registrationClosedButton: 'Registration closed',
-  eventFull: 'EVENT FULL',
-  // Shown instead of EVENT FULL when the organiser opened a queue. A full event
-  // with a waitlist is not a dead end, and the button must not say it is.
-  joinWaitlist: 'JOIN WAITLIST',
-  waitlistFull: 'WAITLIST FULL',
-  errorMessage: 'Could not load this event.',
-  groupNotice: 'This is a group. Choose a specific event below.',
-  groupTag: 'GROUP',
 };
 
 // Food preference options (fest offers food). Values match the backend enum.
@@ -669,125 +452,6 @@ export const ERROR_BOUNDARY_COPY = {
   reportedNote: 'The problem has been reported automatically.',
 };
 
-export const MY_REGISTRATIONS_COPY = {
-  title: 'My Registrations',
-  subtitle: 'All events you have registered for',
-  waitlistPosition: (position) => `POSITION ${position}`,
-  tabActive: 'ACTIVE',
-  tabPast: 'PAST',
-  activeCountSuffix: 'ACTIVE REGISTRATIONS',
-  pastCountSuffix: 'PAST REGISTRATIONS',
-  soloLabel: 'SOLO',
-  paidSuffix: 'PAID',
-  pendingSuffix: 'PENDING',
-  freeLabel: 'FREE',
-  emptyTitle: 'No registrations yet',
-  emptySubtext: 'Events you register for will show up here.',
-  exploreEvents: 'Explore events',
-  errorMessage: 'Could not load your registrations.',
-  cancelledByPrefix: 'CANCELLED BY',
-  keepIt: 'KEEP IT',
-  // Chronology sections — the client's "all past and upcoming" split.
-  sectionUpcoming: 'UPCOMING',
-  sectionToday: 'HAPPENING NOW',
-  sectionPast: 'PAST',
-  viaContingentPrefix: 'VIA',
-  emptyUpcomingTitle: 'NOTHING COMING UP',
-  emptyUpcomingSubtext: 'You have no upcoming events. Your past registrations are still below.',
-  discoverEvents: 'DISCOVER EVENTS →',
-};
-
-// Registration status -> short chip label + which tab it belongs to.
-export const REGISTRATION_STATUS_LABELS = {
-  confirmed: 'CONFIRMED',
-  waitlisted: 'WAITLISTED',
-  pendingPayment: 'PENDING PAYMENT',
-  cancelled: 'CANCELLED',
-  attended: 'ATTENDED',
-  noShow: 'NO SHOW',
-  winner1st: '1ST PLACE',
-  winner2nd: '2ND PLACE',
-  winner3rd: '3RD PLACE',
-  advancedToR2: 'ADVANCED',
-  advancedToR3: 'ADVANCED',
-  advancedToQuarterFinal: 'QUARTER FINAL',
-  advancedToSemiFinal: 'SEMI FINAL',
-  advancedToFinal: 'FINAL',
-  eliminated: 'ELIMINATED',
-  disqualified: 'DISQUALIFIED',
-  paymentExpired: 'PAYMENT EXPIRED',
-};
-
-// Statuses shown under the ACTIVE tab; everything else falls under PAST.
-export const ACTIVE_REGISTRATION_STATUSES = ['confirmed', 'waitlisted', 'pendingPayment'];
-
-export const MY_CERTIFICATES_COPY = {
-  title: 'My Certificates',
-  subtitle: 'Certificates received from coordinators and admins.',
-  tabAll: 'ALL',
-  tabByFest: 'BY FEST',
-  countSuffix: 'certificates',
-  issuedPrefix: 'Issued:',
-  issuedByPrefix: 'Issued by',
-  previewPlaceholder: 'Certificate Preview',
-  downloadLabel: 'Download certificate',
-  verifiedPrefix: 'VERIFIED ✓ · CODE:',
-  emptyTitle: 'No certificates yet',
-  emptySubtext: 'Certificates you earn will be collected here after each fest.',
-  exploreEvents: 'Explore events',
-  errorMessage: 'Could not load your certificates.',
-};
-
-// certificateType -> chip label, chip style, and whether it carries a mark.
-export const CERTIFICATE_TYPE_META = {
-  participation: { label: 'PARTICIPATION', style: 'outlined', title: 'PARTICIPATION' },
-  winner1st: { label: '1ST PLACE', style: 'firstPlace', icon: 'trophy', title: 'FIRST PLACE' },
-  winner2nd: { label: '2ND PLACE', style: 'secondPlace', icon: 'trophy', title: 'SECOND PLACE' },
-  winner3rd: { label: '3RD PLACE', style: 'thirdPlace', icon: 'trophy', title: 'THIRD PLACE' },
-  coordinator: { label: 'COORDINATOR', style: 'filled', title: 'COORDINATOR' },
-  volunteer: { label: 'VOLUNTEER', style: 'accentOutline', title: 'VOLUNTEER SERVICE' },
-  administrator: { label: 'ADMINISTRATOR', style: 'filled', title: 'ADMINISTRATION' },
-  specialMention: { label: 'SPECIAL MENTION', style: 'accentFill', icon: 'star', title: 'SPECIAL MENTION' },
-};
-
-export const CERTIFICATE_DETAIL_COPY = {
-  title: 'CERTIFICATE',
-  certificateOf: 'CERTIFICATE OF',
-  awardedTo: 'Awarded to',
-  forLabel: 'For',
-  hostedByPrefix: 'Hosted by',
-  verificationCodeLabel: 'VERIFICATION CODE',
-  verifyAtPrefix: 'Verify at',
-  verifyPath: '/verify-certificate',
-  issuedPrefix: 'Issued',
-  downloadPdf: 'DOWNLOAD PDF',
-  downloading: 'DOWNLOADING…',
-  downloadFailed: 'DOWNLOAD FAILED — TRY AGAIN',
-  share: 'SHARE',
-  verifyHeader: 'VERIFY THIS CERTIFICATE',
-  verifyPlaceholder: 'ENTER VERIFICATION CODE',
-  verifyButton: 'VERIFY →',
-  verifyHelper: 'This verification is public. Anyone with the code can confirm authenticity.',
-  verifiedTitle: 'VERIFIED — This certificate is authentic',
-  notFoundTitle: 'NOT FOUND — No certificate matches this code',
-  poweredBy: 'Powered by Dedal',
-  publicTryAnother: 'This code does not match any certificate. Try another code.',
-  errorMessage: 'Could not load this certificate.',
-  detailsHeader: 'Certificate Details',
-  labelRecipient: 'Recipient',
-  labelEvent: 'Event',
-  labelFest: 'Fest',
-  labelCollege: 'Issuing College',
-  labelDate: 'Date',
-  labelCertificateId: 'Certificate ID',
-  verifyAuthTitle: 'Verify Authenticity',
-  verifyAuthBody: 'Scan to verify this certificate on the dedal registry.',
-  publicTitle: 'Verify Certificate',
-  publicSubtitle: 'Enter a certificate ID or scan a QR code to verify authenticity.',
-  codeLabel: 'Certificate ID',
-  verifiedHeading: 'Certificate Verified',
-};
-
 export const TEAMS_COPY = {
   title: 'My Team',
   subtitle: 'Select an event, then create or join a team to collaborate and compete.',
@@ -942,61 +606,6 @@ export const REGISTRATION_DETAIL_COPY = {
   errorMessage: 'Could not load this registration.',
 };
 
-export const PASSES_LIST_COPY = {
-  title: 'My Passes',
-  subtitle: 'QR passes generated for your registered events',
-  tabActive: 'Active',
-  tabArchived: 'Archived',
-  statusValid: 'Active',
-  statusSuspended: 'Suspended',
-  statusRevoked: 'Revoked',
-  labelDate: 'Date',
-  labelTime: 'Time',
-  labelVenue: 'Venue',
-  labelStatus: 'Status',
-  idPrefix: 'ID:',
-  qrAltPrefix: 'QR pass for',
-  emptyTitle: 'No passes yet',
-  emptySubtext: 'Register for a fest and your pass appears here.',
-  exploreFests: 'Explore fests',
-  errorMessage: 'Could not load your passes.',
-};
-
-export const QR_PASS_COPY = {
-  // Pass-by-email (the pass is mailed once, on first issue, to the holder).
-  passEmailedTo: (maskedEmailAddress) => `PASS EMAILED TO ${maskedEmailAddress}`,
-  passNotEmailedYet: 'PASS NOT EMAILED YET',
-  resendPassEmail: 'SEND ME MY PASS AGAIN',
-  resendSucceeded: 'SENT — CHECK YOUR INBOX (AND SPAM).',
-  resendFailed: 'Could not send the email right now. Your pass still works in the app.',
-  title: 'MY PASS',
-  // The one-line explanation of the model: one card for the whole fest, with
-  // every event and add-on hanging off it.
-  onePassNote: (festName) => `This pass covers everything you've registered for at ${festName}.`,
-  entitlementsIntro:
-    'Everything below is backed by the one QR above — each door and counter finds its own entry.',
-  remainingSuffix: 'remaining',
-  offerFallbackLabel: 'Add-on',
-  participantBadge: 'PARTICIPANT',
-  backupCodeLabel: 'BACKUP CODE',
-  addToWallet: 'ADD TO WALLET',
-  sharePass: 'SHARE PASS',
-  entitlementsHeader: 'ENTITLEMENTS',
-  usedSuffix: 'USED',
-  errorMessage: 'Could not load your pass.',
-};
-
-// entitlementType -> display label. Event-entry uses the populated event name.
-export const ENTITLEMENT_TYPE_LABELS = {
-  gateAccess: 'Gate Access',
-  eventEntry: 'Event Entry',
-  // offerClaim resolves to the offer's own name (the pass endpoint attaches it);
-  // this is the fallback when an offer was deleted out from under the claim.
-  offerClaim: 'Add-on',
-  meal: 'Meal Pass',
-  accommodationNight: 'Accommodation',
-};
-
 export const BACKSTAGE_COPY = {
   title: 'Backstage',
   // The access header: role-specific title + the one-line explainer.
@@ -1068,42 +677,6 @@ export const VOLUNTEER_HOURS_COPY = {
   // The in-progress caveat, so a volunteer mid-shift is not confused by a
   // number smaller than their rostered window.
   inProgressNote: 'A shift in progress counts only the time worked so far.',
-};
-
-/*
- * The volunteer's own dashboard. Consumed by screens/volunteer-dashboard only,
- * so this block was corrected in place rather than overridden locally.
- *
- * Every label was stamped uppercase and several said their state in a word the
- * old design then coloured green or amber. There is no green or amber in the
- * design system, so the words now carry the whole meaning: "not checked in yet"
- * rather than "PENDING" in amber, "checked in" and "expected" spelled out
- * rather than a percentage under an olive arc. `postLabel` replaces
- * `activeShiftLabel`: the summary returns every shift-covered checkpoint, not
- * only the one running right now, so "active shift" was asserting something the
- * payload does not say.
- */
-export const VOLUNTEER_DASHBOARD_COPY = {
-  title: 'My dashboard',
-  refresh: 'Reload',
-  postLabel: 'My post',
-  openScanner: 'Open the scanner',
-  checkedInOf: (checkedIn, expected) => `${checkedIn} checked in of ${expected} expected`,
-  contactCoordinator: 'Find my coordinator',
-  statPending: 'Not checked in yet',
-  statCheckedIn: 'Checked in',
-  statCheckedOut: 'Checked out',
-  statMyScans: 'My scans today',
-  downloadFullList: 'Download the full list',
-  downloadCheckedIn: 'Download the checked in list',
-  downloadFailed: 'Could not build that file. Try again.',
-  // Mirrors the crew-access empty state: an assignment without shifts.
-  emptyLine:
-    'No shift covered checkpoints yet. Your fest admin schedules you at one, and it appears here.',
-  errorMessage: 'Could not load your dashboard.',
-  retry: 'Try again',
-  offline:
-    'You are offline, so these counts are the last ones loaded and downloads are unavailable until you are back on a network.',
 };
 
 export const CALENDAR_COPY = {
@@ -1192,11 +765,6 @@ export const CAMPUS_ACCESS_COPY = {
   entriesTodayLabel: 'Campus entries today',
   recentEntriesHeading: 'Recent entries',
   noEntriesYet: 'No one has entered yet today.',
-};
-
-export const SPONSORS_COPY = {
-  heading: 'SPONSORS',
-  logoAlt: (sponsorName) => (sponsorName ? `${sponsorName} logo` : 'Sponsor logo'),
 };
 
 /*
@@ -1385,28 +953,6 @@ export const CREW_DIRECTORY_COPY = {
   errorMessage: 'Could not load the crew directory.',
 };
 
-/*
- * The crew-directory fest picker. Consumed by screens/crew-select only, so this
- * block was corrected in place rather than overridden locally: sentence case
- * instead of stamped uppercase, "My fests" for the ones the signed-in user
- * staffs, and the empty state collapsed from a title/subtext pair to the single
- * sentence EmptyState takes.
- */
-export const CREW_SELECT_COPY = {
-  title: 'Crew directory',
-  subtitle: 'Pick a fest to see its crew.',
-  searchPlaceholder: 'Search fests',
-  clearSearch: 'Clear the search',
-  yourFests: 'My fests',
-  allFests: 'All fests',
-  emptyLine: 'Fests with a crew directory will show up here.',
-  noMatches: (query) => `No fests match "${query}".`,
-  errorMessage: 'Could not load fests.',
-  retry: 'Try again',
-  offline:
-    'You are offline, so this is the last version loaded. It will refresh when you are back on a network.',
-};
-
 export const PROFILE_HUB_COPY = {
   title: 'Profile',
   edit: 'Edit profile',
@@ -1488,13 +1034,6 @@ export const SETTINGS_COPY = {
   deleteConfirm: 'Delete your account? This cannot be undone.',
   toggleOn: 'ON',
   toggleOff: 'OFF',
-};
-
-export const NOTIFICATIONS_COPY = {
-  markAllRead: 'Mark all read',
-  emptyTitle: "You're all caught up",
-  emptySubtext: 'Updates about your fests, passes and results will appear here.',
-  errorMessage: 'Could not load notifications.',
 };
 
 // Public college onboarding surface: /for-colleges marketing page, the
@@ -1856,84 +1395,13 @@ export const DESKTOP_COMING_SOON_COPY = {
  * through this block; no inline text.
  */
 export const PARTICIPANT_CONTINGENT_COPY = {
-  // Per-vertical contingent codes (Phase 2).
-  verticalCodesTitle: 'Join codes',
-  verticalCodesHelp:
-    'One code per vertical. Each code fills a seat you have already paid for — share it with the person competing in that vertical.',
-  copy: 'Copy',
-  copied: 'Copied',
-  copyAllCodes: 'Copy all',
-  copyFailed: 'Could not copy to the clipboard. Select the code and copy it manually.',
-  copyCodeFor: (eventName) => `Copy the join code for ${eventName}`,
   shareCodeWith: (eventName) => `Share this code with participants joining ${eventName}.`,
-  slotsRemaining: (remainingSlots, maxClaims) =>
-    remainingSlots === 0 ? 'Fully claimed' : `${remainingSlots} of ${maxClaims} left`,
   codeInvalid: 'Invalid code.',
   codeAvailable: (eventName, remainingSlots) =>
     `${eventName} — ${remainingSlots} ${remainingSlots === 1 ? 'slot' : 'slots'} remaining`,
   codeExhausted: 'This code has been fully claimed.',
   codeAlreadyJoined: 'You have already joined this event.',
   underParent: (parentEventName) => `under ${parentEventName}`,
-  joinedVertical: (eventName, parentEventName) =>
-    parentEventName
-      ? `You've joined ${eventName} under ${parentEventName}.`
-      : `You've joined ${eventName}.`,
-  bundleTag: 'BUNDLE',
-  purchaseSubtitle: 'Contingent Registration',
-  groupAccessTitle: 'Group Access',
-  groupAccessBody: (eventCount) =>
-    `One bundle covering ${eventCount} sub-event${eventCount === 1 ? '' : 's'} — name one attendee for each below. Each attendee receives an email invite to claim their seat.`,
-  orderSummaryTitle: 'ORDER SUMMARY',
-  bundleLine: (eventCount) => `Bundle (${eventCount} event${eventCount === 1 ? '' : 's'})`,
-  totalLabel: 'Total',
-  proceedToPayment: 'PROCEED TO PAYMENT',
-  includesPrefix: 'INCLUDES',
-  individualTotalLabel: 'INDIVIDUALLY',
-  bundlePriceLabel: 'BUNDLE PRICE',
-  saveLine: (rupees) => `SAVE ₹${rupees}`,
-  viewBundle: 'VIEW BUNDLE',
-
-  purchaseTitle: 'CONTINGENT',
-  // TODO(client approval): this DPDP notice wording must be reviewed with the
-  // client before launch. It is a plain-language notice, not a checkbox.
-  dpdpNotice:
-    'You are sharing contact details of other people. We will invite each attendee to sign in and confirm their own registration; they’ll accept our terms themselves before their pass is issued.',
-  attendeeHeadingPrefix: 'ATTENDEE FOR',
-  fullNameLabel: 'FULL NAME',
-  emailLabel: 'EMAIL ADDRESS',
-  phoneLabel: 'PHONE NUMBER',
-  selfSlotNote: 'THIS IS YOU — NO INVITE EMAIL NEEDED',
-  duplicateEmailNote:
-    'Same person on multiple events: they’ll get ONE invite covering all of them. Overlapping schedules are your responsibility.',
-  buyerTermsNote: 'By paying you accept the terms yourself, as the purchasing user.',
-  purchaseButton: 'CONTINUE TO PAYMENT',
-  purchaseFailed: 'THE PURCHASE COULD NOT BE COMPLETED.',
-  seatUnavailablePrefix: 'NO SEAT LEFT IN',
-  errorMessage: 'THIS CONTINGENT COULD NOT BE LOADED.',
-
-  invitedPanelTitle: 'YOU’VE BEEN ADDED TO A CONTINGENT',
-  invitedByPrefix: 'BOUGHT BY',
-  acceptButton: 'ACCEPT',
-  declineButton: 'DECLINE',
-  acceptFailed: 'THE INVITATION COULD NOT BE ACCEPTED.',
-  declineFailed: 'THE INVITATION COULD NOT BE DECLINED.',
-  profileCompletionFirst: 'COMPLETE YOUR PROFILE TO ACCEPT',
-  declineWarning: 'Declining returns the seat. The buyer is not refunded.',
-  purchaseConfirmedBanner: 'PAYMENT CONFIRMED — INVITES ARE ON THEIR WAY.',
-
-  purchasesPanelTitle: 'MY CONTINGENT PURCHASES',
-  purchaseCancelButton: 'CANCEL CONTINGENT',
-  purchaseCancelConfirm:
-    'Cancel this whole contingent purchase? Every seat is released and the refund is processed by the organisers.',
-  purchaseCancelFailed: 'THE PURCHASE COULD NOT BE CANCELLED.',
-  refundPendingLabel: 'REFUND PENDING',
-  claimStatusLabels: {
-    invited: 'INVITED',
-    accepted: 'ACCEPTED',
-    declined: 'DECLINED',
-    cancelled: 'CANCELLED',
-    expired: 'EXPIRED',
-  },
 };
 
 /* The add-on step shown after joining by invite code (Phase 3). */

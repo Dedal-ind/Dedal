@@ -3,7 +3,7 @@
 // centre. One scrollable page: who is registered, the bracket and its match
 // results, what participants said, the event's own details, and certificates.
 // The staff event endpoints are keyed by festId, so festId is read from router
-// state (passed by Backstage).
+// state, falling back to the ?festId query param so a deep link still loads.
 //
 // ALL logic is unchanged from the Heritage version and moved verbatim: the
 // details PATCH and its paise/rupee and datetime-local conversions, the roster
@@ -43,7 +43,7 @@
 // coordinator entered.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Check, LoaderCircle, Megaphone, ScanLine, Search, Star, Trophy } from 'lucide-react';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
@@ -51,7 +51,6 @@ import BottomSheet from '../../components/bottom-sheet/BottomSheet.jsx';
 import EmptyState from '../../components/empty-state/EmptyState.jsx';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
 import apiClient from '../../api-client/api-client.js';
-import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { flattenEventParticipants } from '../../helpers/event-roster.js';
 import { formatEventTypeFull, formatScoringFormat } from '../../helpers/event-format.js';
 import { formatCertificateErrorMessage } from '../../helpers/certificate-error-messages.js';
@@ -149,10 +148,10 @@ function CoordinatorPanelScreen() {
   const navigate = useTransitionNavigate();
   const location = useLocation();
   const { eventId } = useParams();
-  const festId = location.state?.festId;
+  const [searchParams] = useSearchParams();
+  const festId = location.state?.festId ?? searchParams.get('festId') ?? '';
   const isOnline = useOnlineStatus();
 
-  const { isAdministrator } = useAuthentication();
   const [event, setEvent] = useState(null);
   const [loadState, setLoadState] = useState('loading');
 
@@ -357,15 +356,6 @@ function CoordinatorPanelScreen() {
               <span className="dop-tag">{formatScoringFormat(event)}</span>
             ) : null}
           </div>
-          {isAdministrator ? (
-            <button
-              type="button"
-              className="dop-btn dop-btn--sm"
-              onClick={() => navigate(`/admin/events/assignments?festId=${festId}`)}
-            >
-              {COORDINATOR_COPY.manageStaffForEvent}
-            </button>
-          ) : null}
         </div>
 
         {!isOnline ? (
@@ -402,7 +392,7 @@ function CoordinatorPanelScreen() {
             <button
               type="button"
               className="dop-tile"
-              onClick={() => navigate('/backstage/scanner')}
+              onClick={() => navigate(`/backstage/scanner?eventId=${eventId}`)}
             >
               <ScanLine size={20} className="dop-tile__icon" aria-hidden="true" />
               <span className="dop-tile__label">{COORDINATOR_COPY.actionOpenScanner}</span>

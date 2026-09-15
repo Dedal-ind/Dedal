@@ -1141,69 +1141,6 @@ export const ADMIN_CERTIFICATE_OPERATIONS_COPY = {
   actionFailed: 'The action failed. Try again.',
 };
 
-// /admin/events/scoring — initialize, edit, finalize, and award scores for
-// non-bracket events. Bracket events score through the match system and are
-// deliberately excluded here.
-// The Certificates section on Scoring & Results (replaces the standalone module).
-export const ADMIN_SCORING_CERTIFICATES_COPY = {
-  heading: 'Certificates',
-  intro: 'Import your certificate document, choose the participants, and push.',
-
-  templateHeading: 'Certificate template',
-  /*
-   * Simplified spec: the uploaded document IS the certificate — signatures and
-   * decoration baked into the artwork. The system overlays only the holder
-   * name, event, date, verification code and QR. Still PNG/JPEG only (pdfkit's
-   * constraint) — deliberately not a PDF, DOCX or PPTX import; the copy says so
-   * because that is the first thing an organiser will try.
-   */
-  templateIntro:
-    'One full-page image (PNG or JPEG — not a PDF, DOCX or PPTX) that IS the certificate, signatures included. The system overlays only the holder’s name, event, date, verification code (bottom-left) and QR (bottom-right) at fixed positions. A4 landscape: at least 1754 × 1240 px.',
-  documentLabel: 'Certificate template',
-  templateSaved: 'Template saved.',
-  templateSaveFailed: 'Could not save the template. Try again.',
-  previewButton: 'Preview certificate',
-  previewFailed: 'Could not build the preview. Try again.',
-
-  // Recipient-type filter: participants, or the fest's staff.
-  recipientTypeLabel: 'Send to',
-  recipientTypeOptions: [
-    { value: 'participant', label: 'Participants' },
-    { value: 'coordinator', label: 'Coordinators' },
-    { value: 'volunteer', label: 'Volunteers' },
-  ],
-  pendingStaffName: 'Invitation pending',
-  /*
-   * The recipient list's heading and empty state follow the "Send to" selector,
-   * so switching to Coordinators no longer leaves the list labelled
-   * "Participants". Keyed by the same values the selector uses.
-   */
-  recipientHeadingByType: {
-    participant: 'Participants',
-    coordinator: 'Coordinators',
-    volunteer: 'Volunteers',
-  },
-  recipientEmptyByType: {
-    participant: 'No confirmed participants in this scope yet.',
-    coordinator: 'No active coordinators on this fest yet.',
-    volunteer: 'No active volunteers on this fest yet.',
-  },
-  participantsHeading: 'Participants',
-  participantsEmpty: 'No confirmed participants in this scope yet.',
-  selectAll: 'Select all',
-  selectedCount: (selectedCount, totalCount) => `${selectedCount} of ${totalCount} selected`,
-  pushButton: 'Push certificates',
-  pushModalTitle: 'Push certificates?',
-  pushModalBody: (selectedCount) =>
-    `Certificates go to the ${selectedCount} selected participant${selectedCount === 1 ? '' : 's'} and become visible to them immediately. This is not reversible from the console, and changing the template afterwards does NOT re-render certificates already issued.`,
-  confirm: 'Confirm',
-  cancel: 'Cancel',
-  pushResult: (generatedCount, releasedCount) =>
-    `Pushed: ${generatedCount} generated, ${releasedCount} released and visible to their holders.`,
-  actionFailed: 'The push did not complete. Try again.',
-  loadFailed: 'Could not load the certificate settings. Try again.',
-};
-
 export const ADMIN_SCORING_COPY = {
   pageTitle: 'Scoring & Results',
   viewResultsBoardLink: 'View in Results Board',
@@ -1746,8 +1683,9 @@ export const ADMIN_CREATE_EVENT_COPY = {
   prizePlaceholder: 'e.g. ₹50,000 prize pool',
   medicalLabel: 'Requires medical declaration',
   medicalDescription: 'Participants must accept a liability declaration before registering.',
-  allowCancellationLabel: 'Allow cancellation',
-  allowCancellationDescription: 'Let participants cancel after registering. Most college events keep this off.',
+  allowCancellationLabel: 'Allow participants to cancel their registration.',
+  allowCancellationDescription:
+    'When off, participants cannot cancel after registering. Most college events keep this off since funds are pre-committed to arrangements.',
   weightLabel: 'Weight categories',
   genderLabel: 'Gender categories',
   ageLabel: 'Age categories',
@@ -2224,4 +2162,17 @@ export const ADMIN_CAMPAIGNS_COPY = {
   liveEditPromoterRefused: 'Cannot change once published.',
   saveFailed: 'The campaign could not be saved.',
   notPublishableBody: 'This campaign is not ready to publish:',
+};
+
+/* The shared hard-delete confirmation (AdminDeleteConfirm). */
+export const ADMIN_DELETE_COPY = {
+  title: (name) => `Delete ${name || 'this'}?`,
+  body: 'This cannot be undone.',
+  confirm: 'Delete',
+  cancel: 'Cancel',
+  action: 'Delete',
+  childEventsNote: (count) => `This will also delete ${count} child ${count === 1 ? 'event' : 'events'}.`,
+  subEventsBlocked: (count) =>
+    `It has ${count} sub-${count === 1 ? 'event' : 'events'} under it. Delete or move ${count === 1 ? 'it' : 'them'} first.`,
+  failed: 'That could not be deleted.',
 };

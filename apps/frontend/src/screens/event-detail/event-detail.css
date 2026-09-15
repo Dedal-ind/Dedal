@@ -1486,38 +1486,6 @@
   padding-inline: var(--s4);
 }
 
-/*
- * The code panel opens directly above the bar that owns it. Fixed on a phone,
- * not in the page body: the control that opens it lives at the bottom of the
- * screen, and a panel that appears three screens up is a panel nobody sees
- * respond. On desktop it becomes ordinary flow content inside the sidebar,
- * which is where the control that opens it lives there.
- */
-.ded-joinsheet {
-  position: fixed;
-  inset-inline: 0;
-  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-  z-index: 39;
-  padding: var(--s4) var(--page-pad);
-  background: var(--surface-card);
-  border-top: 1px solid var(--divider);
-  box-shadow: var(--e2);
-}
-
-.ded-joinsheet__inner {
-  width: 100%;
-  max-width: 720px;
-  margin-inline: auto;
-}
-
-.ded-joinsheet__title {
-  margin: 0 0 var(--s3);
-  font-size: var(--body-s-size);
-  line-height: var(--body-s-line);
-  font-weight: 600;
-  color: var(--ink);
-}
-
 /* ─────────────────────────────────────────────────────────────────────────
    Sponsor credit
    ─────────────────────────────────────────────────────────────────────────
@@ -1747,14 +1715,6 @@
 
   .ddp-screen.ded-screen {
     padding-bottom: var(--s8);
-  }
-
-  /* The panel joins the sidebar. */
-  .ded-joinsheet {
-    position: static;
-    padding: var(--s3) 0 0;
-    background: transparent;
-    box-shadow: none;
   }
 
   /*

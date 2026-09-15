@@ -22,6 +22,7 @@
     "db:cleanup:admin": "node src/helpers/cleanup-admin-participant-data.js",
     "migrate:college-fields": "node src/helpers/migrate-college-fields.js",
     "migrate:colleges": "node src/helpers/migrate-bangalore-colleges.js",
+    "migrate:karnataka-colleges": "node src/helpers/migrate-karnataka-colleges.js",
     "migrate:college-status": "node src/helpers/backfill-college-status.js",
     "migrate:college-address": "node src/helpers/migrate-college-address.js",
     "migrate:alliance-one": "node src/helpers/migrate-alliance-one-fest.js",

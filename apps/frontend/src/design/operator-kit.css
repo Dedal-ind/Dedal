@@ -576,13 +576,25 @@
    A number and the word for it. No ring charts: a coordinator reads "84 of
    120 checked in", not an arc. */
 
+/*
+ * Two across on a phone, four across on a desktop — explicit columns, not
+ * auto-fit: auto-fit collapsed to one full-width card per row inside a narrow
+ * column and pushed the scanner button below the fold.
+ */
 .dop-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--grid-gap);
 }
 
+@media (min-width: 768px) {
+  .dop-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .dop-stat {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -602,14 +614,38 @@
 }
 
 .dop-stat__label {
+  padding-right: var(--s6);
   font-size: var(--body-s-size);
   line-height: var(--body-s-line);
   color: var(--muted);
 }
 
+/* The download icon, pinned to the card's top-right corner. */
 .dop-stat__action {
-  align-self: flex-start;
-  margin-top: var(--s1);
+  position: absolute;
+  top: var(--s1);
+  right: var(--s1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dop-stat__action:hover {
+  background: var(--ink-dim-4);
+  color: var(--ink);
+}
+
+.dop-stat__action:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* A plain proportion bar, used once, under capacity. --ink on --ink-dim-4:

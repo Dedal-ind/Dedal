@@ -3,9 +3,9 @@
 // the mobile column on wide screens and the desktop coming-soon overlay for
 // phone-only pages. Routing covers the full participant + staff surface.
 //
-// Public routes: the root "/" sign-in screen, OTP verification, and public
+// Public routes: sign-in at /auth/email, OTP verification, legal pages and public
 // certificate verification. Everything else is gated by AuthenticatedRoute, which
-// bounces unauthenticated visitors to "/".
+// bounces unauthenticated visitors to /auth/email.
 
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -28,7 +28,6 @@ import AuthVerifyOtpScreen from './screens/auth-verify-otp/AuthVerifyOtpScreen.j
 import ProfileCompletionScreen from './screens/profile-completion/ProfileCompletionScreen.jsx';
 import DiscoverScreen from './screens/discover/DiscoverScreen.jsx';
 import SearchScreen from './screens/search/SearchScreen.jsx';
-import CategoryEventsScreen from './screens/category-events/CategoryEventsScreen.jsx';
 import FestDetailScreen from './screens/fest-detail/FestDetailScreen.jsx';
 import EventDetailScreen from './screens/event-detail/EventDetailScreen.jsx';
 import RegistrationFormScreen from './screens/registration-form/RegistrationFormScreen.jsx';
@@ -70,13 +69,11 @@ import DirectoryScreen from './screens/directory/DirectoryScreen.jsx';
 import PushCertificateScreen from './screens/push-certificate/PushCertificateScreen.jsx';
 import ScoreboardScreen from './screens/backstage/ScoreboardScreen.jsx';
 import VolunteerScannerScreen from './screens/volunteer-scanner/VolunteerScannerScreen.jsx';
-import VolunteerDashboardScreen from './screens/volunteer-dashboard/VolunteerDashboardScreen.jsx';
 import VolunteerEventScreen from './screens/volunteer-event/VolunteerEventScreen.jsx';
 import CoordinatorPanelScreen from './screens/coordinator-panel/CoordinatorPanelScreen.jsx';
 import CoordinatorEventScreen from './screens/coordinator-event/CoordinatorEventScreen.jsx';
 import CrewDirectoryScreen from './screens/crew-directory/CrewDirectoryScreen.jsx';
 import CrewFestPickerScreen from './screens/crew-directory/CrewFestPickerScreen.jsx';
-import CrewSelectScreen from './screens/crew-select/CrewSelectScreen.jsx';
 import DevSwitchUserScreen from './screens/dev-switch-user/DevSwitchUserScreen.jsx';
 import SignOutScreen from './screens/sign-out/SignOutScreen.jsx';
 
@@ -138,7 +135,7 @@ function AuthenticatedRoute() {
  * administrator on every cold load — so 'unknown' holds on a spinner instead.
  *
  *   · not signed in  → save the intended /admin path and send to the shared
- *     sign-in ("/"); after auth the sign-in flow returns the user here.
+ *     sign-in (/auth/email); after auth the sign-in flow returns the user here.
  *   · authority unknown  → hold on a spinner.
  *   · not an administrator → the not-authorized screen.
  *   · administrator  → render the console.
@@ -190,8 +187,7 @@ function PlatformAdminRoute() {
 // viewport), so a signed-out visitor is sent there. A signed-in visitor is routed
 // by role: an administrator to the console, and everyone else — including
 // coordinators and volunteers — falls through to the feed, which is RENDERED
-// here rather than redirected to — the participant home lives at "/" (it used
-// to live at "/discover", which is now a redirect back to "/").
+// here rather than redirected to — the participant home lives at "/".
 // Authority resolves asynchronously, so while it is still 'unknown' this holds on
 // a spinner rather than flashing an admin to the feed and leaving them there.
 //
@@ -389,10 +385,6 @@ function App() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<RootRoute />} />
-          {/* The participant home moved from /discover to "/". Redirected rather
-              than deleted so bookmarks, shared links and browser history from
-              before the move still land on the feed. */}
-          <Route path="/discover" element={<Navigate to="/" replace />} />
           {/* Bare and coded forms of the same public screen. Without the bare
               route the search field was unreachable — a visitor with a code in
               their hand and no link had nowhere to type it. */}
@@ -432,21 +424,8 @@ function App() {
             <Route element={<ParticipantLayout />}>
               {/* My Fests — the consolidated participant hub. The screens it
                   links to are unchanged; only the door into them moved. */}
-              {/* /my-fests was a menu of destinations and is gone; /account is
-                  that menu now. Redirected rather than deleted outright so an
-                  old bookmark or a link in an already-sent email still lands
-                  somewhere true instead of on a 404. */}
-              <Route path="/my-fests" element={<Navigate to="/account" replace />} />
-              {/*
-                The category browse screen that used to live at /search moved
-                here, unchanged. It was never a search screen; it was a category
-                grid with a search box bolted on, and the two were competing for
-                one route.
-              */}
-              <Route path="/explore" element={<CategoryEventsScreen />} />
               <Route path="/my-passes" element={<MyPassesScreen />} />
               <Route path="/backstage" element={<BackstageScreen />} />
-              <Route path="/crew-select" element={<CrewSelectScreen />} />
               <Route path="/my-registrations" element={<MyRegistrationsScreen />} />
               {/* Contingent codes the participant bought, and one purchase's codes. */}
               <Route path="/my-codes" element={<MyCodesScreen />} />
@@ -461,8 +440,7 @@ function App() {
               {/* Fest detail renders under the header; it also carries its own
                   sticky register bar on the bottom edge. */}
               <Route path="/fests/:festSlug" element={<FestDetailScreen />} />
-              {/* Volunteer dashboard and coordinator panel. */}
-              <Route path="/backstage/volunteer-dashboard" element={<VolunteerDashboardScreen />} />
+              {/* Coordinator panel for one event. */}
               <Route path="/backstage/coordinator/:eventId" element={<CoordinatorPanelScreen />} />
               {/* Crew Access hubs the backstage screen routes into. */}
               <Route path="/backstage/coordinator-hub" element={<CoordinatorHubScreen />} />
@@ -516,9 +494,6 @@ function App() {
             <Route path="/search" element={<SearchScreen />} />
 
             {/* Interior pages — no participant header */}
-            {/* Superseded by /search. Redirected rather than deleted so any
-                bookmark or in-app link still lands somewhere that searches. */}
-            <Route path="/search-live" element={<Navigate to="/search" replace />} />
             <Route path="/events/:eventSlug" element={<EventDetailScreen />} />
 
             {/* Registration and checkout */}
@@ -567,8 +542,6 @@ function App() {
           </Route>
 
           <Route element={<AdminAuthorizedRoute />}>
-            {/* /admin → the dashboard once authorized. */}
-            <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
 
             <Route element={<AdminLayout />}>
               <Route path="/admin/overview" element={<AdminOverviewScreen />} />
@@ -647,23 +620,24 @@ function App() {
                   path="/admin/college-applications/:applicationId"
                   element={<AdminCollegeApplicationDetailScreen />}
                 />
-              </Route>
-              <Route path="/admin/system/data-controls" element={<AdminDataControlsScreen />} />
-              <Route
-                path="/admin/system/configuration"
-                element={
-                  <AdminPlaceholderScreen title="Configuration" stitchScreen="system_configuration" />
-                }
-              />
+                <Route path="/admin/system/data-controls" element={<AdminDataControlsScreen />} />
+                <Route
+                  path="/admin/system/configuration"
+                  element={
+                    <AdminPlaceholderScreen title="Configuration" stitchScreen="system_configuration" />
+                  }
+                />
+                </Route>
             </Route>
           </Route>
 
-          {/* Unknown paths → root, which itself routes by auth state. */}
-          <Route path="*" element={<Navigate to="/" replace />} />
           <Route path="/terms-of-service" element={<TermsOfServiceScreen />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyScreen />} />
           {/* A specific past version, for showing an acceptance back verbatim. */}
           <Route path="/policies/versions/:versionId" element={<PolicyVersionScreen />} />
+
+          {/* Unknown paths → root, which itself routes by auth state. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         </RouteTransition>
         </ResponsiveShell>

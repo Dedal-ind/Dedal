@@ -665,8 +665,6 @@ function AuthSignInScreen() {
       <nav className="dsi-legal" aria-label="Legal">
         <Link to="/privacy-policy">{AUTH_COPY.privacyPolicy}</Link>
         <Link to="/terms-of-service">{AUTH_COPY.termsOfService}</Link>
-        <a href="/legal/refunds">Cancellation and refunds</a>
-        <a href="/legal/customer-satisfaction">Customer satisfaction</a>
       </nav>
 
       {isSigningInWithGoogle ? (

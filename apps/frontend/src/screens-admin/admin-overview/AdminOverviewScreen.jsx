@@ -44,8 +44,10 @@ import AdminStatusPill from '../../components-admin/admin-status-pill/AdminStatu
 import AdminActionsMenu from '../../components-admin/admin-actions-menu/AdminActionsMenu.jsx';
 import AdminActivityFeed from '../../components-admin/admin-activity-feed/AdminActivityFeed.jsx';
 import AdminErrorBanner from '../../components-admin/admin-error-banner/AdminErrorBanner.jsx';
+import AdminDeleteConfirm from '../../components-admin/admin-delete-confirm/AdminDeleteConfirm.jsx';
 import AdminFestInsights from './AdminFestInsights.jsx';
 import {
+  ADMIN_DELETE_COPY,
   ADMIN_OVERVIEW_COPY,
   ADMIN_ACTIVITY_COPY,
   ADMIN_FEST_STRUCTURE_COPY,
@@ -172,6 +174,8 @@ function AdminOverviewScreen() {
   const [eventNameById, setEventNameById] = useState(() => new Map());
   const [drillDownFestId, setDrillDownFestId] = useState(null);
   const [transitionError, setTransitionError] = useState('');
+  const [festDeleteTarget, setFestDeleteTarget] = useState(null);
+  const [isDeletingFest, setIsDeletingFest] = useState(false);
   const [activePopup, setActivePopup] = useState(null); // 'registrations' | 'checkIns' | 'checkOuts' | 'yetToCheckIn' | 'confirmedRegistrations'
   const [popupData, setPopupData] = useState([]);
   const [popupLoading, setPopupLoading] = useState(false);
@@ -280,11 +284,7 @@ function AdminOverviewScreen() {
   /*
    * Open a popup and fetch the list behind the number.
    *
-   * REWIRED: this originally called /analytics/drill-down/registrations|
-   * checkIns|checkOuts — routes that have never existed. The .catch(() => null)
-   * swallowed the 404, so every popup opened, spun, and reported "no data",
-   * which read as an empty fest rather than a wiring fault. The sources below
-   * are the same ones the full drill-down screen already uses:
+   * The lists come from the existing roster and scan-log endpoints:
    *
    *   registrations / yetToCheckIn -> the event roster or fest participants
    *   checkIns / checkOuts         -> the event scan log (direction IN/OUT)
@@ -464,28 +464,18 @@ function AdminOverviewScreen() {
           });
         }
         /*
-         * Hard delete lives last and reddest. The server refuses any fest with
-         * registrations (409, "cancel or archive instead"), so this is only a
-         * cleanup tool for test fests — the guard is server-side, the confirm
-         * here is just a double-check.
+         * Hard delete lives last. Drafts only — the server refuses anything
+         * else (and any fest with registrations) — and always behind the shared
+         * confirmation, which says how many events go with it.
          */
-        items.push({
-          key: 'delete',
-          label: ADMIN_OVERVIEW_COPY.deleteFestAction ?? 'Delete fest',
-          tone: 'danger',
-          onSelect: async () => {
-            if (!window.confirm(ADMIN_OVERVIEW_COPY.deleteFestConfirm ?? 'Delete this fest permanently?')) {
-              return;
-            }
-            setTransitionError('');
-            try {
-              await apiClient.delete(`/fests/${row.id}`);
-              await loadDashboard();
-            } catch (deleteException) {
-              setTransitionError(deleteException.message || ADMIN_OVERVIEW_COPY.transitionFailed);
-            }
-          },
-        });
+        if (row.status === 'draft') {
+          items.push({
+            key: 'delete',
+            label: ADMIN_OVERVIEW_COPY.deleteFestAction,
+            tone: 'danger',
+            onSelect: () => setFestDeleteTarget(row),
+          });
+        }
         return <AdminActionsMenu items={items} label={ADMIN_OVERVIEW_COPY.actionsLabel} />;
       },
     },
@@ -793,6 +783,30 @@ function AdminOverviewScreen() {
           />
         </div>
       )}
+
+      <AdminDeleteConfirm
+        target={festDeleteTarget ? { name: festDeleteTarget.festName } : null}
+        note={
+          festDeleteTarget?.eventCount > 0
+            ? ADMIN_DELETE_COPY.childEventsNote(festDeleteTarget.eventCount)
+            : ''
+        }
+        isBusy={isDeletingFest}
+        onCancel={() => setFestDeleteTarget(null)}
+        onConfirm={async () => {
+          setIsDeletingFest(true);
+          setTransitionError('');
+          try {
+            await apiClient.delete(`/fests/${festDeleteTarget.id}`);
+            await loadDashboard();
+          } catch (deleteException) {
+            setTransitionError(deleteException.message || ADMIN_DELETE_COPY.failed);
+          } finally {
+            setIsDeletingFest(false);
+            setFestDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 }

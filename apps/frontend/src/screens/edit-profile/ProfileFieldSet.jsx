@@ -26,6 +26,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import apiClient from '../../api-client/api-client.js';
 import CollegeSelect from '../../components/college-select/CollegeSelect.jsx';
+import {
+  OTHER_COLLEGE_NAME_MAX_LENGTH,
+  OTHER_COLLEGE_OPTION,
+  buildCollegePayload,
+  isCollegeChoiceComplete,
+} from '../../helpers/college-options.js';
 import DepartmentSelect from '../../components/department-select/DepartmentSelect.jsx';
 import { useAuthentication } from '../../contexts/authentication-context/AuthenticationContext.jsx';
 import { checkProfessionalEmail } from '../../helpers/professional-email.js';
@@ -96,7 +102,12 @@ function buildForm(user) {
     phoneNumber: user?.phoneNumber ?? '',
     /* The API returns collegeId either as a bare id or as a populated object,
        depending on the route that served the user. The picker wants the id. */
-    collegeId: user?.collegeId?.id ?? user?.collegeId?._id ?? user?.collegeId ?? '',
+    collegeId:
+      !user?.collegeId && user?.otherCollegeName
+        ? OTHER_COLLEGE_OPTION
+        : (user?.collegeId?.id ?? user?.collegeId?._id ?? user?.collegeId ?? ''),
+    /* A college not on the platform, typed by the student. */
+    otherCollegeName: user?.otherCollegeName ?? '',
     usn: user?.usn ?? '',
     department: user?.department ?? '',
     yearOfStudy: user?.yearOfStudy ?? null,
@@ -283,7 +294,7 @@ function ProfileFieldSet({ onSaved, autoFocusFirstField = false }) {
   const isComplete =
     form.fullName.trim() !== '' &&
     PHONE_PATTERN.test(form.phoneNumber.trim()) &&
-    form.collegeId !== '' &&
+    isCollegeChoiceComplete(form.collegeId, form.otherCollegeName) &&
     form.usn.trim() !== '';
   const canSave = isDirty && isComplete && !isSaving;
   const selectedCollege = colleges.find((college) => college.id === form.collegeId) ?? null;
@@ -300,7 +311,7 @@ function ProfileFieldSet({ onSaved, autoFocusFirstField = false }) {
       const saved = await apiClient.patch('/users/me', {
         fullName: form.fullName.trim(),
         phoneNumber: form.phoneNumber.trim(),
-        collegeId: form.collegeId,
+        ...buildCollegePayload(form.collegeId, form.otherCollegeName),
         usn: form.usn.trim().toUpperCase(),
         department: form.department || undefined,
         yearOfStudy: form.yearOfStudy ?? undefined,
@@ -464,6 +475,24 @@ function ProfileFieldSet({ onSaved, autoFocusFirstField = false }) {
             />
           </div>
         </div>
+
+        {form.collegeId === OTHER_COLLEGE_OPTION ? (
+          <div className="dst-field">
+            <FieldLabel htmlFor="dst-other-college" required>
+              Enter your college name
+            </FieldLabel>
+            <input
+              id="dst-other-college"
+              className="dst-input"
+              type="text"
+              autoComplete="organization"
+              required
+              maxLength={OTHER_COLLEGE_NAME_MAX_LENGTH}
+              value={form.otherCollegeName}
+              onChange={(event) => setField('otherCollegeName', event.target.value)}
+            />
+          </div>
+        ) : null}
 
         <div className="dst-field">
           <FieldLabel htmlFor="dst-usn" required>

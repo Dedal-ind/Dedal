@@ -146,7 +146,6 @@ const DESKTOP_READY_PARTICIPANT_ROUTES = [
      prefix's exemption. It is migrated and responsive now, and a volunteer
      picking a crew on a laptop was being shown a "coming soon to desktop"
      page instead of the screen. */
-  '/crew-select',
   '/account',
   '/terms-of-service',
   '/privacy-policy',
@@ -275,14 +274,14 @@ function ResponsiveShell({ children }) {
   // layout (hero left, form right), so they render full-width on every
   // viewport instead of the centered utility column or any overlay.
   if (pathname.startsWith('/auth/')) {
-    return <div className="min-h-screen w-full bg-background">{children}</div>;
+    return <div className="min-h-screen w-full bg-[var(--surface)]">{children}</div>;
   }
 
   // 1) Shared utility screens — centered column on desktop, full-width on mobile.
   if (isUtilityRoute(pathname)) {
     if (isDesktopViewport) {
       return (
-        <div className="flex min-h-screen w-full justify-center bg-background">
+        <div className="flex min-h-screen w-full justify-center bg-[var(--surface)]">
           <div
             className="w-full"
             style={{
@@ -294,7 +293,7 @@ function ResponsiveShell({ children }) {
         </div>
       );
     }
-    return <div className="min-h-screen w-full bg-background">{children}</div>;
+    return <div className="min-h-screen w-full bg-[var(--surface)]">{children}</div>;
   }
 
   // 2) Admin console — desktop-first.
@@ -309,9 +308,7 @@ function ResponsiveShell({ children }) {
   // feed: let its role redirects run on every viewport for signed-in users, and
   // the feed itself is desktop-ready (it is also listed in
   // DESKTOP_READY_PARTICIPANT_ROUTES), so it never wants the overlay either.
-  // /discover rides along for the same reason: it is now nothing but a redirect
-  // to "/", and an overlay would swallow the route before the redirect ran.
-  if ((pathname === '/' || pathname === '/discover') && isAuthenticated) {
+  if (pathname === '/' && isAuthenticated) {
     return <div className="min-h-screen w-full">{children}</div>;
   }
   // Desktop: unauthenticated users see the login page (handled by /auth/ above).
@@ -328,7 +325,7 @@ function ResponsiveShell({ children }) {
   if (isDesktopViewport && !isAuthenticated) {
     return children;
   }
-  return <div className="min-h-screen w-full bg-background">{children}</div>;
+  return <div className="min-h-screen w-full bg-[var(--surface)]">{children}</div>;
 }
 
 export default ResponsiveShell;

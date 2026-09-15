@@ -1,0 +1,93 @@
+/*
+ * add-on-shop.css — the compact buy-an-add-on rows (components/add-on-shop).
+ * Tokens only. Each row is one decision: what it is, what it costs, Buy.
+ */
+
+.das-shop {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.das-shop__title {
+  margin: 0;
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.das-shop__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--r-card);
+  background: var(--surface-card);
+  box-shadow: var(--e1);
+}
+
+.das-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+}
+
+.das-row + .das-row {
+  border-top: 1px solid var(--divider);
+}
+
+.das-row__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.das-row__name {
+  font-size: var(--body-m-size);
+  line-height: var(--body-m-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.das-row__note {
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--muted);
+}
+
+.das-row__price {
+  flex-shrink: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.das-row__buy {
+  flex-shrink: 0;
+  min-width: 64px;
+  min-height: 36px;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  color: var(--surface-card);
+  font: inherit;
+  font-size: var(--body-s-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.das-row__buy:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.das-shop__error {
+  margin: 0;
+  font-size: var(--body-s-size);
+  line-height: var(--body-s-line);
+  color: var(--primary);
+}

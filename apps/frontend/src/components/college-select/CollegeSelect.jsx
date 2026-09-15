@@ -8,8 +8,10 @@
 // name highlighted. Selecting sets the collegeId via onSelect.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, Search } from 'lucide-react';
 
 import apiClient from '../../api-client/api-client.js';
+import { OTHER_COLLEGE_LABEL, OTHER_COLLEGE_OPTION } from '../../helpers/college-options.js';
 import { useExitTransition } from '../../hooks/use-exit-transition/use-exit-transition.js';
 import '../../design/layer-motion.css';
 
@@ -78,7 +80,14 @@ function CollegeSelect({ colleges, selectedCollegeId, onSelect, placeholder, cit
     return () => document.removeEventListener('mousedown', handleDocumentClick);
   }, []);
 
-  const displayValue = isOpen ? query : selectedCollege ? readCollegeLabel(selectedCollege) : '';
+  const isOtherSelected = selectedCollegeId === OTHER_COLLEGE_OPTION;
+  const displayValue = isOpen
+    ? query
+    : isOtherSelected
+      ? OTHER_COLLEGE_LABEL
+      : selectedCollege
+        ? readCollegeLabel(selectedCollege)
+        : '';
 
   /*
    * The listbox was conditionally rendered with no transition, so it appeared
@@ -94,10 +103,8 @@ function CollegeSelect({ colleges, selectedCollegeId, onSelect, placeholder, cit
 
   return (
     <div className="relative" ref={containerReference}>
-      <div className="flex items-center gap-2 rounded-large border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors focus-within:border-olive-accent">
-        <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">
-          search
-        </span>
+      <div className="flex items-center gap-2 rounded-[var(--r-card)] border border-[var(--divider)] bg-[var(--surface-card)] px-4 py-3 transition-colors focus-within:border-[var(--ink)]">
+        <Search size={18} className="shrink-0 text-[var(--muted)]" aria-hidden="true" />
         <input
           type="text"
           value={displayValue}
@@ -107,18 +114,16 @@ function CollegeSelect({ colleges, selectedCollegeId, onSelect, placeholder, cit
             setQuery(changeEvent.target.value);
             setIsOpen(true);
           }}
-          className="w-full bg-transparent font-body text-base text-on-surface outline-none placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+          className="w-full bg-transparent font-[family-name:var(--font)] text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:outline-none focus:ring-0"
           data-search-input
         />
-        <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">
-          expand_more
-        </span>
+        <ChevronDown size={18} className="shrink-0 text-[var(--muted)]" aria-hidden="true" />
       </div>
 
       {isListMounted ? (
         <ul
           ref={listRef}
-          className={`absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-large border border-outline-variant bg-surface-container-lowest shadow-subtle dlm-drop${
+          className={`absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-[var(--r-card)] border border-[var(--divider)] bg-[var(--surface-card)] shadow-[var(--e1)] dlm-drop${
             isListVisible ? ' dlm-drop--in' : ''
           }`}
           /* Held in the tree for the 180ms exit, but not a list a keyboard can
@@ -126,7 +131,7 @@ function CollegeSelect({ colleges, selectedCollegeId, onSelect, placeholder, cit
           inert={isOpen ? undefined : true}
         >
           {filteredColleges.length === 0 ? (
-            <li className="px-4 py-3 font-body text-[12px] font-bold uppercase tracking-label-caps text-on-surface-variant">
+            <li className="border-b border-[var(--divider)] px-4 py-3 font-[family-name:var(--font)] text-[12px] font-bold text-[var(--muted)]">
               No colleges found
             </li>
           ) : (
@@ -144,12 +149,12 @@ function CollegeSelect({ colleges, selectedCollegeId, onSelect, placeholder, cit
                       setQuery('');
                       setIsOpen(false);
                     }}
-                    className="w-full border-b border-outline-variant px-4 py-3 text-left font-body text-base text-on-surface last:border-b-0 hover:bg-surface-container"
+                    className="w-full border-b border-[var(--divider)] px-4 py-3 text-left font-[family-name:var(--font)] text-base text-[var(--ink)] last:border-b-0 hover:bg-[var(--ink-dim-4)]"
                   >
                     {hasDistinctShortName ? (
                       <>
                         {college.collegeName}{' '}
-                        <span className="font-body text-[12px] font-semibold uppercase tracking-label-caps text-on-surface-variant">
+                        <span className="font-[family-name:var(--font)] text-[12px] font-semibold text-[var(--muted)]">
                           [{college.commonName}]
                         </span>
                       </>
@@ -161,6 +166,21 @@ function CollegeSelect({ colleges, selectedCollegeId, onSelect, placeholder, cit
               );
             })
           )}
+          {/* Always last, whatever the search: a college that is not on the
+              platform yet must never lock a student out of signing up. */}
+          <li>
+            <button
+              type="button"
+              onClick={() => {
+                onSelect(OTHER_COLLEGE_OPTION);
+                setQuery('');
+                setIsOpen(false);
+              }}
+              className="w-full px-4 py-3 text-left font-[family-name:var(--font)] text-base font-semibold text-[var(--ink)] hover:bg-[var(--ink-dim-4)]"
+            >
+              {OTHER_COLLEGE_LABEL}
+            </button>
+          </li>
         </ul>
       ) : null}
     </div>

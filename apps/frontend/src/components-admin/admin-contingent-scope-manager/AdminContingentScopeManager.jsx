@@ -54,7 +54,7 @@ const COPY = {
   blockedParentHasFee:
     'This event charges its own registration fee, so a contingent under it would charge buyers twice. Make the event free to bundle its sub-events.',
   blockedNotEnoughEvents: (minimum) =>
-    `A contingent needs at least ${minimum} eligible events here — published, solo events.`,
+    `A contingent needs at least ${minimum} eligible events here — published solo or team events.`,
   nameLabel: 'Name',
   descriptionLabel: 'Description',
   descriptionHelp: 'What the bundle offers buyers.',

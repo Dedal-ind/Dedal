@@ -210,6 +210,9 @@ describe("inspectCode", () => {
 
     expect(result.kind).toBe("team");
     expect(result.teamId).toBe(String(team._id));
+    // Slugs, because the public event lookups resolve by slug.
+    expect(result.eventSlug).toBe(financeEvent.eventSlug);
+    expect(typeof result.festSlug).toBe("string");
   });
 
   it("reports availability, exhaustion and prior claims distinctly", async () => {

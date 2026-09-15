@@ -31,6 +31,22 @@ function parseCollegeId(rawValue, details) {
   return rawValue;
 }
 
+const OTHER_COLLEGE_NAME_MIN_LENGTH = 2;
+const OTHER_COLLEGE_NAME_MAX_LENGTH = 120;
+
+/* "Other": absent or blank means not chosen (null); invalid is undefined. */
+function parseOtherCollegeName(rawValue, details) {
+  if (rawValue === undefined || rawValue === null || (typeof rawValue === "string" && rawValue.trim() === "")) {
+    return null;
+  }
+  const trimmed = typeof rawValue === "string" ? rawValue.trim() : "";
+  if (trimmed.length < OTHER_COLLEGE_NAME_MIN_LENGTH || trimmed.length > OTHER_COLLEGE_NAME_MAX_LENGTH) {
+    details.otherCollegeName = `must be between ${OTHER_COLLEGE_NAME_MIN_LENGTH} and ${OTHER_COLLEGE_NAME_MAX_LENGTH} characters`;
+    return undefined;
+  }
+  return trimmed;
+}
+
 function parseUsn(rawValue, details) {
   if (typeof rawValue !== "string" || rawValue.trim().length < USN_MIN_LENGTH) {
     details.usn = `must be at least ${USN_MIN_LENGTH} characters`;
@@ -242,7 +258,9 @@ function validateUpdateProfilePayload(requestBody) {
 
   const details = {};
   const fullName = parseFullName(requestBody.fullName, details);
-  const collegeId = parseCollegeId(requestBody.collegeId, details);
+  // Either a listed college or a typed "Other" name — never both.
+  const otherCollegeName = parseOtherCollegeName(requestBody.otherCollegeName, details);
+  const collegeId = otherCollegeName === null ? parseCollegeId(requestBody.collegeId, details) : null;
   const usn = parseUsn(requestBody.usn, details);
   const phoneNumber = parsePhoneNumber(requestBody.phoneNumber, details);
   const yearOfStudy = parseYearOfStudy(requestBody.yearOfStudy, details);
@@ -277,6 +295,7 @@ function validateUpdateProfilePayload(requestBody) {
     value: {
       fullName,
       collegeId,
+      otherCollegeName,
       usn,
       phoneNumber,
       yearOfStudy,

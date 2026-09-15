@@ -76,7 +76,6 @@ function AdminContingentEditScreen() {
           (event) =>
             String(event.parentEventId) === String(resolvedParentId) &&
             event.status === 'published' &&
-            event.eventType === 'solo' &&
             !lockedEventIds.has(String(event.id)),
         ),
       );

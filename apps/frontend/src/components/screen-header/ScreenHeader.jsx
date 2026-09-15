@@ -33,25 +33,9 @@ import './screen-header.css';
 
 const FLOATING_BUTTON_CLASS = [
   'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
-  'text-on-surface transition-colors',
-  'hover:bg-surface-container active:scale-95 active:bg-surface-container-high',
+  'text-[var(--ink)] transition-colors',
+  'hover:bg-[var(--ink-dim-4)] active:scale-95 active:bg-[var(--ink-dim-4)]',
 ].join(' ');
-
-/*
- * Shared chrome for a floating control: a 44px target — the minimum comfortable
- * touch size — on its own legible surface. Exported so screens do not re-derive
- * it; the hand-rolled copies this replaced ranged from 40px to 44px, and three
- * of them were not buttons at all.
- */
-export function ScreenHeaderAction({ iconName, label, onClick }) {
-  return (
-    <button type="button" onClick={onClick} aria-label={label} className={FLOATING_BUTTON_CLASS}>
-      <span className="material-symbols-outlined text-[22px]" aria-hidden="true">
-        {iconName}
-      </span>
-    </button>
-  );
-}
 
 /**
  * @param {object} props

@@ -42,6 +42,7 @@ import { REGISTRATION_FORM_COPY } from '../../brand/brand-copy.js';
 import '../../design/team-code-entry.css';
 import '../../design/post-join-addons.css';
 import '../../design/join-code.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 const TEAM_NAME_MIN_LENGTH = 2;
 const TEAM_NAME_MAX_LENGTH = 60;
@@ -162,7 +163,13 @@ function JoinCodeScreen() {
     try {
       const verdict = await apiClient.get(`/invite-codes/${code}/inspect`);
       if (verdict?.kind === 'team' && verdict.eventId) {
-        const event = await apiClient.get(`/public/events/${verdict.eventId}`).catch(() => null);
+        /* The public lookups resolve by slug; the inspection carries both. */
+        const eventPath = verdict.festSlug && verdict.eventSlug
+          ? `/public/fests/${verdict.festSlug}/events/${verdict.eventSlug}`
+          : verdict.eventSlug
+            ? `/public/events/${verdict.eventSlug}`
+            : null;
+        const event = eventPath ? await apiClient.get(eventPath).catch(() => null) : null;
         setTeamInvite({ code, event });
         setNeedsMedicalForInvite(Boolean(event?.requiresMedicalDeclaration));
         setHasAcceptedMedical(false);
@@ -392,7 +399,7 @@ function JoinCodeScreen() {
     }
   }
 
-  const onBack = step === 'preview' || step === 'teamInvite' ? startOver : () => navigate(-1);
+  const onBack = step === 'preview' || step === 'teamInvite' ? startOver : () => navigateBack(navigate, '/');
 
   return (
     <div className="djc-screen">

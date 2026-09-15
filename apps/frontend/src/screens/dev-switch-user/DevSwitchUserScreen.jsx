@@ -6,6 +6,7 @@
 // so on a production build this screen simply shows "unavailable".
 
 import { useCallback, useEffect, useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ScreenHeader from '../../components/screen-header/ScreenHeader.jsx';
 import apiClient from '../../api-client/api-client.js';
@@ -67,7 +68,7 @@ function DevSwitchUserScreen() {
   })).filter((group) => group.members.length > 0);
 
   return (
-    <div className="min-h-screen bg-background px-4 py-6">
+    <div className="min-h-screen bg-[var(--surface)] px-4 py-6">
       <ScreenHeader sticky={false} />
 
       {loadState === 'loading' ? (
@@ -79,8 +80,8 @@ function DevSwitchUserScreen() {
       ) : null}
 
       {loadState === 'unavailable' ? (
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <p className="font-body text-[14px] leading-[22px] text-on-surface">
+        <div className="rounded-xl border border-[var(--divider)] bg-[var(--surface-card)] p-4">
+          <p className="font-[family-name:var(--font)] text-[14px] leading-[22px] text-[var(--ink)]">
             The user switcher is only available when the backend runs with
             APPLICATION_ENVIRONMENT=development.
           </p>
@@ -88,14 +89,14 @@ function DevSwitchUserScreen() {
       ) : null}
 
       {loadState === 'error' ? (
-        <div className="rounded-xl border border-error/40 bg-error-container/40 p-4">
-          <p className="mb-3 font-body text-[13px] leading-[20px] text-on-error-container" role="alert">
+        <div className="rounded-xl border border-[var(--divider)] bg-[var(--surface-card)] p-4">
+          <p className="mb-3 font-[family-name:var(--font)] text-[13px] leading-[20px] text-[var(--primary)]" role="alert">
             Could not load users.
           </p>
           <button
             type="button"
             onClick={loadUsers}
-            className="rounded-pill border border-outline-variant bg-surface-container-lowest px-5 py-2.5 font-body text-[13px] font-semibold text-on-surface transition-colors active:bg-surface-container"
+            className="rounded-pill border border-[var(--divider)] bg-[var(--surface-card)] px-5 py-2.5 font-[family-name:var(--font)] text-[13px] font-semibold text-[var(--ink)] transition-colors active:bg-[var(--ink-dim-4)]"
           >
             Retry
           </button>
@@ -105,14 +106,14 @@ function DevSwitchUserScreen() {
       {loadState === 'ready' ? (
         <div className="flex flex-col gap-6">
           {error ? (
-            <p className="font-body text-[13px] leading-[20px] text-error" role="alert">
+            <p className="font-[family-name:var(--font)] text-[13px] leading-[20px] text-[var(--primary)]" role="alert">
               {error}
             </p>
           ) : null}
 
           {groups.map((group) => (
             <section key={group.role}>
-              <h2 className="mb-2 px-1 font-body text-[12px] font-bold uppercase leading-4 tracking-label-caps text-on-surface-variant">
+              <h2 className="mb-2 px-1 font-[family-name:var(--font)] text-[12px] font-bold leading-4 text-[var(--muted)]">
                 {group.label} ({group.members.length})
               </h2>
               <div className="flex flex-col gap-2">
@@ -127,30 +128,30 @@ function DevSwitchUserScreen() {
                       className={[
                         'flex items-center justify-between gap-3 rounded-xl border p-3 text-left transition-colors active:scale-[0.98] disabled:opacity-60',
                         isCurrent
-                          ? 'border-olive-accent bg-olive-accent/10'
-                          : 'border-outline-variant bg-surface-container-lowest active:bg-surface-container',
+                          ? 'border-[var(--primary)] bg-[var(--ink-dim-4)]'
+                          : 'border-[var(--divider)] bg-[var(--surface-card)] active:bg-[var(--ink-dim-4)]',
                       ].join(' ')}
                     >
                       <span className="min-w-0">
-                        <span className="block truncate font-display text-[16px] font-bold leading-tight text-on-surface">
+                        <span className="block truncate font-[family-name:var(--font)] text-[16px] font-bold leading-tight text-[var(--ink)]">
                           {user.fullName || user.emailAddress}
                         </span>
-                        <span className="block truncate font-body text-[12px] leading-[18px] text-on-surface-variant">
+                        <span className="block truncate font-[family-name:var(--font)] text-[12px] leading-[18px] text-[var(--muted)]">
                           {user.emailAddress}
                         </span>
                       </span>
                       {switchingEmail === user.emailAddress ? (
                         <span
                           aria-hidden="true"
-                          className="h-5 w-5 shrink-0 animate-spin rounded-pill border-2 border-olive-accent/40 border-t-olive-accent"
+                          className="h-5 w-5 shrink-0 animate-spin rounded-pill border-2 border-[var(--ink-dim-2)] border-t-[var(--primary)]"
                         />
                       ) : (
                         <span
                           className={[
-                            'shrink-0 rounded-pill px-2.5 py-0.5 font-body text-[10px] font-bold uppercase leading-4 tracking-label-caps',
+                            'shrink-0 rounded-pill px-2.5 py-0.5 font-[family-name:var(--font)] text-[10px] font-bold leading-4',
                             isCurrent
-                              ? 'bg-olive-accent text-on-tertiary'
-                              : 'border border-olive-accent text-olive-accent',
+                              ? 'bg-[var(--primary)] text-white'
+                              : 'border border-[var(--primary)] text-[var(--primary)]',
                           ].join(' ')}
                         >
                           {isCurrent ? 'current' : 'switch'}
@@ -167,11 +168,9 @@ function DevSwitchUserScreen() {
             <button
               type="button"
               onClick={signOut}
-              className="flex h-[48px] w-full items-center justify-center gap-2 rounded-pill border border-outline-variant bg-surface-container-lowest font-body text-[14px] font-semibold text-on-surface transition-colors active:bg-surface-container"
+              className="flex h-[48px] w-full items-center justify-center gap-2 rounded-pill border border-[var(--divider)] bg-[var(--surface-card)] font-[family-name:var(--font)] text-[14px] font-semibold text-[var(--ink)] transition-colors active:bg-[var(--ink-dim-4)]"
             >
-              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-                logout
-              </span>
+              <LogOut size={18} aria-hidden="true" />
               Sign out
             </button>
           ) : null}

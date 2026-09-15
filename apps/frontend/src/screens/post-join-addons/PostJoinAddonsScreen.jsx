@@ -43,6 +43,8 @@ function PostJoinAddonsScreen() {
   /* Set by the join flow when the captaincy was forced rather than volunteered
      for — see resolveCaptaincyOnJoin. */
   const captaincyNotice = location.state?.captaincyNotice === true;
+  /* Where a paid purchase returns once captured — the pass, when bought from there. */
+  const returnTo = location.state?.returnTo ?? null;
   const navigate = useTransitionNavigate();
   const isOnline = useOnlineStatus();
 
@@ -124,7 +126,8 @@ function PostJoinAddonsScreen() {
       if (result?.paid) {
         // The existing checkout screen owns the Razorpay modal from here.
         navigate(`/checkout/${result.paymentGroupId}`, {
-          state: { registrationId, isAddOnPurchase: true },
+          // Carried through so a purchase started on the pass returns to the pass.
+          state: { registrationId, isAddOnPurchase: true, returnTo },
         });
         return;
       }
@@ -134,7 +137,7 @@ function PostJoinAddonsScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, chosenLines, offers, selections, registrationId, navigate]);
+  }, [isSubmitting, chosenLines, offers, selections, registrationId, navigate, returnTo]);
 
   const handleSkip = useCallback(() => {
     navigate(`/registration-success/${registrationId}`, { replace: true });

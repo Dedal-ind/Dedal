@@ -13,7 +13,7 @@ import AdminExecutiveTable from '../../components-admin/admin-executive-table/Ad
 import AdminExecutiveChip from '../../components-admin/admin-executive-chip/AdminExecutiveChip.jsx';
 import AdminActionsMenu from '../../components-admin/admin-actions-menu/AdminActionsMenu.jsx';
 import AdminErrorBanner from '../../components-admin/admin-error-banner/AdminErrorBanner.jsx';
-import AdminModal from '../../components-admin/admin-modal/AdminModal.jsx';
+import AdminDeleteConfirm from '../../components-admin/admin-delete-confirm/AdminDeleteConfirm.jsx';
 import AdminPager from '../../components-admin/admin-pager/AdminPager.jsx';
 import AdminScreenState from '../../components-admin/admin-screen-state/AdminScreenState.jsx';
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
@@ -142,7 +142,6 @@ function AdminCampaignsScreen() {
     ];
     if (row.status === 'draft') {
       items.push({ key: 'publish', label: COPY.publishAction, onSelect: () => runAction(() => campaignsApi.publish(row.id), COPY.publishedNotice(row.name)) });
-      items.push({ key: 'delete', label: COPY.deleteAction, tone: 'danger', onSelect: () => setDeleteTarget(row) });
     }
     if (row.status === 'published') {
       items.push({ key: 'pause', label: COPY.pauseAction, onSelect: () => runAction(() => campaignsApi.pause(row.id), COPY.pausedNotice(row.name)) });
@@ -152,6 +151,10 @@ function AdminCampaignsScreen() {
     }
     if (row.status !== 'archived') {
       items.push({ key: 'archive', label: COPY.archiveAction, tone: 'danger', onSelect: () => runAction(() => campaignsApi.archive(row.id), COPY.archivedNotice(row.name)) });
+    }
+    // Delete is draft-only (the server enforces it) and always the last item.
+    if (row.status === 'draft') {
+      items.push({ key: 'delete', label: COPY.deleteAction, tone: 'danger', onSelect: () => setDeleteTarget(row) });
     }
     return items;
   }
@@ -297,18 +300,13 @@ function AdminCampaignsScreen() {
         </AdminExecutiveCard>
       ) : null}
 
-      <AdminModal
-        isOpen={Boolean(deleteTarget)}
-        title={COPY.deleteModalTitle}
-        confirmLabel={COPY.deleteAction}
-        cancelLabel={COPY.cancel}
-        tone="danger"
+      <AdminDeleteConfirm
+        target={deleteTarget}
+        note={deleteTarget ? COPY.deleteModalBody(deleteTarget.name) : ''}
         isBusy={isDeleting}
         onConfirm={confirmDelete}
-        onCancel={() => (isDeleting ? null : setDeleteTarget(null))}
-      >
-        {deleteTarget ? COPY.deleteModalBody(deleteTarget.name) : ''}
-      </AdminModal>
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

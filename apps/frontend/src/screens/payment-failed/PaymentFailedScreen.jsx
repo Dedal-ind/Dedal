@@ -24,6 +24,7 @@ import { PAYMENT_STATUS_COPY } from '../../brand/brand-copy.js';
 import { BackIcon } from '../../components/detail-icons/DetailIcons.jsx';
 import '../../design/registration.css';
 import '../checkout/checkout.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 function PaymentFailedScreen() {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ function PaymentFailedScreen() {
 
   return (
     <div className="drg-screen dck-screen drg-screen--solo">
-      <button type="button" className="dck-back" onClick={() => navigate(-1)} aria-label="Back">
+      <button type="button" className="dck-back" onClick={() => navigateBack(navigate, '/')} aria-label="Back">
         <BackIcon />
       </button>
 

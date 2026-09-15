@@ -23,6 +23,7 @@ import { BackIcon, OfflineIcon, PassIcon, RetryIcon } from '../../components/det
 
 import '../../design/registration.css';
 import './contingent-purchase.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 const COPY = {
   kicker: 'Contingent',
@@ -227,7 +228,7 @@ function ContingentPurchaseScreen() {
     }
   }
 
-  const goBack = () => navigate(-1);
+  const goBack = () => navigateBack(navigate, '/');
 
   if (loadState === 'loading' && !contingent) {
     return (

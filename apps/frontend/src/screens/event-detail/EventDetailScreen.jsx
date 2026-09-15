@@ -26,6 +26,8 @@ import { useLocation, useParams } from 'react-router-dom';
 import { useTransitionNavigate } from '../../components/route-transition/use-transition-navigate.js';
 import gsap from 'gsap';
 import apiClient from '../../api-client/api-client.js';
+import BottomSheet from '../../components/bottom-sheet/BottomSheet.jsx';
+import AddOnShop from '../../components/add-on-shop/AddOnShop.jsx';
 import {
   isLiveRegistrationStatus,
   canPurchaseAddOns,
@@ -218,6 +220,7 @@ function EventDetailScreen() {
   const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
   // One FAQ open at a time — an accordion, not a set of independent toggles.
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [isAddOnSheetOpen, setIsAddOnSheetOpen] = useState(false);
 
   const descriptionRef = useRef(null);
   const aboutBodyRef = useRef(null);
@@ -753,7 +756,8 @@ function EventDetailScreen() {
      * Falling back to the registration only if the event somehow has no fest,
      * which would otherwise leave the button dead.
      */
-    ctaLabel = 'View pass';
+    // Says the thing that is true — they are in — and still opens the pass.
+    ctaLabel = 'Registered ✓';
     ctaAction = () =>
       navigate(
         event.festId ? `/my-passes/${event.festId}` : `/my-registrations/${existingRegistrationId}`,
@@ -877,6 +881,22 @@ function EventDetailScreen() {
      */
     const offersJoinWithCode = !isCancelled && !existingRegistrationId;
     if (!offersJoinWithCode) {
+      /* Already registered: the second action is buying add-ons for the seat
+         they hold, in a sheet, without leaving the event. */
+      if (canPurchaseAddOnsForThisEvent && purchasableAddOns.length > 0) {
+        return (
+          <div className="ded-cta__pair">
+            <button
+              type="button"
+              className="ddp-button ddp-button--quiet"
+              onClick={() => setIsAddOnSheetOpen(true)}
+            >
+              Buy add-ons
+            </button>
+            {primaryAction}
+          </div>
+        );
+      }
       return primaryAction;
     }
     return (
@@ -1338,7 +1358,7 @@ function EventDetailScreen() {
                               className="ded-addon__action"
                               disabled={!canPurchaseAddOnsForThisEvent}
                               onClick={() =>
-                                navigate(`/registrations/${existingRegistrationId}/add-ons`)
+                                setIsAddOnSheetOpen(true)
                               }
                             >
                               Get add-on
@@ -1348,6 +1368,22 @@ function EventDetailScreen() {
                       ))}
                     </ul>
                   </section>
+                ) : null}
+
+                {/* The add-ons sheet: the same compact rows and the same purchase
+                    path as the pass screen, for the seat already held. */}
+                {existingRegistrationId ? (
+                  <BottomSheet
+                    isOpen={isAddOnSheetOpen}
+                    onClose={() => setIsAddOnSheetOpen(false)}
+                    title="Buy add-ons"
+                  >
+                    <AddOnShop
+                      registrationId={existingRegistrationId}
+                      returnTo={location.pathname}
+                      hideTitle
+                    />
+                  </BottomSheet>
                 ) : null}
 
                 {/* ── Bundles (containers only) ──────────────────────────── */}

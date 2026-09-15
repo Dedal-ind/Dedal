@@ -100,6 +100,12 @@ function CreateRoundsScreen() {
 
   // ── Data fetching ──────────────────────────────────────────────────────
   const loadRounds = useCallback(async () => {
+    /* No festId (a link without ?festId) would build /fests//events/… —
+       show the error state instead of a request that can only 404. */
+    if (!festId) {
+      setLoadState('error');
+      return;
+    }
     setLoadState('loading');
     try {
       const result = await apiClient.get(`/fests/${festId}/events/${eventId}/rounds`);
@@ -214,7 +220,7 @@ function CreateRoundsScreen() {
         } emailed the rules.`,
       );
       await loadRounds();
-      navigate(`/backstage/coordinator/events/${eventId}/scoreboard?festId=${festId}`);
+      navigate(`/backstage/coordinator/events/${eventId}/scorecard?festId=${festId}`);
     } catch (error) {
       setFailure(error?.message ?? 'Could not start this round. Please try again.');
     } finally {

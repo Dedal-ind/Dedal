@@ -1,5 +1,5 @@
 // DiscoverScreen.jsx
-// Route: /discover — the home screen, and the app's default route.
+// Route: / — the home screen, and the app's default route.
 //
 // THE SHAPE IS FIXED; ONLY THE CONTENT VARIES. Hero, live-now strip, category
 // chips, feed. With ten fests and with five hundred it is the same four
@@ -201,11 +201,14 @@ function DiscoverScreen() {
         apiClient.get('/public/events/independent', { signal }).catch(() => []),
       ]);
       const list = Array.isArray(payload) ? payload : (payload?.fests ?? []);
-      setFests(list);
+      /* The public list keeps published fests after they end; the feed shows
+         only live and upcoming ones. Past fests stay reachable from search. */
+      const loadedTs = Date.now();
+      setFests(list.filter((fest) => !fest.endsOn || new Date(fest.endsOn).getTime() >= loadedTs));
       setStandaloneEvents(
         Array.isArray(independentPayload) ? independentPayload : (independentPayload?.events ?? []),
       );
-      setNowTs(Date.now());
+      setNowTs(loadedTs);
       setLoadState('ready');
     } catch (error) {
       /*

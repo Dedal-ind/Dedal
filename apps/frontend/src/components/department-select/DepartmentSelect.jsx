@@ -7,6 +7,7 @@
 // exact label to the same field.
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, Search } from 'lucide-react';
 
 import { DEPARTMENT_OPTIONS } from '../../brand/brand-copy.js';
 import { useExitTransition } from '../../hooks/use-exit-transition/use-exit-transition.js';
@@ -50,10 +51,8 @@ function DepartmentSelect({ value, onChange, placeholder, maxLength = 100 }) {
 
   return (
     <div className="relative" ref={containerReference}>
-      <div className="flex items-center gap-2 rounded-large border border-outline-variant bg-surface-container-lowest px-4 py-3 transition-colors focus-within:border-olive-accent">
-        <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">
-          search
-        </span>
+      <div className="flex items-center gap-2 rounded-[var(--r-card)] border border-[var(--divider)] bg-[var(--surface-card)] px-4 py-3 transition-colors focus-within:border-[var(--ink)]">
+        <Search size={18} className="shrink-0 text-[var(--muted)]" aria-hidden="true" />
         <input
           type="text"
           value={value ?? ''}
@@ -72,18 +71,16 @@ function DepartmentSelect({ value, onChange, placeholder, maxLength = 100 }) {
             onChange(changeEvent.target.value);
             setIsOpen(true);
           }}
-          className="w-full bg-transparent font-body text-base text-on-surface outline-none placeholder:text-on-surface-variant focus:outline-none focus:ring-0"
+          className="w-full bg-transparent font-[family-name:var(--font)] text-base text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:outline-none focus:ring-0"
           data-search-input
         />
-        <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">
-          expand_more
-        </span>
+        <ChevronDown size={18} className="shrink-0 text-[var(--muted)]" aria-hidden="true" />
       </div>
 
       {isListMounted ? (
         <ul
           ref={listRef}
-          className={`absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-large border border-outline-variant bg-surface-container-lowest shadow-subtle dlm-drop${
+          className={`absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-[var(--r-card)] border border-[var(--divider)] bg-[var(--surface-card)] shadow-[var(--e1)] dlm-drop${
             isListVisible ? ' dlm-drop--in' : ''
           }`}
           /* Held in the tree for the 180ms exit, but not a list a keyboard can
@@ -92,8 +89,8 @@ function DepartmentSelect({ value, onChange, placeholder, maxLength = 100 }) {
         >
           {filteredDepartments.length === 0 ? (
             /* Never "No results" — whatever was typed IS the accepted value. */
-            <li className="px-4 py-3 font-body text-[12px] font-bold uppercase tracking-label-caps text-on-surface-variant">
-              USING WHAT YOU TYPED
+            <li className="px-4 py-3 font-[family-name:var(--font)] text-[12px] font-bold text-[var(--muted)]">
+              Using what you typed
             </li>
           ) : (
             filteredDepartments.map((department) => (
@@ -104,7 +101,7 @@ function DepartmentSelect({ value, onChange, placeholder, maxLength = 100 }) {
                     onChange(department);
                     setIsOpen(false);
                   }}
-                  className="w-full border-b border-outline-variant px-4 py-3 text-left font-body text-base text-on-surface last:border-b-0 hover:bg-surface-container"
+                  className="w-full border-b border-[var(--divider)] px-4 py-3 text-left font-[family-name:var(--font)] text-base text-[var(--ink)] last:border-b-0 hover:bg-[var(--ink-dim-4)]"
                 >
                   {department}
                 </button>

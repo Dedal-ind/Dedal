@@ -35,6 +35,7 @@ import {
 } from '../../components/detail-icons/DetailIcons.jsx';
 import LinkedInIcon from '../../components/detail-icons/LinkedInIcon.jsx';
 import '../../design/certificate-page.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 /*
  * NOT formatShortDate(). That helper is the retired stamped-uppercase voice and
@@ -167,7 +168,7 @@ function CertificateDetailScreen() {
           <button
             type="button"
             className="dcd-back"
-            onClick={() => navigate(-1)}
+            onClick={() => navigateBack(navigate, '/')}
             aria-label="Back"
           >
             <BackIcon />

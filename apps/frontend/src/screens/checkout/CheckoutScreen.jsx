@@ -28,6 +28,7 @@ import { BackIcon, RetryIcon, OfflineIcon } from '../../components/detail-icons/
 import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status.js';
 import '../../design/registration.css';
 import './checkout.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 const RAZORPAY_SCRIPT_SOURCE = 'https://checkout.razorpay.com/v1/checkout.js';
 
@@ -203,7 +204,12 @@ function CheckoutScreen() {
             razorpayPaymentId: razorpayResponse.razorpay_payment_id,
             razorpaySignature: razorpayResponse.razorpay_signature,
           });
-          if (typeof registrationId === 'string' && registrationId !== '') {
+          // An add-on bought from the pass or an event page returns there, where
+          // the new entitlement shows, rather than to a registration receipt.
+          const returnTo = passedState.returnTo;
+          if (typeof returnTo === 'string' && returnTo.startsWith('/')) {
+            navigate(returnTo, { replace: true, state: { addOnPurchased: true } });
+          } else if (typeof registrationId === 'string' && registrationId !== '') {
             navigate(`/registration-success/${registrationId}`, { replace: true });
           } else {
             // No known destination — let the processing screen resolve it from
@@ -292,7 +298,7 @@ function CheckoutScreen() {
         </div>
       ) : null}
 
-      <button type="button" className="dck-back" onClick={() => navigate(-1)} aria-label="Back">
+      <button type="button" className="dck-back" onClick={() => navigateBack(navigate, '/')} aria-label="Back">
         <BackIcon />
       </button>
 

@@ -87,8 +87,11 @@ async function updateUserProfile(userId, payload, context = {}) {
     throw new ApplicationError(403, ERROR_CODES.USER_BLOCKED, "This account is blocked.");
   }
 
-  const college = await CollegeModel.findOne({ _id: payload.collegeId, isVerified: true });
-  if (!college) {
+  /* A typed "Other" college has no record to check; a listed one must exist. */
+  const college = payload.otherCollegeName
+    ? null
+    : await CollegeModel.findOne({ _id: payload.collegeId, isVerified: true });
+  if (!college && !payload.otherCollegeName) {
     throw new ApplicationError(
       400,
       ERROR_CODES.PROFILE_COLLEGE_NOT_FOUND,
@@ -97,7 +100,8 @@ async function updateUserProfile(userId, payload, context = {}) {
   }
 
   user.fullName = payload.fullName;
-  user.collegeId = college._id;
+  user.collegeId = college ? college._id : null;
+  user.otherCollegeName = college ? null : payload.otherCollegeName;
   user.usn = payload.usn;
   user.phoneNumber = payload.phoneNumber;
   user.yearOfStudy = payload.yearOfStudy;

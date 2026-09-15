@@ -49,6 +49,7 @@ import { useOnlineStatus } from '../../hooks/use-online-status/use-online-status
 import { formatTeamErrorMessage } from '../../helpers/team-error-messages.js';
 import '../../design/registration.css';
 import './registration-form.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 /*
  * The four custom-question types the backend enum actually defines. There is no
@@ -703,7 +704,7 @@ function RegistrationFormScreen() {
         <button
           type="button"
           className="drf-back"
-          onClick={() => (isStepOne || !isRosterFlow ? navigate(-1) : setStep(1))}
+          onClick={() => (isStepOne || !isRosterFlow ? navigateBack(navigate, '/') : setStep(1))}
           aria-label={isRosterFlow && step === 2 ? 'Back to team details' : 'Back'}
         >
           <BackIcon size="lg" />

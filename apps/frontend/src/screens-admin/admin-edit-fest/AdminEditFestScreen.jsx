@@ -30,7 +30,12 @@ import AdminSponsorsEditor from '../../components-admin/admin-sponsors-editor/Ad
 import { toSponsorPayload, toSponsorFormRows } from '../../helpers/sponsor-form.js';
 import { toOfferPayload, toOfferFormRow } from '../../helpers/offer-form.js';
 import AdminOfferCheckpointsPanel from '../../components-admin/admin-offer-checkpoints-panel/AdminOfferCheckpointsPanel.jsx';
-import { ADMIN_EDIT_FEST_COPY as COPY, ADMIN_FEST_STRUCTURE_COPY } from '../../brand-admin/brand-copy.js';
+import AdminDeleteConfirm from '../../components-admin/admin-delete-confirm/AdminDeleteConfirm.jsx';
+import {
+  ADMIN_DELETE_COPY,
+  ADMIN_EDIT_FEST_COPY as COPY,
+  ADMIN_FEST_STRUCTURE_COPY,
+} from '../../brand-admin/brand-copy.js';
 
 const OVERVIEW_ROUTE = '/admin/overview';
 
@@ -183,6 +188,28 @@ function AdminEditFestScreen() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Hard delete: draft fests only. eventCount is read when the dialog opens.
+  const [festStatus, setFestStatus] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function openDelete() {
+    const events = await apiClient.get(`/fests/${festId}/events/all`).catch(() => []);
+    setDeleteTarget({ name: form.festName, eventCount: Array.isArray(events) ? events.length : 0 });
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    setServerError('');
+    try {
+      await apiClient.delete(`/fests/${festId}`);
+      navigate(OVERVIEW_ROUTE);
+    } catch (deleteError) {
+      setServerError(deleteError?.message || ADMIN_DELETE_COPY.failed);
+      setDeleteTarget(null);
+      setIsDeleting(false);
+    }
+  }
 
   useEffect(() => {
     let isActive = true;
@@ -194,6 +221,7 @@ function AdminEditFestScreen() {
         }
         const loaded = festToForm(fest);
         setIsSoloContainer(Boolean(fest.isSoloContainer));
+        setFestStatus(fest.status ?? '');
         setRawOffers(fest.offers ?? []);
         setInitialForm(loaded);
         setForm(loaded);
@@ -304,6 +332,16 @@ function AdminEditFestScreen() {
           >
             {ADMIN_FEST_STRUCTURE_COPY.viewStructure}
           </AdminExecutiveButton>
+          {/* Draft-only, last, and text rather than filled: destructive. */}
+          {festStatus === 'draft' ? (
+            <button
+              type="button"
+              onClick={openDelete}
+              className="px-2 font-admin-body text-[14px] font-medium text-admin-status-error-red hover:underline"
+            >
+              {ADMIN_DELETE_COPY.action}
+            </button>
+          ) : null}
         </div>
       </div>
       {isSoloContainer ? (
@@ -421,6 +459,14 @@ function AdminEditFestScreen() {
           </AdminExecutiveButton>
         </div>
       </AdminExecutiveCard>
+
+      <AdminDeleteConfirm
+        target={deleteTarget}
+        note={deleteTarget?.eventCount > 0 ? ADMIN_DELETE_COPY.childEventsNote(deleteTarget.eventCount) : ''}
+        isBusy={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

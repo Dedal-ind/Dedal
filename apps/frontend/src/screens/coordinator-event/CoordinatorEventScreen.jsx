@@ -34,6 +34,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
+  ClipboardList,
   Contact,
   ListOrdered,
   Megaphone,
@@ -160,6 +161,13 @@ function CoordinatorEventScreen() {
       to: `/backstage/coordinator/events/${eventId}/broadcast?festId=${festId}`,
     },
     {
+      key: 'panel',
+      label: 'Event details',
+      meta: 'Roster, results and details',
+      Icon: ClipboardList,
+      to: `/backstage/coordinator/${eventId}?festId=${festId}`,
+    },
+    {
       key: 'directory',
       label: 'Directory',
       meta: 'Find a person or team',
@@ -221,16 +229,6 @@ function CoordinatorEventScreen() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleOpenScanner}
-              className="dop-btn dop-btn--block dop-btn--primary"
-              style={{ minHeight: '56px' }}
-            >
-              <ScanLine size={20} aria-hidden="true" />
-              Open the scanner
-            </button>
-
             <section className="dop-section">
               <div className="dop-section__head">
                 <h2 className="dop-section__title">Check-in</h2>
@@ -274,6 +272,24 @@ function CoordinatorEventScreen() {
           </>
         ) : null}
       </div>
+
+      {/* Pinned like the volunteer's scan bar: the most-tapped control stays in
+          reach however far the coordinator has scrolled. */}
+      {loadState === 'ready' && data ? (
+        <div className="dop-bar">
+          <div className="dop-bar__inner">
+            <button
+              type="button"
+              onClick={handleOpenScanner}
+              className="dop-btn dop-btn--block dop-btn--primary"
+              style={{ minHeight: '56px' }}
+            >
+              <ScanLine size={20} aria-hidden="true" />
+              Open the scanner
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

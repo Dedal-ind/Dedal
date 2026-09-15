@@ -18,6 +18,7 @@ import { useAuthentication } from '../../contexts/authentication-context/Authent
 import SearchPanel from '../../components/search/SearchPanel.jsx';
 import { useRotatingPlaceholder } from '../../hooks/use-rotating-placeholder/use-rotating-placeholder.js';
 import './search-screen.css';
+import { navigateBack } from '../../helpers/navigate-back.js';
 
 const BACK_LABEL = 'Back';
 
@@ -102,7 +103,7 @@ function SearchScreen() {
           <button
             type="button"
             className="dss-back"
-            onClick={() => navigate(-1)}
+            onClick={() => navigateBack(navigate, '/')}
             aria-label={BACK_LABEL}
           >
             <BackGlyph />

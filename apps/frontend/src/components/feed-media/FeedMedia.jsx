@@ -175,9 +175,13 @@ function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered, fallback
            network work the moment it is parsed, whatever preload says. */
         src={isNear ? videoUrl : undefined}
         poster={imageUrl || undefined}
+        /* All four as attributes: iOS Safari silently refuses autoplay if any is
+           missing. The half-visible observer still pauses it off screen. Low Power
+           Mode blocks autoplay outright — the poster shows, which is fine. */
+        autoPlay
         muted
-        playsInline
         loop
+        playsInline
         preload={isNear ? 'metadata' : 'none'}
         onLoadedData={onMediaRendered}
         onError={() => setHasMediaFailed(true)}

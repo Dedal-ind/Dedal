@@ -296,3 +296,44 @@ describe("notify participants", () => {
     expect(response.status).toBe(400);
   });
 });
+
+describe("hard delete is for drafts only", () => {
+  it("deletes a draft event", async () => {
+    await EventModel.updateOne({ _id: event._id }, { status: "draft" });
+    const response = await authed(request(application).delete(eventPath(event._id)));
+    expect(response.status).toBe(200);
+    expect(await EventModel.findById(event._id)).toBeNull();
+  });
+
+  it("refuses to delete a published event", async () => {
+    const response = await authed(request(application).delete(eventPath(event._id)));
+    expect(response.status).toBe(409);
+    expect(await EventModel.findById(event._id)).not.toBeNull();
+  });
+
+  it("refuses a draft parent event that still has sub-events", async () => {
+    await EventModel.updateOne({ _id: event._id }, { status: "draft" });
+    await EventModel.updateOne({ _id: otherEvent._id }, { parentEventId: event._id });
+    const response = await authed(request(application).delete(eventPath(event._id)));
+    expect(response.status).toBe(409);
+  });
+
+  it("refuses to delete a published fest", async () => {
+    const response = await authed(request(application).delete(`/api/v1/fests/${fest._id}`));
+    expect(response.status).toBe(409);
+  });
+
+  it("deletes a draft fest and its events", async () => {
+    const draftFest = await createTestFest(college, admin.user, { status: "draft", festSlug: "draft-fest", festName: "Draft Fest" });
+    await EventModel.create({
+      ...buildEventAttributes(),
+      status: "draft",
+      eventSlug: "draft-fest-event",
+      festId: draftFest._id,
+      createdByUserId: admin.user._id,
+    });
+    const response = await authed(request(application).delete(`/api/v1/fests/${draftFest._id}`));
+    expect(response.status).toBe(200);
+    expect(await EventModel.countDocuments({ festId: draftFest._id })).toBe(0);
+  });
+});

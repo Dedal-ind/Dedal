@@ -150,6 +150,12 @@ function ScoreboardScreen() {
 
   // ── Load data ───────────────────────────────────────────────
   const loadData = useCallback(async () => {
+    /* No festId (a link without ?festId) would build /fests//events/… —
+       show the error state instead of a request that can only 404. */
+    if (!festId) {
+      setLoadState('error');
+      return;
+    }
     setLoadState('loading');
     try {
       const [eventData, roundList] = await Promise.all([
