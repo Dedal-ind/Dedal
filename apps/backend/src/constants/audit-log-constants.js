@@ -45,6 +45,7 @@ const AUDIT_ACTIONS = {
   PROMOTION_ARCHIVED: "promotion.archived",
   PROMOTION_DELETED: "promotion.deleted",
   PROMOTION_REORDERED: "promotion.reordered",
+  HOME_BANNER_UPDATED: "homeBanner.updated",
   // Promotions phase 2: promoter / campaign / creative / placement.
   PROMOTER_CREATED: "promoter.created",
   PROMOTER_UPDATED: "promoter.updated",
@@ -180,6 +181,7 @@ const AUDIT_ENTITY_TYPES = {
   EVENT_SCORE: "eventScore",
   ACHIEVEMENT: "achievement",
   PROMOTION: "promotion",
+  HOME_BANNER: "homeBanner",
   PROMOTER: "promoter",
   CREATIVE: "creative",
   CAMPAIGN: "campaign",

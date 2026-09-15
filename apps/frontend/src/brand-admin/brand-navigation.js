@@ -92,6 +92,15 @@ export const ADMIN_SIDEBAR_SECTIONS = [
         route: '/admin/system/promotions',
         platformAdminOnly: true,
       },
+      // What the big hero on Discover shows: automatic, or up to five fests and
+      // promotions in the order chosen here.
+      {
+        id: 'home-banner',
+        label: 'Home banner',
+        iconName: 'GalleryHorizontal',
+        route: '/admin/system/home-banner',
+        platformAdminOnly: true,
+      },
       // Promotions phase 5: promoters and their creative libraries. The old
       // promotions screen above stays live until the participant surfaces
       // switch to campaigns.

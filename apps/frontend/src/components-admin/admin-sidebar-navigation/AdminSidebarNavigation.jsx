@@ -38,6 +38,7 @@ import {
   Bell,
   LogOut,
   Search,
+  GalleryHorizontal,
 } from 'lucide-react';
 import apiClient from '../../api-client/api-client.js';
 import { ADMIN_SIDEBAR_SECTIONS } from '../../brand-admin/brand-navigation.js';
@@ -47,6 +48,7 @@ import AdminNotificationPanel from '../admin-notification-panel/AdminNotificatio
 import { ADMIN_DASHBOARD_COPY, ADMIN_AUTH_COPY } from '../../brand-admin/brand-copy.js';
 
 const ICONS = {
+  GalleryHorizontal,
   Inbox,
   LayoutDashboard,
   Network,

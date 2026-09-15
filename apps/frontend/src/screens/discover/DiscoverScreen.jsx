@@ -164,6 +164,18 @@ function injectPromotions(entries, promotions) {
     }
     items.push(entry);
   });
+  /*
+   * A SHORT FEED STILL CARRIES ITS PROMOTIONS. The first slot sits before the
+   * fifth entry, so a platform with four or fewer live fests (every launch week)
+   * never reached one and a published promotion — video or image — was simply
+   * never rendered. When no slot was reached, the promotions follow the last
+   * entry instead; with no entries at all they are the feed.
+   */
+  if (promotionIndex === 0) {
+    promotions.forEach((promotion, index) => {
+      items.push({ kind: 'promotion', key: `promotion-${promotion.id}-tail-${index}`, promotion });
+    });
+  }
   return items;
 }
 
@@ -179,6 +191,8 @@ function DiscoverScreen() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const [publicPromotions, setPublicPromotions] = useState([]);
+  /* The platform admin's curated banner slides; [] means automatic. */
+  const [curatedBannerSlides, setCuratedBannerSlides] = useState([]);
   const [decisionPromotions, setDecisionPromotions] = useState([]);
 
   const sentinelRef = useRef(null);
@@ -246,6 +260,21 @@ function DiscoverScreen() {
       /* Silent. A home screen never shows an error because an advertisement
          did not load. */
       .catch(() => setPublicPromotions([]));
+    return () => controller.abort();
+  }, []);
+
+  /* The home banner setting. Silent on failure, like promotions: the banner
+     falls back to the automatic rule, never to an error. */
+  useEffect(() => {
+    const controller = new AbortController();
+    apiClient
+      .get('/public/home-banner', { signal: controller.signal })
+      .then((payload) =>
+        setCuratedBannerSlides(
+          payload?.mode === 'curated' && Array.isArray(payload.slides) ? payload.slides : [],
+        ),
+      )
+      .catch(() => setCuratedBannerSlides([]));
     return () => controller.abort();
   }, []);
 
@@ -320,7 +349,26 @@ function DiscoverScreen() {
    * twice, once enormous and once small, within one screen of scrolling reads
    * as a bug rather than as emphasis.
    */
-  const heroKey = heroSelection?.kind === 'fest' ? `fest-${heroSelection.fest.festSlug}` : null;
+  /* Curated slides in the same shape the automatic selection uses, so the hero
+     renders both through one path. A curated fest's live mark is computed here
+     against the same clock as the feed. */
+  const heroSlides = useMemo(
+    () =>
+      curatedBannerSlides
+        .filter((slide) => (slide.kind === 'fest' ? slide.fest : slide.promotion))
+        .map((slide) =>
+          slide.kind === 'fest'
+            ? { kind: 'fest', fest: slide.fest, isLive: isFestLive(slide.fest.startsOn, slide.fest.endsOn, nowTs) }
+            : { kind: 'promotion', promotion: slide.promotion },
+        ),
+    [curatedBannerSlides, nowTs],
+  );
+  const isCuratedBanner = heroSlides.length > 0;
+
+  /* Only the single automatic hero is removed from the feed: a curated banner
+     rotates, so its fests stay in the feed where they are always reachable. */
+  const heroKey =
+    !isCuratedBanner && heroSelection?.kind === 'fest' ? `fest-${heroSelection.fest.festSlug}` : null;
 
   const feedItems = useMemo(() => {
     /* ...unless it is the only thing there is: removing it would leave an
@@ -420,7 +468,12 @@ function DiscoverScreen() {
         <DiscoverSearchBar />
 
         {loadState === 'ready' ? (
-          <FeedHero selection={heroSelection} nowTs={nowTs} onOpenFest={openFest} />
+          <FeedHero
+            selection={heroSelection}
+            slides={isCuratedBanner ? heroSlides : null}
+            nowTs={nowTs}
+            onOpenFest={openFest}
+          />
         ) : null}
 
         {/* Absent from the DOM when nothing is live — not hidden. */}

@@ -102,6 +102,7 @@ import EventScheduleScreen from './screens/event-schedule/EventScheduleScreen.js
 import AppErrorBoundary from './components/app-error-boundary/AppErrorBoundary.jsx';
 import AdminEventTimelineScreen from './screens-admin/admin-event-timeline/AdminEventTimelineScreen.jsx';
 import AdminPromotionsScreen from './screens-admin/admin-promotions/AdminPromotionsScreen.jsx';
+import AdminHomeBannerScreen from './screens-admin/admin-home-banner/AdminHomeBannerScreen.jsx';
 import AdminPromotersScreen from './screens-admin/admin-promoters/AdminPromotersScreen.jsx';
 import AdminPromoterDetailScreen from './screens-admin/admin-promoter-detail/AdminPromoterDetailScreen.jsx';
 import AdminCreativesScreen from './screens-admin/admin-creatives/AdminCreativesScreen.jsx';
@@ -604,6 +605,7 @@ function App() {
               <Route element={<PlatformAdminRoute />}>
                 <Route path="/admin/system/colleges" element={<AdminCollegeVerificationScreen />} />
                 <Route path="/admin/system/promotions" element={<AdminPromotionsScreen />} />
+                <Route path="/admin/system/home-banner" element={<AdminHomeBannerScreen />} />
                 <Route path="/admin/system/promoters" element={<AdminPromotersScreen />} />
                 <Route path="/admin/system/promoters/:promoterId" element={<AdminPromoterDetailScreen />} />
                 <Route path="/admin/system/promoters/:promoterId/creatives" element={<AdminCreativesScreen />} />

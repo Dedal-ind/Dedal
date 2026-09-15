@@ -332,5 +332,6 @@ module.exports = {
   listAllPromotions,
   getPublishedPromotions,
   getPublishedPromotionsBoth,
+  toPublicPromotion,
   MAXIMUM_PUBLISHED_PROMOTION_COUNT_PER_TYPE,
 };

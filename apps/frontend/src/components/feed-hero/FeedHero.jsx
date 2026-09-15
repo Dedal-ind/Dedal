@@ -23,7 +23,8 @@
 
 import { openPromotionDestination, resolvePromotionDestination } from '../../helpers/promotion-destination.js';
 import { resolvePromotionMedia, viewabilityMediaTypeFor } from '../../helpers/promotion-media.js';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { prefersReducedMotion } from '../../design/motion.js';
 import { useViewability } from '../../hooks/use-viewability/use-viewability.js';
 import { DELIVERY_EVENT_KINDS, reportDeliveryEvent } from '../../helpers/delivery-reporter.js';
 import FeedMedia from '../feed-media/FeedMedia.jsx';
@@ -166,6 +167,7 @@ function PromotionHero({ promotion, onOpenFest }) {
       imageUrl={media.imageUrl}
       videoUrl={media.videoUrl}
       alt=""
+      allowSoundToggle={false}
       onMediaRendered={handleMediaRendered}
       overlay={
         <>
@@ -195,10 +197,7 @@ function PromotionHero({ promotion, onOpenFest }) {
   );
 }
 
-function FeedHero({ selection, nowTs, onOpenFest }) {
-  if (!selection) {
-    return null;
-  }
+function HeroSlide({ selection, nowTs, onOpenFest }) {
   if (selection.kind === 'promotion') {
     return <PromotionHero promotion={selection.promotion} onOpenFest={onOpenFest} />;
   }
@@ -210,6 +209,192 @@ function FeedHero({ selection, nowTs, onOpenFest }) {
       onOpen={() => onOpenFest(selection.fest)}
     />
   );
+}
+
+const ROTATE_EVERY_MS = 6000;
+/* Matches --herocarousel-fade in discover.css. */
+const CROSSFADE_MS = 700;
+const SWIPE_THRESHOLD_PX = 40;
+
+/*
+ * THE CURATED BANNER: up to five slides the platform admin chose, rotating.
+ *
+ * Built to the WAI-ARIA carousel pattern, because an auto-advancing banner is
+ * moving content (WCAG 2.2.2) and must be stoppable:
+ *   · a Pause / Play button, first in the control order, whose LABEL says what
+ *     it will do rather than toggling aria-pressed;
+ *   · rotation pauses while the pointer is over the banner or focus is inside
+ *     it, so nothing slides away mid-read or mid-tap;
+ *   · with reduced motion requested it starts paused;
+ *   · a dot per slide, and a swipe on touch screens.
+ * Only the visible slide is mounted, so a video slide plays only while shown.
+ * One slide is just that slide: no controls, nothing to rotate.
+ */
+function HeroCarousel({ slides, nowTs, onOpenFest }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  /* The slide being faded OUT. Kept mounted only for the crossfade, then
+     released, so at most two slides (and two videos) exist at once. */
+  const [leavingIndex, setLeavingIndex] = useState(null);
+  const [isPaused, setIsPaused] = useState(() => prefersReducedMotion());
+  const [isHeld, setIsHeld] = useState(false);
+  const touchStartRef = useRef(null);
+  const count = slides.length;
+  const safeIndex = activeIndex % count;
+
+  useEffect(() => {
+    if (count < 2 || isPaused || isHeld) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      setLeavingIndex(safeIndex);
+      setActiveIndex((index) => (index + 1) % count);
+    }, ROTATE_EVERY_MS);
+    return () => window.clearTimeout(timer);
+  }, [count, isPaused, isHeld, safeIndex]);
+
+  useEffect(() => {
+    if (leavingIndex === null) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setLeavingIndex(null), CROSSFADE_MS);
+    return () => window.clearTimeout(timer);
+  }, [leavingIndex, safeIndex]);
+
+  if (count === 1) {
+    return <HeroSlide selection={slides[0]} nowTs={nowTs} onOpenFest={onOpenFest} />;
+  }
+
+  const goTo = (index) => {
+    const next = ((index % count) + count) % count;
+    if (next === safeIndex) {
+      return;
+    }
+    setLeavingIndex(prefersReducedMotion() ? null : safeIndex);
+    setActiveIndex(next);
+  };
+  const slideKey = (slide) => `${slide.kind}-${slide.kind === 'fest' ? slide.fest.id : slide.promotion.id}`;
+
+  return (
+    <div
+      className="dsc-herocarousel"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Featured"
+      onMouseEnter={() => setIsHeld(true)}
+      onMouseLeave={() => setIsHeld(false)}
+      onFocus={() => setIsHeld(true)}
+      onBlur={(blurEvent) => {
+        if (!blurEvent.currentTarget.contains(blurEvent.relatedTarget)) {
+          setIsHeld(false);
+        }
+      }}
+      onTouchStart={(touchEvent) => {
+        touchStartRef.current = touchEvent.touches[0]?.clientX ?? null;
+      }}
+      onTouchEnd={(touchEvent) => {
+        const startX = touchStartRef.current;
+        const endX = touchEvent.changedTouches[0]?.clientX;
+        touchStartRef.current = null;
+        if (startX == null || endX == null || Math.abs(endX - startX) < SWIPE_THRESHOLD_PX) {
+          return;
+        }
+        goTo(safeIndex + (endX < startX ? 1 : -1));
+      }}
+    >
+      {/*
+        A CROSSFADE, NOT A REMOUNT. The slides share one grid cell, so the
+        outgoing slide fades out while the incoming one fades in over it (with
+        a slight settle from 1.03 scale) — never a flash of empty card between
+        them. Keyed by the slide, not the position, so a slide keeps its loaded
+        poster or video while it is on screen.
+      */}
+      <div className="dsc-herocarousel__stage">
+        {slides.map((slide, index) => {
+          const isActive = index === safeIndex;
+          const isLeaving = index === leavingIndex && !isActive;
+          if (!isActive && !isLeaving) {
+            return null;
+          }
+          return (
+            <div
+              key={slideKey(slide)}
+              className={
+                isActive
+                  ? 'dsc-herocarousel__slide dsc-herocarousel__slide--active'
+                  : 'dsc-herocarousel__slide dsc-herocarousel__slide--leaving'
+              }
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`${index + 1} of ${count}`}
+              aria-hidden={isActive ? undefined : 'true'}
+              inert={isActive ? undefined : true}
+            >
+              <HeroSlide selection={slide} nowTs={nowTs} onOpenFest={onOpenFest} />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="dsc-herocarousel__controls">
+        <button
+          type="button"
+          className="dsc-herocarousel__pause"
+          onClick={() => setIsPaused((paused) => !paused)}
+          aria-label={isPaused ? 'Start banner rotation' : 'Pause banner rotation'}
+        >
+          {isPaused ? (
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+              <path d="M8 5.5v13l10-6.5-10-6.5Z" fill="currentColor" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+              <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" />
+            </svg>
+          )}
+        </button>
+        <div className="dsc-herocarousel__dots">
+          {slides.map((slide, index) => (
+            <button
+              type="button"
+              key={slideKey(slide)}
+              className={index === safeIndex ? 'dsc-herocarousel__dot dsc-herocarousel__dot--on' : 'dsc-herocarousel__dot'}
+              aria-label={`Show slide ${index + 1} of ${count}`}
+              aria-current={index === safeIndex ? 'true' : undefined}
+              onClick={() => goTo(index)}
+            >
+              {/* The active dot fills over the rotation interval — a quiet
+                  countdown that freezes while the banner is paused or held. */}
+              {index === safeIndex ? (
+                <span
+                  key={`fill-${safeIndex}`}
+                  className="dsc-herocarousel__fill"
+                  style={{
+                    animationDuration: `${ROTATE_EVERY_MS}ms`,
+                    animationPlayState: isPaused || isHeld ? 'paused' : 'running',
+                  }}
+                  aria-hidden="true"
+                />
+              ) : null}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/*
+ * `slides` (curated by the platform admin) wins when present; otherwise the
+ * single automatic `selection`.
+ */
+function FeedHero({ selection, slides = null, nowTs, onOpenFest }) {
+  if (slides && slides.length > 0) {
+    return <HeroCarousel slides={slides} nowTs={nowTs} onOpenFest={onOpenFest} />;
+  }
+  if (!selection) {
+    return null;
+  }
+  return <HeroSlide selection={selection} nowTs={nowTs} onOpenFest={onOpenFest} />;
 }
 
 export default FeedHero;

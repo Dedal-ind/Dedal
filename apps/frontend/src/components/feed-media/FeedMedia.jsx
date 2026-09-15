@@ -60,7 +60,20 @@ function SpeakerIcon({ muted }) {
  * surface whose title is NOT already on top of the media passes it — a fest
  * card's name sits directly below and would be said twice.
  */
-function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered, fallbackTitle = null }) {
+/*
+ * allowSoundToggle: a fest's own video can be unmuted with a tap. A promotion's
+ * cannot — it always plays muted and a tap on it belongs to the promotion (its
+ * link, or nothing), so no sound control is rendered over it.
+ */
+function FeedMedia({
+  imageUrl,
+  videoUrl,
+  alt,
+  overlay,
+  onMediaRendered,
+  fallbackTitle = null,
+  allowSoundToggle = true,
+}) {
   const frameRef = useRef(null);
   const videoRef = useRef(null);
   const progressRef = useRef(null);
@@ -223,16 +236,20 @@ function FeedMedia({ imageUrl, videoUrl, alt, overlay, onMediaRendered, fallback
       {overlay}
       {isVideo ? (
         <>
-          <button
-            type="button"
-            className="dsc-media__sound"
-            onClick={toggleMute}
-            aria-label={isMuted ? 'Unmute video' : 'Mute video'}
-            aria-pressed={!isMuted}
-          />
-          <span className="dsc-media__glyph" ref={glyphRef} aria-hidden="true">
-            <SpeakerIcon muted={isMuted} />
-          </span>
+          {allowSoundToggle ? (
+            <>
+              <button
+                type="button"
+                className="dsc-media__sound"
+                onClick={toggleMute}
+                aria-label={isMuted ? 'Unmute video' : 'Mute video'}
+                aria-pressed={!isMuted}
+              />
+              <span className="dsc-media__glyph" ref={glyphRef} aria-hidden="true">
+                <SpeakerIcon muted={isMuted} />
+              </span>
+            </>
+          ) : null}
           <span className="dsc-media__progress" aria-hidden="true">
             <span className="dsc-media__progress-fill" ref={progressRef} />
           </span>

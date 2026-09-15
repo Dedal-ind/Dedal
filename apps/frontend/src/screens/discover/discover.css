@@ -1335,3 +1335,182 @@
 .dsc-live--onmedia .dsc-live__dot {
   background: var(--primary);
 }
+
+/*
+ * ── Curated home banner (FeedHero HeroCarousel) ───────────────────────────
+ * A true crossfade: every mounted slide sits in the SAME grid cell, so the
+ * stage is as tall as the slides and the outgoing slide fades out underneath
+ * the incoming one — no absolute positioning guessing a height, and no frame
+ * of empty card between slides. The incoming slide also settles from a 1.03
+ * scale, a slow ease-out that reads as polish rather than motion.
+ *
+ * The controls sit UNDER the banner, not on it: each slide already carries its
+ * own title, call to action and sponsor pill on the image.
+ */
+.dsc-herocarousel {
+  --herocarousel-fade: 700ms;
+  --herocarousel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  margin-block: var(--s3) var(--s4);
+}
+
+.dsc-herocarousel__stage {
+  display: grid;
+  border-radius: var(--r-card);
+  overflow: hidden;
+  box-shadow: var(--e1);
+  isolation: isolate;
+}
+
+.dsc-herocarousel__slide {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.dsc-herocarousel__slide .dsc-hero {
+  margin-block: 0;
+  box-shadow: none;
+}
+
+.dsc-herocarousel__slide--active {
+  z-index: 2;
+  animation: dsc-herocarousel-in var(--herocarousel-fade) var(--herocarousel-ease) both;
+}
+
+.dsc-herocarousel__slide--leaving {
+  z-index: 1;
+  animation: dsc-herocarousel-out var(--herocarousel-fade) ease both;
+  pointer-events: none;
+}
+
+.dsc-herocarousel__slide--active .dsc-media__el {
+  animation: dsc-herocarousel-settle calc(var(--herocarousel-fade) * 2.4) var(--herocarousel-ease) both;
+}
+
+@keyframes dsc-herocarousel-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dsc-herocarousel-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dsc-herocarousel-settle {
+  from {
+    transform: scale(1.03);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.dsc-herocarousel__controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+
+.dsc-herocarousel__pause {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--divider);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color var(--d-quick) var(--ease-enter);
+}
+
+.dsc-herocarousel__pause:hover {
+  background: var(--ink-dim-4);
+}
+
+.dsc-herocarousel__dots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 24px-tall hit area around a small pill; the active pill widens and fills. */
+.dsc-herocarousel__dot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 20px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: width var(--herocarousel-fade) var(--herocarousel-ease);
+}
+
+.dsc-herocarousel__dot::before {
+  content: "";
+  position: absolute;
+  inset-inline: 6px;
+  top: 50%;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--divider);
+  transform: translateY(-50%);
+}
+
+.dsc-herocarousel__dot--on {
+  width: 40px;
+}
+
+.dsc-herocarousel__fill {
+  position: absolute;
+  inset-inline: 6px;
+  top: 50%;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: left center;
+  animation-name: dsc-herocarousel-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes dsc-herocarousel-fill {
+  from {
+    transform: translateY(-50%) scaleX(0);
+  }
+  to {
+    transform: translateY(-50%) scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dsc-herocarousel__slide--active,
+  .dsc-herocarousel__slide--leaving,
+  .dsc-herocarousel__slide--active .dsc-media__el {
+    animation: none;
+  }
+
+  .dsc-herocarousel__slide--leaving {
+    display: none;
+  }
+
+  .dsc-herocarousel__fill {
+    animation: none;
+    transform: translateY(-50%) scaleX(1);
+  }
+}

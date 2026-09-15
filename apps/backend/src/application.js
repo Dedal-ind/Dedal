@@ -72,6 +72,7 @@ const {
 const { publicEventStaffRouter } = require("./routes/public-event-staff-routes");
 const { backstageRouter } = require("./routes/backstage-routes");
 const { promotionRouter, publicPromotionRouter } = require("./routes/promotion-routes");
+const { homeBannerRouter, publicHomeBannerRouter } = require("./routes/home-banner-routes");
 const { decisionRouter } = require("./routes/decision-routes");
 const { deliveryRouter } = require("./routes/delivery-routes");
 const { promoterRouter, creativeRouter } = require("./routes/promoter-routes");
@@ -186,6 +187,9 @@ application.use("/api/v1/public/events", publicEventBySlugRouter);
 application.use("/api/v1/backstage", backstageRouter);
 application.use("/api/v1/promotions", promotionRouter);
 application.use("/api/v1/public/promotions", publicPromotionRouter);
+// The home banner: which fests and promotions the Discover hero rotates.
+application.use("/api/v1/home-banner", homeBannerRouter);
+application.use("/api/v1/public/home-banner", publicHomeBannerRouter);
 // The promotions decision engine (phase 3). Per-participant, never cached.
 application.use("/api/v1/decisions", decisionRouter);
 // Delivery tracking ingest (phase 4): what happened to a decision.

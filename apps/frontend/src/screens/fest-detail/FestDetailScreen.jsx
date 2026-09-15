@@ -471,14 +471,26 @@ function FestDetailScreen() {
      on an unmounted tree. */
   useEffect(() => () => clearTimeout(swapTimerRef.current), []);
 
+  /*
+   * EVERY tab goes through here, "All" included. "All" used to call
+   * setActiveTab directly, which left a pending swap from the previous tap
+   * alive: its timer fired afterwards and put the old category back, so the
+   * tap on "All" was lost and the grid could be left faded out under the chips.
+   * A new tap always cancels the pending swap first.
+   */
   const selectTab = useCallback(
     (nextTab) => {
-      if (nextTab === activeTab) return;
+      clearTimeout(swapTimerRef.current);
+      if (nextTab === activeTab) {
+        // Tapping the tab that is already showing ends any half-finished swap.
+        setIsSwapping(false);
+        return;
+      }
       if (prefersReducedMotion()) {
+        setIsSwapping(false);
         setActiveTab(nextTab);
         return;
       }
-      clearTimeout(swapTimerRef.current);
       setIsSwapping(true);
       swapTimerRef.current = setTimeout(() => {
         setActiveTab(nextTab);
@@ -1161,7 +1173,7 @@ function FestDetailScreen() {
                       type="button"
                       className="dfd-tab"
                       aria-pressed={activeTab === ALL_TAB}
-                      onClick={() => setActiveTab(ALL_TAB)}
+                      onClick={() => selectTab(ALL_TAB)}
                     >
                       <span className="dfd-tab__row">
                         All

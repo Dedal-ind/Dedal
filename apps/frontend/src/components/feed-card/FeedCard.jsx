@@ -321,6 +321,7 @@ export function PromotionFeedCard({ promotion, onOpenFest }) {
         videoUrl={media.videoUrl}
         fallbackTitle={promotion.title}
         alt=""
+        allowSoundToggle={false}
         onMediaRendered={handleMediaRendered}
         overlay={
           <>

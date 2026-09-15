@@ -532,6 +532,7 @@ module.exports = {
   fetchFestsForAdministrator,
   fetchFestById,
   listPublicFests,
+  buildPublicFestResponse,
   getPublicFestById,
   getPublicFestBySlug,
   updateFest,
