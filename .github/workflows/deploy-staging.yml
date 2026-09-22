@@ -174,4 +174,11 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: curl -sf https://testing.dedal.in/api/v1/health || exit 1
+          script: |
+            set -e
+            curl -sf https://testing.dedal.in/api/v1/health > /dev/null
+            google_config=$(curl -sf https://testing.dedal.in/api/v1/authentication/google/config)
+            echo "$google_config" | grep -q '"clientId":"' || {
+              echo "Google sign-in is not configured: GOOGLE_CLIENT_ID is missing on staging."
+              exit 1
+            }

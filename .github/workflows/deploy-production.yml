@@ -112,13 +112,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # No --mode flag: Vite's default production mode reads
-      # apps/frontend/.env.production, which is gitignored, so this build takes
-      # its API base URL from whatever that file contains on the runner. If the
-      # production build ever comes out pointing at the wrong API, this is the
-      # line to look at.
+      # The GitHub runner is clean and .env.production is gitignored, so the
+      # production API URL must be injected explicitly at build time. Without
+      # this, Vite leaves VITE_API_BASE_URL undefined and the browser calls
+      # /authentication/* on the frontend origin instead of /api/v1.
       - name: Build frontend (production)
         run: cd apps/frontend && pnpm build
+        env:
+          VITE_API_BASE_URL: https://dedal.in/api/v1
+          VITE_APP_ENVIRONMENT: production
 
       - name: Clear remote dist
         uses: appleboy/ssh-action@v1.2.2
@@ -146,4 +148,11 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: curl -sf https://dedal.in/api/v1/health || exit 1
+          script: |
+            set -e
+            curl -sf https://dedal.in/api/v1/health > /dev/null
+            google_config=$(curl -sf https://dedal.in/api/v1/authentication/google/config)
+            echo "$google_config" | grep -q '"clientId":"' || {
+              echo "Google sign-in is not configured: GOOGLE_CLIENT_ID is missing on production."
+              exit 1
+            }

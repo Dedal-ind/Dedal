@@ -37,12 +37,17 @@ if (-not (Test-Path $LOCAL_FRONTEND)) { throw "Frontend folder not found" }
 if (-not (Test-Path "$LOCAL_FRONTEND\package.json")) { throw "package.json missing" }
 
 if (-not (Test-Path "$LOCAL_FRONTEND\.env.production")) {
-    Write-Host "    WARNING: .env.production not found locally" -ForegroundColor Yellow
-    Write-Host "    Vite will use .env or defaults. Continue anyway? Type YES" -ForegroundColor Yellow
-    $c = Read-Host
-    if ($c -ne "YES") { exit 1 }
+    throw "Missing .env.production — refusing to build a production bundle with a fallback API URL."
 } else {
     Write-Host "    .env.production present" -ForegroundColor Green
+}
+
+$productionEnvironment = Get-Content "$LOCAL_FRONTEND\.env.production" -Raw
+if ($productionEnvironment -notmatch '(?m)^\s*VITE_API_BASE_URL=https?://[^\r\n]+') {
+    throw ".env.production must define VITE_API_BASE_URL as an absolute HTTP(S) URL."
+}
+if ($productionEnvironment -match '(?m)^\s*VITE_API_BASE_URL=https?://localhost|^\s*VITE_API_BASE_URL=https?://127\.0\.0\.1') {
+    throw ".env.production points VITE_API_BASE_URL at localhost; refusing to deploy a non-production API target."
 }
 
 Write-Host "    SSH key found" -ForegroundColor Green
@@ -117,10 +122,22 @@ try {
         Write-Host "    Users may keep seeing the OLD UI despite this successful deploy." -ForegroundColor Yellow
         Write-Host "    Fix: apps/backend/docs/server-nginx-config.md (section 1)." -ForegroundColor Yellow
     }
+
 } catch {
     Write-Host "    Warning: could not verify the served bundle ($($_.Exception.Message))" -ForegroundColor Yellow
     Write-Host "    Confirm manually before reporting this deploy as shipped." -ForegroundColor Yellow
 }
+
+$settingsUrl = "$VERIFY_URL/admin/settings?deploycheck=" + (Get-Random)
+try {
+    $settingsResponse = Invoke-WebRequest -Uri $settingsUrl -UseBasicParsing -TimeoutSec 15
+} catch {
+    throw "Production deep-link check failed for /admin/settings. Configure nginx to fall back to /index.html. Details: $($_.Exception.Message)"
+}
+if ($settingsResponse.StatusCode -ne 200 -or $settingsResponse.Content -notmatch '<script[^>]+type="module"') {
+    throw "Production deep-link check failed for /admin/settings. Configure nginx to fall back to /index.html."
+}
+Write-Host "    /admin/settings deep-link returns the SPA entrypoint." -ForegroundColor Green
 
 Write-Host ""
 Write-Host "==> Frontend deploy complete." -ForegroundColor Green
